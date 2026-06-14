@@ -1,0 +1,62 @@
+// MiTR Journey Yoga Studio — database schema
+// Datasource URL is configured in prisma.config.ts (DIRECT_URL for migrations).
+// Runtime client uses DATABASE_URL (pooled) via @prisma/adapter-pg.
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+// -----------------------------------------------------------------------------
+// Phase 2 — Member identity
+// -----------------------------------------------------------------------------
+
+enum Level {
+  CAT
+  TIGER
+  LEOPARD
+}
+
+model Member {
+  id               String   @id @default(cuid())
+  lineUserId       String   @unique
+  displayName      String
+  phone            String
+  classesAttended  Int      @default(0)
+  level            Level    @default(CAT)
+  // Track which celebrations have been shown so the toast only fires once per threshold.
+  celebratedLevels Level[]  @default([])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  attendances Attendance[]
+
+  @@index([lineUserId])
+}
+
+// Placeholder — fully wired in Phase 3 when ClassOccurrence exists.
+enum AttendanceStatus {
+  BOOKED
+  CHECKED_IN
+  CANCELLED
+  NO_SHOW
+}
+
+model Attendance {
+  id                String           @id @default(cuid())
+  memberId          String
+  classOccurrenceId String
+  status            AttendanceStatus @default(BOOKED)
+  checkedInAt       DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([classOccurrenceId])
+}

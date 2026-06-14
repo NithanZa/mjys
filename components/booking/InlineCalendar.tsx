@@ -1,0 +1,274 @@
+"use client";
+
+import { cn } from "@/lib/cn";
+import { isSameStudioDay, STUDIO_TZ, formatTime } from "@/lib/dates";
+import {
+    addMonths,
+    format,
+    isSameMonth,
+    startOfMonth,
+    startOfWeek,
+    startOfDay,
+} from "date-fns";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
+import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { useMemo, useState } from "react";
+import { getOccurrencesForDay, OccurrenceView } from "@/lib/mock/schedule";
+import Link from "next/link";
+
+export interface InlineCalendarProps {
+    selected: Date;
+    onSelect: (date: Date) => void;
+    min: Date;
+    max: Date;
+    instructorId?: string;
+    classType?: string;
+    intensity?: string;
+    onlyAvailable?: boolean;
+}
+
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
+export function InlineCalendar({
+    selected,
+    onSelect,
+    min,
+    max,
+    instructorId = "all",
+    classType = "all",
+    intensity = "all",
+    onlyAvailable = false,
+}: InlineCalendarProps) {
+    const [cursor, setCursor] = useState<Date>(() =>
+        toZonedTime(selected, STUDIO_TZ),
+    );
+
+    const cells = useMemo(() => {
+        const monthStart = startOfMonth(cursor);
+        const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+        const list: Date[] = [];
+        const day = new Date(gridStart);
+        // Always render 42 cells (6 weeks) for layout stability.
+        for (let i = 0; i < 42; i++) {
+            list.push(new Date(day));
+            day.setDate(day.getDate() + 1);
+        }
+        return list;
+    }, [cursor]);
+
+    const minLocal = toZonedTime(min, STUDIO_TZ);
+    const maxLocal = toZonedTime(max, STUDIO_TZ);
+    const selectedLocal = toZonedTime(selected, STUDIO_TZ);
+
+    const shift = (delta: number) => {
+        setCursor((c) => addMonths(c, delta));
+    };
+
+    // Helper to check if start of days are equal in local time
+    const startOfDayLocal = (d: Date) => {
+        const copy = new Date(d);
+        copy.setHours(0, 0, 0, 0);
+        return copy;
+    };
+
+    return (
+        <div className="w-full bg-neutral-card rounded-lg border border-neutral-line/40 p-4 md:p-6 shadow-sm">
+            {/* Calendar Header */}
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="font-display text-h1 font-semibold text-neutral-ink">
+                    {format(cursor, "MMMM yyyy")}
+                </h2>
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        aria-label="Previous month"
+                        onClick={() => shift(-1)}
+                        className="grid h-10 w-10 place-items-center rounded-full border border-neutral-line/60 text-neutral-text-2 bg-neutral-bg hover:bg-primary-50 transition-colors"
+                    >
+                        <ChevronLeft strokeWidth={2} className="h-5 w-5 text-neutral-ink" />
+                    </button>
+                    <button
+                        type="button"
+                        aria-label="Next month"
+                        onClick={() => shift(1)}
+                        className="grid h-10 w-10 place-items-center rounded-full border border-neutral-line/60 text-neutral-text-2 bg-neutral-bg hover:bg-primary-50 transition-colors"
+                    >
+                        <ChevronRight strokeWidth={2} className="h-5 w-5 text-neutral-ink" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Weekdays Grid Header */}
+            <div className="grid grid-cols-7 gap-2 mb-2">
+                {WEEKDAYS.map((d) => (
+                    <div
+                        key={d}
+                        className="text-center font-display text-caption font-medium uppercase tracking-[0.06em] text-neutral-text-2 py-1"
+                    >
+                        {d}
+                    </div>
+                ))}
+            </div>
+
+            {/* Month Days Grid */}
+            <div className="grid grid-cols-7 gap-2">
+                {cells.map((dayLocal) => {
+                    const inMonth = isSameMonth(dayLocal, cursor);
+                    const cellUtcMidnight = fromZonedTime(dayLocal, STUDIO_TZ);
+                    const isSelected = isSameStudioDay(cellUtcMidnight, selected);
+                    const isToday = isSameStudioDay(cellUtcMidnight, new Date());
+                    
+                    const tooEarly = dayLocal < startOfDayLocal(minLocal);
+                    const tooLate = dayLocal > startOfDayLocal(maxLocal);
+                    const disabled = tooEarly || tooLate;
+
+                    // Get occurrences for this local day
+                    let occurrences = getOccurrencesForDay(cellUtcMidnight);
+
+                    if (instructorId && instructorId !== "all") {
+                        occurrences = occurrences.filter((o) => o.instructorId === instructorId);
+                    }
+                    if (classType && classType !== "all") {
+                        occurrences = occurrences.filter((o) => {
+                            if (classType === "special") return !!o.template.isSpecial;
+                            if (classType === "regular") return !o.template.isSpecial;
+                            return true;
+                        });
+                    }
+                    if (intensity && intensity !== "all") {
+                        occurrences = occurrences.filter((o) => o.template.intensity === intensity);
+                    }
+                    if (onlyAvailable) {
+                        occurrences = occurrences.filter((o) => o.slotsLeft > 0);
+                    }
+
+                    return (
+                        <div
+                            key={dayLocal.toISOString()}
+                            onClick={() => {
+                                if (!disabled) {
+                                    onSelect(cellUtcMidnight);
+                                }
+                            }}
+                            className={cn(
+                                "group relative min-h-[72px] md:min-h-[140px] flex flex-col rounded-md border p-1 md:p-2 transition-all cursor-pointer select-none",
+                                disabled && "opacity-40 cursor-not-allowed bg-neutral-bg/20",
+                                !disabled && isSelected && "border-primary-500 ring-1 ring-primary-500 bg-primary-50/10",
+                                !disabled && !isSelected && inMonth && "border-neutral-line/20 bg-neutral-bg hover:border-primary-300",
+                                !disabled && !isSelected && !inMonth && "border-transparent bg-neutral-bg/40 text-neutral-text-3 hover:border-primary-200"
+                            )}
+                        >
+                            {/* Date Number Badge */}
+                            <div className="flex justify-between items-center mb-1">
+                                <span
+                                    className={cn(
+                                        "font-display text-body font-medium flex items-center justify-center h-6 w-6 rounded-full",
+                                        isToday && !isSelected && "bg-accent-500 text-neutral-bg font-bold",
+                                        isSelected && "bg-primary-500 text-neutral-ink font-bold",
+                                        !isToday && !isSelected && inMonth && "text-neutral-ink",
+                                        !isToday && !isSelected && !inMonth && "text-neutral-text-3"
+                                    )}
+                                >
+                                    {format(dayLocal, "d")}
+                                </span>
+
+                                {/* Compact mobile indicators */}
+                                {occurrences.length > 0 && (
+                                    <div className="flex md:hidden gap-1">
+                                        {occurrences.map((occ) => (
+                                            <span
+                                                key={occ.id}
+                                                className={cn(
+                                                    "h-1.5 w-1.5 rounded-full",
+                                                    occ.template.isSpecial
+                                                        ? "bg-primary-800"
+                                                        : "bg-primary-400"
+                                                )}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Desktop: Occurrences List */}
+                            <div className="hidden md:flex flex-col gap-1.5 flex-grow overflow-y-auto max-h-[105px] scrollbar-none mt-1">
+                                {occurrences.map((occ) => {
+                                    const isSpecial = occ.template.isSpecial;
+                                    const isFull = occ.slotsLeft <= 0;
+                                    return (
+                                        <Link
+                                            key={occ.id}
+                                            href={`/book/${occ.id}`}
+                                            onClick={(e) => e.stopPropagation()} // don't select the date when clicking the class card
+                                            className={cn(
+                                                "block text-left p-1.5 rounded border transition-transform hover:scale-[1.02]",
+                                                isSpecial
+                                                    ? "bg-primary-900 text-primary-50 border-primary-800"
+                                                    : "bg-primary-50 text-primary-900 border-primary-200 hover:bg-primary-100/50"
+                                            )}
+                                        >
+                                            <div className="flex items-center justify-between gap-1">
+                                                <span className={cn(
+                                                    "font-sans text-[10px] font-bold tracking-tight",
+                                                    isSpecial ? "text-primary-300" : "text-primary-700"
+                                                )}>
+                                                    {formatTime(occ.startsAt)}
+                                                </span>
+                                                {isSpecial && (
+                                                    <Sparkles className="h-2.5 w-2.5 text-primary-300 fill-primary-300" />
+                                                )}
+                                            </div>
+                                            <div className="font-display text-[11px] font-semibold leading-tight truncate mt-0.5">
+                                                {occ.template.name}
+                                            </div>
+                                            <div className={cn(
+                                                "font-sans text-[9px] truncate",
+                                                isSpecial ? "text-primary-100" : "text-neutral-text-2"
+                                            )}>
+                                                {occ.instructor.name}
+                                            </div>
+                                            <div className="flex justify-between items-center mt-1 pt-0.5 border-t border-current/10">
+                                                <span className={cn(
+                                                    "font-sans text-[9px] font-medium",
+                                                    isFull 
+                                                        ? (isSpecial ? "text-primary-400" : "text-neutral-text-3")
+                                                        : (isSpecial ? "text-accent-300" : "text-success-fg")
+                                                )}>
+                                                    {isFull ? "Full" : `${occ.slotsLeft}/${occ.capacity} spots`}
+                                                </span>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Mobile indication label */}
+                            <div className="md:hidden flex-grow flex items-end justify-center pb-0.5">
+                                {occurrences.length > 0 && (
+                                    <span className="text-[10px] font-sans font-medium text-neutral-text-3">
+                                        {occurrences.length} {occurrences.length === 1 ? "class" : "classes"}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Legend / Info */}
+            <div className="flex flex-wrap gap-4 mt-6 pt-4 border-t border-neutral-line/20 font-sans text-caption text-neutral-text-2">
+                <div className="flex items-center gap-2">
+                    <span className="inline-block h-3.5 w-7 rounded border border-primary-200 bg-primary-50" />
+                    <span>Regular Class</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="inline-block h-3.5 w-7 rounded border border-primary-800 bg-primary-900" />
+                    <span>Special Masterclass</span>
+                </div>
+                <div className="ml-auto text-neutral-text-3 italic">
+                    Tap a date or class to see details & book
+                </div>
+            </div>
+        </div>
+    );
+}

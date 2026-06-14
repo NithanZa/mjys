@@ -1,26 +1,271 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* =============================================================================
+ * MiTR Journey Yoga Studio — design tokens
+ * See: docs/plans/mvp/brand-guideline.md
+ * ============================================================================= */
+
+@theme {
+  /* ---------- Color: primary (orange) ---------- */
+  --color-primary-50: #fcf6ea;
+  --color-primary-100: #fbe8d0;
+  --color-primary-200: #f9d3ae;
+  --color-primary-300: #f6ae7e;
+  --color-primary-400: #f4a068;
+  --color-primary-500: #f29252;
+  --color-primary-600: #dc7a3d;
+  --color-primary-700: #b25f2d;
+  --color-primary-800: #874621;
+  --color-primary-900: #5c2f15;
+
+  /* ---------- Color: accent (sage green) ---------- */
+  --color-accent-50: #f1f5ee;
+  --color-accent-100: #e3ecdd;
+  --color-accent-200: #cddbc2;
+  --color-accent-300: #b7c9a8;
+  --color-accent-400: #9ab28a;
+  --color-accent-500: #7c9a6b;
+  --color-accent-600: #637e55;
+  --color-accent-700: #4f6b41;
+  --color-accent-800: #3a5030;
+  --color-accent-900: #2c3d24;
+
+  /* ---------- Color: neutrals (warm) ---------- */
+  /* Usage: bg-neutral-bg, bg-neutral-card, border-neutral-line,
+     text-neutral-text, text-neutral-text-2, text-neutral-text-3, text-neutral-ink */
+  --color-neutral-bg: #fff8ec;
+  --color-neutral-card: #fdf2e2;
+  --color-neutral-line: #f7c9a3;
+  --color-neutral-text: #181411;
+  --color-neutral-text-2: #5f5148;
+  --color-neutral-text-3: #a8998d;
+  --color-neutral-ink: #2a1c14;
+
+  /* ---------- Color: semantic (theme-swappable, see [data-semantic-theme]) ----- */
+  --color-success-fg: #4f8a5b;
+  --color-success-bg: #e8f2ea;
+  --color-warning-fg: #c98a1f;
+  --color-warning-bg: #fbedd0;
+  --color-error-fg: #b33a2a;
+  --color-error-bg: #f8ddd7;
+  --color-info-fg: #3d6d8f;
+  --color-info-bg: #e1edf4;
+
+  /* ---------- Typography ----------
+     --font-mitr and --font-noto-sans-thai are injected by next/font in app/layout.tsx */
+  --font-display: var(--font-mitr), "Noto Sans Thai", system-ui, sans-serif;
+  --font-sans: var(--font-noto-sans-thai), "Inter", system-ui, sans-serif;
+
+  --text-overline: 0.6875rem; /* 11 / 16 */
+  --text-overline--line-height: 1rem;
+  --text-caption: 0.75rem; /* 12 / 18 */
+  --text-caption--line-height: 1.125rem;
+  --text-body: 0.875rem; /* 14 / 22 */
+  --text-body--line-height: 1.375rem;
+  --text-body-lg: 1rem; /* 16 / 24 */
+  --text-body-lg--line-height: 1.5rem;
+  --text-h3: 1.125rem; /* 18 / 26 */
+  --text-h3--line-height: 1.625rem;
+  --text-h2: 1.25rem; /* 20 / 28 */
+  --text-h2--line-height: 1.75rem;
+  --text-h1: 1.5rem; /* 24 / 32 */
+  --text-h1--line-height: 2rem;
+  --text-display: 2rem; /* 32 / 40 */
+  --text-display--line-height: 2.5rem;
+  --text-display-lg: 2.5rem; /* 40 / 48 */
+  --text-display-lg--line-height: 3rem;
+
+  /* ---------- Radius (Pillow) ---------- */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* ---------- Shadow (Soft warm) ---------- */
+  --shadow-sm: 0 1px 2px rgba(92, 47, 21, 0.06);
+  --shadow-md: 0 4px 12px rgba(92, 47, 21, 0.08);
+  --shadow-lg: 0 12px 32px rgba(92, 47, 21, 0.12);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* =============================================================================
+ * Custom utilities (Tailwind v4)
+ * ============================================================================= */
+
+@utility bg-breath {
+  background: linear-gradient(
+    160deg,
+    #fff8ec 0%,
+    #f1f5ee 55%,
+    #b7c9a8 100%
+  );
 }
 
-@media (prefers-color-scheme: dark) {
+@utility bg-sunrise {
+  background: linear-gradient(
+    160deg,
+    #fcf6ea 0%,
+    #f6ae7e 55%,
+    #f29252 100%
+  );
+}
+
+/* Safe-area helpers — LIFF runs edge-to-edge with viewport-fit=cover */
+@utility safe-pt {
+  padding-top: max(env(safe-area-inset-top), 0.5rem);
+}
+@utility safe-pb {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+@utility safe-px {
+  padding-left: max(env(safe-area-inset-left), 1rem);
+  padding-right: max(env(safe-area-inset-right), 1rem);
+}
+
+/* =============================================================================
+ * Semantic theme hot-swap
+ * Switch at runtime via <html data-semantic-theme="warm | earthy | bright">
+ * ============================================================================= */
+
+[data-semantic-theme="warm"] {
+  --color-success-fg: #4f8a5b;
+  --color-success-bg: #e8f2ea;
+  --color-warning-fg: #c98a1f;
+  --color-warning-bg: #fbedd0;
+  --color-error-fg: #b33a2a;
+  --color-error-bg: #f8ddd7;
+  --color-info-fg: #3d6d8f;
+  --color-info-bg: #e1edf4;
+}
+
+[data-semantic-theme="earthy"] {
+  --color-success-fg: #6b8f5a;
+  --color-success-bg: #eef2e6;
+  --color-warning-fg: #b07a2a;
+  --color-warning-bg: #f6e6cc;
+  --color-error-fg: #9a4636;
+  --color-error-bg: #f2d9d2;
+  --color-info-fg: #4f7384;
+  --color-info-bg: #e3ecf1;
+}
+
+[data-semantic-theme="bright"] {
+  --color-success-fg: #2e7d44;
+  --color-success-bg: #e3f1e7;
+  --color-warning-fg: #d98e00;
+  --color-warning-bg: #fdefcc;
+  --color-error-fg: #c0392b;
+  --color-error-bg: #fadbd6;
+  --color-info-fg: #1f6fa5;
+  --color-info-bg: #dcebf5;
+}
+
+/* =============================================================================
+ * Base / reset — tuned for LINE LIFF in-app browser (iOS WKWebView + Android)
+ * See brand-guideline.md §6 for the rationale behind each rule.
+ * ============================================================================= */
+
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: light;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  html {
+    /* Prevent iOS rotating-text auto-resize */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Kill the iOS rubber-band bounce at the document level */
+    overscroll-behavior-y: none;
+    /* Smoother font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-neutral-bg);
+    color: var(--color-neutral-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-body-lg);
+    line-height: var(--text-body-lg--line-height);
+    min-height: 100dvh;
+    /* Honor iPhone safe areas under viewport-fit=cover */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Headings use Mitr by default */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    color: var(--color-neutral-ink);
+    margin: 0;
+  }
+
+  /* Kill the iOS tap-flash; we'll style :active / :focus-visible ourselves */
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Prevent iOS auto-zoom on input focus (font-size must be >= 16px) */
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--color-neutral-text);
+  }
+
+  button {
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    color: inherit;
+  }
+
+  /* Accessible focus ring — replaces inconsistent iOS default */
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  /* Hide scrollbars in WebKit but keep scrollability */
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
