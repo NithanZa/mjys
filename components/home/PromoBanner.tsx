@@ -1,5 +1,8 @@
-import { Card } from "@/components/ui/Card";
+"use client";
+
+import { cn } from "@/lib/cn";
 import { ArrowRight } from "lucide-react";
+import { motion } from "motion/react";
 import Link from "next/link";
 
 export interface PromoBannerProps {
@@ -20,12 +23,17 @@ export function PromoBanner({
   return (
     <Link
       href={href}
-      className="block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+      className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
     >
-      <Card
-        elevation="sm"
-        interactive
-        className="bg-primary-100/60 flex items-center gap-3"
+      <motion.div
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        transition={{ duration: 0.2 }}
+        className={cn(
+          "bg-primary-100/60 rounded-xl p-4 shadow-sm",
+          "flex items-center gap-3 cursor-pointer",
+          "active:scale-[0.99]"
+        )}
       >
         <div className="flex-1 min-w-0">
           <span className="font-display text-overline uppercase tracking-[0.08em] text-primary-700">
@@ -42,7 +50,7 @@ export function PromoBanner({
           {cta}
           <ArrowRight strokeWidth={1.75} className="h-4 w-4" aria-hidden />
         </span>
-      </Card>
+      </motion.div>
     </Link>
   );
 }

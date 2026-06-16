@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/cn";
-import { isSameStudioDay, STUDIO_TZ, formatTime } from "@/lib/dates";
+import { isSameStudioDay, STUDIO_TZ, formatTimeShort } from "@/lib/dates";
 import {
     addMonths,
     format,
@@ -17,7 +17,7 @@ import { getOccurrencesForDay, OccurrenceView } from "@/lib/mock/schedule";
 import Link from "next/link";
 
 export interface InlineCalendarProps {
-    selected: Date;
+    selected: Date | null;
     onSelect: (date: Date) => void;
     min: Date;
     max: Date;
@@ -40,7 +40,7 @@ export function InlineCalendar({
     onlyAvailable = false,
 }: InlineCalendarProps) {
     const [cursor, setCursor] = useState<Date>(() =>
-        toZonedTime(selected, STUDIO_TZ),
+        toZonedTime(selected || min, STUDIO_TZ),
     );
 
     const cells = useMemo(() => {
@@ -58,7 +58,6 @@ export function InlineCalendar({
 
     const minLocal = toZonedTime(min, STUDIO_TZ);
     const maxLocal = toZonedTime(max, STUDIO_TZ);
-    const selectedLocal = toZonedTime(selected, STUDIO_TZ);
 
     const shift = (delta: number) => {
         setCursor((c) => addMonths(c, delta));
@@ -72,38 +71,38 @@ export function InlineCalendar({
     };
 
     return (
-        <div className="w-full bg-neutral-card rounded-lg border border-neutral-line/40 p-4 md:p-6 shadow-sm">
+        <div className="w-full bg-neutral-card rounded-lg border border-neutral-line/40 p-4 shadow-sm">
             {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="font-display text-h1 font-semibold text-neutral-ink">
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display text-h2 font-semibold text-neutral-ink">
                     {format(cursor, "MMMM yyyy")}
                 </h2>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                     <button
                         type="button"
                         aria-label="Previous month"
                         onClick={() => shift(-1)}
-                        className="grid h-10 w-10 place-items-center rounded-full border border-neutral-line/60 text-neutral-text-2 bg-neutral-bg hover:bg-primary-50 transition-colors"
+                        className="grid h-8 w-8 place-items-center rounded-full border border-neutral-line/40 text-neutral-text-2 bg-neutral-bg hover:bg-primary-50 transition-colors"
                     >
-                        <ChevronLeft strokeWidth={2} className="h-5 w-5 text-neutral-ink" />
+                        <ChevronLeft strokeWidth={2.25} className="h-4 w-4 text-neutral-ink" />
                     </button>
                     <button
                         type="button"
                         aria-label="Next month"
                         onClick={() => shift(1)}
-                        className="grid h-10 w-10 place-items-center rounded-full border border-neutral-line/60 text-neutral-text-2 bg-neutral-bg hover:bg-primary-50 transition-colors"
+                        className="grid h-8 w-8 place-items-center rounded-full border border-neutral-line/40 text-neutral-text-2 bg-neutral-bg hover:bg-primary-50 transition-colors"
                     >
-                        <ChevronRight strokeWidth={2} className="h-5 w-5 text-neutral-ink" />
+                        <ChevronRight strokeWidth={2.25} className="h-4 w-4 text-neutral-ink" />
                     </button>
                 </div>
             </div>
 
             {/* Weekdays Grid Header */}
-            <div className="grid grid-cols-7 gap-2 mb-2">
+            <div className="grid grid-cols-7 gap-1.5 mb-1.5">
                 {WEEKDAYS.map((d) => (
                     <div
                         key={d}
-                        className="text-center font-display text-caption font-medium uppercase tracking-[0.06em] text-neutral-text-2 py-1"
+                        className="text-center font-display text-[11px] font-medium uppercase tracking-[0.05em] text-neutral-text-3 py-0.5"
                     >
                         {d}
                     </div>
@@ -111,11 +110,11 @@ export function InlineCalendar({
             </div>
 
             {/* Month Days Grid */}
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1.5">
                 {cells.map((dayLocal) => {
                     const inMonth = isSameMonth(dayLocal, cursor);
                     const cellUtcMidnight = fromZonedTime(dayLocal, STUDIO_TZ);
-                    const isSelected = isSameStudioDay(cellUtcMidnight, selected);
+                    const isSelected = selected ? isSameStudioDay(cellUtcMidnight, selected) : false;
                     const isToday = isSameStudioDay(cellUtcMidnight, new Date());
                     
                     const tooEarly = dayLocal < startOfDayLocal(minLocal);
@@ -151,18 +150,18 @@ export function InlineCalendar({
                                 }
                             }}
                             className={cn(
-                                "group relative min-h-[72px] md:min-h-[140px] flex flex-col rounded-md border p-1 md:p-2 transition-all cursor-pointer select-none",
-                                disabled && "opacity-40 cursor-not-allowed bg-neutral-bg/20",
-                                !disabled && isSelected && "border-primary-500 ring-1 ring-primary-500 bg-primary-50/10",
-                                !disabled && !isSelected && inMonth && "border-neutral-line/20 bg-neutral-bg hover:border-primary-300",
-                                !disabled && !isSelected && !inMonth && "border-transparent bg-neutral-bg/40 text-neutral-text-3 hover:border-primary-200"
+                                "group relative min-h-[56px] md:min-h-[105px] flex flex-col rounded-md border p-1 md:p-1.5 transition-all cursor-pointer select-none",
+                                disabled && "opacity-30 cursor-not-allowed bg-neutral-bg/20",
+                                !disabled && isSelected && "border-primary-500 bg-primary-100 shadow-sm ring-2 ring-primary-500/20",
+                                !disabled && !isSelected && inMonth && "border-neutral-line/20 bg-neutral-bg hover:border-primary-300 hover:bg-neutral-bg/70",
+                                !disabled && !isSelected && !inMonth && "border-transparent bg-neutral-bg/30 text-neutral-text-3 hover:border-primary-200"
                             )}
                         >
                             {/* Date Number Badge */}
-                            <div className="flex justify-between items-center mb-1">
+                            <div className="flex justify-between items-center mb-0.5">
                                 <span
                                     className={cn(
-                                        "font-display text-body font-medium flex items-center justify-center h-6 w-6 rounded-full",
+                                        "font-display text-caption font-semibold flex items-center justify-center h-5 w-5 rounded-full text-center",
                                         isToday && !isSelected && "bg-accent-500 text-neutral-bg font-bold",
                                         isSelected && "bg-primary-500 text-neutral-ink font-bold",
                                         !isToday && !isSelected && inMonth && "text-neutral-ink",
@@ -174,12 +173,12 @@ export function InlineCalendar({
 
                                 {/* Compact mobile indicators */}
                                 {occurrences.length > 0 && (
-                                    <div className="flex md:hidden gap-1">
+                                    <div className="flex md:hidden gap-0.5">
                                         {occurrences.map((occ) => (
                                             <span
                                                 key={occ.id}
                                                 className={cn(
-                                                    "h-1.5 w-1.5 rounded-full",
+                                                    "h-1 w-1 rounded-full",
                                                     occ.template.isSpecial
                                                         ? "bg-primary-800"
                                                         : "bg-primary-400"
@@ -190,53 +189,25 @@ export function InlineCalendar({
                                 )}
                             </div>
 
-                            {/* Desktop: Occurrences List */}
-                            <div className="hidden md:flex flex-col gap-1.5 flex-grow overflow-y-auto max-h-[105px] scrollbar-none mt-1">
+                            {/* Desktop: Sleek horizontal mini-pills (like Google Calendar) */}
+                            <div className="hidden md:flex flex-col gap-0.5 flex-grow overflow-y-auto max-h-[70px] scrollbar-none mt-0.5">
                                 {occurrences.map((occ) => {
                                     const isSpecial = occ.template.isSpecial;
-                                    const isFull = occ.slotsLeft <= 0;
                                     return (
                                         <Link
                                             key={occ.id}
                                             href={`/book/${occ.id}`}
                                             onClick={(e) => e.stopPropagation()} // don't select the date when clicking the class card
                                             className={cn(
-                                                "block text-left p-1.5 rounded border transition-transform hover:scale-[1.02]",
+                                                "flex items-center gap-1 px-1 py-0.5 rounded-xs border text-[9px] font-sans transition-all truncate hover:brightness-95",
                                                 isSpecial
-                                                    ? "bg-primary-900 text-primary-50 border-primary-800"
-                                                    : "bg-primary-50 text-primary-900 border-primary-200 hover:bg-primary-100/50"
+                                                    ? "bg-primary-900 text-primary-100 border-primary-800"
+                                                    : "bg-primary-100 text-primary-900 border-primary-200"
                                             )}
+                                            title={`${formatTimeShort(occ.startsAt)} - ${occ.template.name} (${occ.instructor.name})`}
                                         >
-                                            <div className="flex items-center justify-between gap-1">
-                                                <span className={cn(
-                                                    "font-sans text-[10px] font-bold tracking-tight",
-                                                    isSpecial ? "text-primary-300" : "text-primary-700"
-                                                )}>
-                                                    {formatTime(occ.startsAt)}
-                                                </span>
-                                                {isSpecial && (
-                                                    <Sparkles className="h-2.5 w-2.5 text-primary-300 fill-primary-300" />
-                                                )}
-                                            </div>
-                                            <div className="font-display text-[11px] font-semibold leading-tight truncate mt-0.5">
-                                                {occ.template.name}
-                                            </div>
-                                            <div className={cn(
-                                                "font-sans text-[9px] truncate",
-                                                isSpecial ? "text-primary-100" : "text-neutral-text-2"
-                                            )}>
-                                                {occ.instructor.name}
-                                            </div>
-                                            <div className="flex justify-between items-center mt-1 pt-0.5 border-t border-current/10">
-                                                <span className={cn(
-                                                    "font-sans text-[9px] font-medium",
-                                                    isFull 
-                                                        ? (isSpecial ? "text-primary-400" : "text-neutral-text-3")
-                                                        : (isSpecial ? "text-accent-300" : "text-success-fg")
-                                                )}>
-                                                    {isFull ? "Full" : `${occ.slotsLeft}/${occ.capacity} spots`}
-                                                </span>
-                                            </div>
+                                            <span className="font-bold shrink-0">{formatTimeShort(occ.startsAt)}</span>
+                                            <span className="truncate flex-grow font-semibold">{occ.template.name}</span>
                                         </Link>
                                     );
                                 })}
@@ -245,8 +216,8 @@ export function InlineCalendar({
                             {/* Mobile indication label */}
                             <div className="md:hidden flex-grow flex items-end justify-center pb-0.5">
                                 {occurrences.length > 0 && (
-                                    <span className="text-[10px] font-sans font-medium text-neutral-text-3">
-                                        {occurrences.length} {occurrences.length === 1 ? "class" : "classes"}
+                                    <span className="text-[9px] font-sans font-medium text-neutral-text-3">
+                                        {occurrences.length} {occurrences.length === 1 ? "cl" : "cls"}
                                     </span>
                                 )}
                             </div>
@@ -256,17 +227,17 @@ export function InlineCalendar({
             </div>
 
             {/* Legend / Info */}
-            <div className="flex flex-wrap gap-4 mt-6 pt-4 border-t border-neutral-line/20 font-sans text-caption text-neutral-text-2">
-                <div className="flex items-center gap-2">
-                    <span className="inline-block h-3.5 w-7 rounded border border-primary-200 bg-primary-50" />
-                    <span>Regular Class</span>
+            <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t border-neutral-line/10 font-sans text-caption text-neutral-text-2">
+                <div className="flex items-center gap-1.5">
+                    <span className="inline-block h-2.5 w-5 rounded-xs border border-primary-200 bg-primary-100" />
+                    <span className="text-[11px]">Regular Class</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="inline-block h-3.5 w-7 rounded border border-primary-800 bg-primary-900" />
-                    <span>Special Masterclass</span>
+                <div className="flex items-center gap-1.5">
+                    <span className="inline-block h-2.5 w-5 rounded-xs border border-primary-800 bg-primary-900" />
+                    <span className="text-[11px]">Special Masterclass</span>
                 </div>
-                <div className="ml-auto text-neutral-text-3 italic">
-                    Tap a date or class to see details & book
+                <div className="ml-auto text-neutral-text-3 italic text-[11px]">
+                    Tap a date to filter, click again to clear
                 </div>
             </div>
         </div>

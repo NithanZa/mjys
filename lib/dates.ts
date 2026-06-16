@@ -41,6 +41,13 @@ export function formatTime(date: Date): string {
   return format(toZonedTime(date, STUDIO_TZ), "HH:mm");
 }
 
+/** Friendly short time: "9am", "6:30pm", "12pm". */
+export function formatTimeShort(date: Date): string {
+  const raw = format(toZonedTime(date, STUDIO_TZ), "h:mm a");
+  // Strip the leading zero and drop ":00" for clean display
+  return raw.replace(/^0/, "").replace(":00 ", "").replace(" ", "").toLowerCase();
+}
+
 export function formatDateLong(date: Date): string {
   return format(toZonedTime(date, STUDIO_TZ), "EEEE, d MMMM yyyy");
 }

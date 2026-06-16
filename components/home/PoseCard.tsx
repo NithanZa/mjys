@@ -18,7 +18,7 @@ export function PoseCard({
     return (
         <div
             className={cn(
-                "overflow-hidden rounded-xl border border-accent-200 bg-accent-50",
+                "overflow-hidden rounded-xl border border-accent-200 bg-accent-50 shadow-sm",
                 className,
             )}
         >

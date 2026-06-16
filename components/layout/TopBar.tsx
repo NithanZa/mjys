@@ -34,7 +34,7 @@ export function TopBar({
       )}
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <div className="flex h-14 items-center gap-2 px-3">
+      <div className="flex h-14 items-center gap-2 px-4 lg:px-8">
         {back ? (
           <IconButton
             aria-label="Back"

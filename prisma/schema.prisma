@@ -25,7 +25,11 @@ model Member {
   id               String   @id @default(cuid())
   lineUserId       String   @unique
   displayName      String
+  email            String
   phone            String
+  dob              String
+  address          String
+  tocAccepted      Boolean  @default(false)
   classesAttended  Int      @default(0)
   level            Level    @default(CAT)
   // Track which celebrations have been shown so the toast only fires once per threshold.
@@ -33,12 +37,62 @@ model Member {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  attendances Attendance[]
+  attendances       Attendance[]
+  pendingPurchases  PendingPurchase[]
+  packages          Package[]
+  toyParts          MemberToyPart[]
+  milestones        MemberMilestone[]
 
   @@index([lineUserId])
 }
 
-// Placeholder — fully wired in Phase 3 when ClassOccurrence exists.
+// -----------------------------------------------------------------------------
+// Phase 3 — Schedules & Bookings
+// -----------------------------------------------------------------------------
+
+model Instructor {
+  id       String  @id @default(cuid())
+  slug     String  @unique
+  name     String
+  title    String
+  bio      String
+  photoUrl String?
+  initials String
+  order    Int
+
+  occurrences ClassOccurrence[]
+}
+
+model ClassTemplate {
+  id          String  @id @default(cuid())
+  name        String
+  description String
+  durationMin Int
+  intensity   String  // "Gentle" | "Balanced" | "Strong"
+  tagline     String
+  isSpecial   Boolean @default(false)
+
+  occurrences ClassOccurrence[]
+}
+
+model ClassOccurrence {
+  id           String   @id @default(cuid())
+  templateId   String
+  instructorId String
+  startsAt     DateTime
+  durationMin  Int
+  capacity     Int
+  bookedCount  Int      @default(0)
+
+  template   ClassTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  instructor Instructor    @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  attendances Attendance[]
+
+  @@index([templateId])
+  @@index([instructorId])
+  @@index([startsAt])
+}
+
 enum AttendanceStatus {
   BOOKED
   CHECKED_IN
@@ -55,8 +109,148 @@ model Attendance {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member           Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  classOccurrence  ClassOccurrence @relation(fields: [classOccurrenceId], references: [id], onDelete: Cascade)
 
   @@index([memberId])
   @@index([classOccurrenceId])
+}
+
+// -----------------------------------------------------------------------------
+// Phase 4 — CMS, Packages & Purchases
+// -----------------------------------------------------------------------------
+
+model HomeContent {
+  id              String   @id @default("singleton")
+  heroTitle       String
+  heroSubtitle    String
+  quoteText       String
+  quoteAuthor     String?
+  poseName        String
+  poseDescription String
+  poseImageUrl    String?
+  bannerImageUrl  String?
+  bannerHref      String?
+  updatedAt       DateTime @updatedAt
+}
+
+enum PackageType {
+  CLASSES_5
+  CLASSES_10
+  CLASSES_20
+  UNLIMITED
+  WALK_IN
+}
+
+model PackageOffer {
+  id           String      @id @default(cuid())
+  name         String
+  type         PackageType
+  priceTHB     Int
+  classCount   Int?        // Null for UNLIMITED
+  validityDays Int
+  tagline      String
+  perks        String[]
+  highlight    Boolean     @default(false)
+  sortOrder    Int
+  active       Boolean     @default(true)
+
+  pendingPurchases PendingPurchase[]
+  packages         Package[]
+}
+
+enum PurchaseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model PendingPurchase {
+  id             String         @id @default(cuid())
+  memberId       String
+  packageOfferId String
+  proofImageUrl  String?
+  status         PurchaseStatus @default(PENDING)
+  createdAt      DateTime       @default(now())
+  reviewedAt     DateTime?
+
+  member Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  offer  PackageOffer @relation(fields: [packageOfferId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([packageOfferId])
+}
+
+enum PackageStatus {
+  ACTIVE
+  EXPIRED
+  EXHAUSTED
+}
+
+model Package {
+  id               String        @id @default(cuid())
+  memberId         String
+  packageOfferId   String
+  classesRemaining Int?          // Null for UNLIMITED
+  expiresAt        DateTime
+  status           PackageStatus @default(ACTIVE)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  member Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  offer  PackageOffer @relation(fields: [packageOfferId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([packageOfferId])
+}
+
+// -----------------------------------------------------------------------------
+// Phase 5 — Rewards (Toys & Milestones)
+// -----------------------------------------------------------------------------
+
+model ToyPart {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  imageUrl  String?
+  sortOrder Int
+
+  memberParts MemberToyPart[]
+}
+
+model MemberToyPart {
+  id        String   @id @default(cuid())
+  memberId  String
+  toyPartId String
+  earnedAt  DateTime @default(now())
+
+  member  Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  toyPart ToyPart @relation(fields: [toyPartId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([toyPartId])
+}
+
+model Milestone {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  requirement   Json
+  rewardOfferId String?
+
+  memberMilestones MemberMilestone[]
+}
+
+model MemberMilestone {
+  id          String    @id @default(cuid())
+  memberId    String
+  milestoneId String
+  unlockedAt  DateTime  @default(now())
+  redeemedAt  DateTime?
+
+  member    Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  milestone Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([milestoneId])
 }

@@ -22,6 +22,12 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        if (process.env.NEXT_PUBLIC_STANDALONE_MODE === "true") {
+            console.info("[liff] standalone mode — skipping LIFF init");
+            setStatus("ready");
+            return;
+        }
+
         let cancelled = false;
         initLiff()
             .then((instance) => {

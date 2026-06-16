@@ -18,7 +18,7 @@ import { useLiff } from "@/lib/liff";
 import { getLevel } from "@/lib/levels";
 import { getRecentActivity } from "@/lib/mock/activity";
 import { getNextBooking } from "@/lib/mock/bookings-store";
-import { useMockMember } from "@/lib/profile/mock-store";
+import { useMember } from "@/lib/profile/use-member";
 import { usePurchases } from "@/lib/mock/purchases-store";
 import { LockIcon, LogOut, Smartphone } from "lucide-react";
 import Link from "next/link";
@@ -34,113 +34,39 @@ const DEV = process.env.NODE_ENV !== "production";
 
 export default function ProfilePage() {
     const { status, isInClient, error: liffError } = useLiff();
-    const { member, register, addClasses, markCelebrated, reset } =
-        useMockMember();
+    const { member, loading, register, addClasses, markCelebrated, reset } =
+        useMember();
     const { activePackage } = usePurchases();
     const [devRegOpen, setDevRegOpen] = useState(false);
 
+    // Map DB celebratedLevels strings (Level enum) back to celebration thresholds
+    const celebratedNumbers = useMemo<number[]>(() => {
+        if (!member) return [];
+        const nums: number[] = [];
+        if (member.celebratedLevels.includes("TIGER")) nums.push(20);
+        if (member.celebratedLevels.includes("LEOPARD")) nums.push(50);
+        if (member.celebratedLevels.includes("CAT")) nums.push(100);
+        return nums;
+    }, [member]);
+
     // Derive the active celebration from member state — no useEffect needed.
-    // The mock store updates `celebrated` on dismiss, which naturally clears this,
-    // and the next uncelebrated threshold (if any) takes its place.
     const pendingCelebration = useMemo<number | null>(() => {
         if (!member) return null;
         return (
             [20, 50, 100].find(
                 (t) =>
                     member.classesAttended >= t &&
-                    !member.celebrated.includes(t),
+                    !celebratedNumbers.includes(t),
             ) ?? null
         );
-    }, [member]);
+    }, [member, celebratedNumbers]);
 
     function dismissCelebration() {
         if (pendingCelebration !== null) markCelebrated(pendingCelebration);
     }
 
-    // AC6 — non-LINE fallback. Allow "continue anyway" so devs can still test.
-    const [bypassLineCheck, setBypassLineCheck] = useState(false);
-    const showLineFallback =
-        status === "ready" && !isInClient && !bypassLineCheck && !member;
-
-    // Loading skeleton until LIFF has settled. The mock store is sync (localStorage)
-    // so its value is available on first client render via useSyncExternalStore.
-    if (status === "loading") {
-        return (
-            <>
-                <TopBar title="Profile" />
-                <Card>
-                    <p className="font-sans text-body text-neutral-text-2">
-                        Loading…
-                    </p>
-                </Card>
-            </>
-        );
-    }
-
-    if (status === "error") {
-        return (
-            <>
-                <TopBar title="Profile" />
-                <EmptyState
-                    icon={<Smartphone strokeWidth={1.75} className="h-6 w-6" />}
-                    title="Couldn't connect to LINE"
-                    description={
-                        liffError ?? "Try reopening this page from inside LINE."
-                    }
-                />
-            </>
-        );
-    }
-
-    if (showLineFallback) {
-        return (
-            <>
-                <TopBar title="Profile" />
-                <EmptyState
-                    icon={<Smartphone strokeWidth={1.75} className="h-6 w-6" />}
-                    title="Open in LINE to continue"
-                    description="Your MiTR member profile is tied to your LINE account. Open this link inside the LINE app to register."
-                    action={
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setBypassLineCheck(true)}
-                        >
-                            Continue anyway (dev)
-                        </Button>
-                    }
-                />
-            </>
-        );
-    }
-
     if (!member) {
-        return (
-            <>
-                <TopBar title="Welcome" />
-                <RegistrationForm
-                    onSubmit={({
-                        displayName,
-                        email,
-                        phone,
-                        dob,
-                        address,
-                        tocAccepted,
-                        lineUserId,
-                    }) => {
-                        register({
-                            displayName,
-                            email,
-                            phone,
-                            dob,
-                            address,
-                            tocAccepted,
-                            lineUserId,
-                        });
-                    }}
-                />
-            </>
-        );
+        return null;
     }
 
     const level = getLevel(member.classesAttended);
@@ -265,7 +191,6 @@ export default function ProfilePage() {
                                     dob,
                                     address,
                                     tocAccepted,
-                                    lineUserId,
                                 }) => {
                                     register({
                                         displayName,
@@ -274,7 +199,6 @@ export default function ProfilePage() {
                                         dob,
                                         address,
                                         tocAccepted,
-                                        lineUserId,
                                     });
                                     setDevRegOpen(false);
                                 }}

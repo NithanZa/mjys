@@ -11,7 +11,7 @@ export function QuoteCard({ text, author, className }: QuoteCardProps) {
     return (
         <div
             className={cn(
-                "rounded-xl border border-primary-200 bg-primary-50 px-5 py-4",
+                "rounded-xl border border-primary-200 bg-primary-50 px-5 py-4 shadow-sm",
                 className,
             )}
         >

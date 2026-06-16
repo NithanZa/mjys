@@ -115,11 +115,11 @@ export function PaymentSheet({
           </Card>
 
           <Button variant="primary" fullWidth onClick={onMarkPaid}>
-            I&apos;ve paid — request approval
+            I&apos;ve sent the slip — request approval
           </Button>
           <p className="text-center font-sans text-caption text-neutral-text-3">
-            The studio will verify your transfer and activate the pack within
-            24 hours.
+            Send your payment slip and email to our LINE OA. The studio will
+            verify and activate the pack within 24 hours.
           </p>
         </div>
       )}

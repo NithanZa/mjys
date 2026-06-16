@@ -1,14 +1,9 @@
 "use client";
 
-// FRONTEND-ONLY mock purchases store. Combines the planned `PendingPurchase`
-// and `Package` tables into a single localStorage-backed list.
-// Replaced in the backend pass by:
-//   - POST /api/purchases   → creates PendingPurchase
-//   - PATCH /api/purchases/:id (admin) → approves and creates Package
-
-import { useCallback, useSyncExternalStore } from "react";
-import { addDays } from "date-fns";
+import { useLiff } from "@/lib/liff";
 import { getPackageOffer, type PackageOffer } from "@/lib/mock/packages";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { addDays } from "date-fns";
 
 const STORAGE_KEY = "mjys.purchases.v1";
 const CHANGE_EVENT = "mjys:purchases-changed";
@@ -39,6 +34,7 @@ export interface ActivePackageView {
     isUnlimited: boolean;
 }
 
+// ---- snapshot caching for local storage fallback ----
 let cachedRaw: string | null | undefined = undefined;
 let cachedList: MockPurchase[] = [];
 
@@ -75,104 +71,267 @@ function subscribe(callback: () => void) {
 const SERVER_SNAPSHOT: MockPurchase[] = [];
 const getServerSnapshot = (): MockPurchase[] => SERVER_SNAPSHOT;
 
-function newId() {
-    return "pur_" + Math.random().toString(36).slice(2, 10);
-}
-
 export interface UsePurchasesResult {
     purchases: MockPurchase[];
     pendingPurchases: MockPurchase[];
     activePackage: ActivePackageView | null;
+    loading: boolean;
     /** Create a new PENDING purchase for the given offer. Returns the new purchase id. */
-    createPending: (offerId: string) => string;
+    createPending: (offerId: string) => Promise<string>;
     /** Simulate studio approval of a PENDING purchase (frontend stub for AC5). */
-    approvePending: (purchaseId: string) => void;
+    approvePending: (purchaseId: string) => Promise<void>;
     /** Reject a PENDING purchase. */
-    rejectPending: (purchaseId: string) => void;
+    rejectPending: (purchaseId: string) => Promise<void>;
     /** Reset all purchases (dev). */
-    reset: () => void;
+    reset: () => Promise<void>;
 }
 
 export function usePurchases(): UsePurchasesResult {
-    const purchases = useSyncExternalStore(
+    const { liff, status, isLoggedIn } = useLiff();
+    const [realPurchases, setRealPurchases] = useState<MockPurchase[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const isMock = status !== "ready" || !isLoggedIn || !liff;
+
+    const mockPurchases = useSyncExternalStore(
         subscribe,
         readSnapshot,
         getServerSnapshot,
     );
 
-    const pendingPurchases = purchases.filter((p) => p.status === "PENDING");
+    const fetchRealPurchases = useCallback(async () => {
+        if (isMock) {
+            setLoading(false);
+            return;
+        }
 
-    // Pick the most-recently-approved, still-valid package as "active".
-    const activePackage = pickActivePackage(purchases);
+        try {
+            const token = liff.getIDToken();
+            if (!token) return;
 
-    const createPending: UsePurchasesResult["createPending"] = useCallback(
-        (offerId) => {
-            const offer = getPackageOffer(offerId);
-            if (!offer) throw new Error(`Unknown package offer: ${offerId}`);
-            const purchase: MockPurchase = {
-                id: newId(),
-                offerId,
-                status: "PENDING",
-                classesRemaining: null,
-                expiresAt: null,
-                createdAt: new Date().toISOString(),
-                reviewedAt: null,
-            };
-            writeSnapshot([...readSnapshot(), purchase]);
-            return purchase.id;
+            const res = await fetch("/api/purchases", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                
+                // Map PendingPurchase table records
+                const pendingMapped: MockPurchase[] = data.pendingPurchases.map((p: any) => ({
+                    id: p.id,
+                    offerId: p.packageOfferId,
+                    status: p.status, // "PENDING" or "REJECTED" or "APPROVED"
+                    classesRemaining: null,
+                    expiresAt: null,
+                    createdAt: p.createdAt,
+                    reviewedAt: p.reviewedAt,
+                }));
+
+                // Map active Package table records
+                const packagesMapped: MockPurchase[] = data.activePackages.map((p: any) => ({
+                    id: p.id,
+                    offerId: p.packageOfferId,
+                    status: p.status === "ACTIVE" ? "APPROVED" : p.status, // ACTIVE maps to APPROVED in mock terminology
+                    classesRemaining: p.classesRemaining,
+                    expiresAt: p.expiresAt,
+                    createdAt: p.createdAt,
+                    reviewedAt: p.updatedAt,
+                }));
+
+                // Merge and filter out duplicates (packages that were derived from pending)
+                const combined = [...packagesMapped];
+                pendingMapped.forEach((pending) => {
+                    const existsInPackages = packagesMapped.some((pkg) => pkg.offerId === pending.offerId && pending.status === "APPROVED");
+                    if (!existsInPackages) {
+                        combined.push(pending);
+                    }
+                });
+
+                setRealPurchases(combined);
+            }
+        } catch (err) {
+            console.error("Failed to fetch real purchases:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [isMock, liff]);
+
+    useEffect(() => {
+        fetchRealPurchases();
+    }, [fetchRealPurchases]);
+
+    const activePurchases = isMock ? mockPurchases : realPurchases;
+    const pendingPurchases = activePurchases.filter((p) => p.status === "PENDING");
+    const activePackage = pickActivePackage(activePurchases);
+
+    const createPending = useCallback(
+        async (offerId: string): Promise<string> => {
+            if (isMock) {
+                const offer = getPackageOffer(offerId);
+                if (!offer) throw new Error(`Unknown package offer: ${offerId}`);
+                const purchase: MockPurchase = {
+                    id: "pur_" + Math.random().toString(36).slice(2, 10),
+                    offerId,
+                    status: "PENDING",
+                    classesRemaining: null,
+                    expiresAt: null,
+                    createdAt: new Date().toISOString(),
+                    reviewedAt: null,
+                };
+                writeSnapshot([...readSnapshot(), purchase]);
+                return purchase.id;
+            }
+
+            setLoading(true);
+            try {
+                const token = liff.getIDToken();
+                const res = await fetch("/api/purchases", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ packageOfferId: offerId }),
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || "Failed to make purchase");
+                }
+
+                const data = await res.json();
+                await fetchRealPurchases();
+                return data.pendingPurchase.id;
+            } catch (err: any) {
+                alert(err.message);
+                throw err;
+            } finally {
+                setLoading(false);
+            }
         },
-        [],
+        [isMock, liff, fetchRealPurchases],
     );
 
-    const approvePending: UsePurchasesResult["approvePending"] = useCallback(
-        (purchaseId) => {
-            const list = readSnapshot();
-            const target = list.find((p) => p.id === purchaseId);
-            if (!target || target.status !== "PENDING") return;
-            const offer = getPackageOffer(target.offerId);
-            if (!offer) return;
-            const now = new Date();
-            const expiresAt = addDays(now, offer.validityDays).toISOString();
-            const updated: MockPurchase = {
-                ...target,
-                status: "APPROVED",
-                classesRemaining: offer.classCount, // null for UNLIMITED
-                expiresAt,
-                reviewedAt: now.toISOString(),
-            };
-            writeSnapshot(list.map((p) => (p.id === purchaseId ? updated : p)));
+    const approvePending = useCallback(
+        async (purchaseId: string) => {
+            if (isMock) {
+                const list = readSnapshot();
+                const target = list.find((p) => p.id === purchaseId);
+                if (!target || target.status !== "PENDING") return;
+                const offer = getPackageOffer(target.offerId);
+                if (!offer) return;
+                const now = new Date();
+                const expiresAt = addDays(now, offer.validityDays).toISOString();
+                const updated: MockPurchase = {
+                    ...target,
+                    status: "APPROVED",
+                    classesRemaining: offer.classCount,
+                    expiresAt,
+                    reviewedAt: now.toISOString(),
+                };
+                writeSnapshot(list.map((p) => (p.id === purchaseId ? updated : p)));
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const token = liff.getIDToken();
+                const res = await fetch("/api/purchases", {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ purchaseId, status: "APPROVED" }),
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || "Failed to approve purchase");
+                }
+
+                await fetchRealPurchases();
+            } catch (err: any) {
+                alert(err.message);
+            } finally {
+                setLoading(false);
+            }
         },
-        [],
+        [isMock, liff, fetchRealPurchases],
     );
 
-    const rejectPending: UsePurchasesResult["rejectPending"] = useCallback(
-        (purchaseId) => {
-            const list = readSnapshot();
-            const target = list.find((p) => p.id === purchaseId);
-            if (!target || target.status !== "PENDING") return;
-            writeSnapshot(
-                list.map((p) =>
-                    p.id === purchaseId
-                        ? {
-                              ...p,
-                              status: "REJECTED",
-                              reviewedAt: new Date().toISOString(),
-                          }
-                        : p,
-                ),
-            );
+    const rejectPending = useCallback(
+        async (purchaseId: string) => {
+            if (isMock) {
+                const list = readSnapshot();
+                const target = list.find((p) => p.id === purchaseId);
+                if (!target || target.status !== "PENDING") return;
+                writeSnapshot(
+                    list.map((p) =>
+                        p.id === purchaseId
+                            ? {
+                                  ...p,
+                                  status: "REJECTED",
+                                  reviewedAt: new Date().toISOString(),
+                              }
+                            : p,
+                    ),
+                );
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const token = liff.getIDToken();
+                const res = await fetch("/api/purchases", {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ purchaseId, status: "REJECTED" }),
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || "Failed to reject purchase");
+                }
+
+                await fetchRealPurchases();
+            } catch (err: any) {
+                alert(err.message);
+            } finally {
+                setLoading(false);
+            }
         },
-        [],
+        [isMock, liff, fetchRealPurchases],
     );
 
-    const reset: UsePurchasesResult["reset"] = useCallback(() => {
-        writeSnapshot([]);
-    }, []);
+    const reset = useCallback(async () => {
+        if (isMock) {
+            writeSnapshot([]);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const token = liff.getIDToken();
+            await fetch("/api/purchases", {
+                method: "PUT",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            await fetchRealPurchases();
+        } catch (err) {
+            console.error("Failed to reset purchases:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [isMock, liff, fetchRealPurchases]);
 
     return {
-        purchases,
+        purchases: activePurchases,
         pendingPurchases,
         activePackage,
+        loading,
         createPending,
         approvePending,
         rejectPending,

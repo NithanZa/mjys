@@ -11,7 +11,7 @@ export function Container({
 }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("mx-auto w-full max-w-screen-sm px-4", className)}
+      className={cn("mx-auto w-full px-4 lg:px-8", className)}
       {...props}
     />
   );
