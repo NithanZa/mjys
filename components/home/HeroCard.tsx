@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/cn";
 import { motion } from "motion/react";
+import Image from "next/image";
 
 export interface HeroCardProps {
   eyebrow: string;
@@ -9,6 +10,7 @@ export interface HeroCardProps {
   subtitle: string;
   tagline: string;
   className?: string;
+  logoUrl?: string;
 }
 
 export function HeroCard({
@@ -17,6 +19,7 @@ export function HeroCard({
   subtitle,
   tagline,
   className,
+  logoUrl = "/mitr logo.jpg",
 }: HeroCardProps) {
   return (
     <section
@@ -40,27 +43,45 @@ export function HeroCard({
       />
 
       <div className="relative">
-        <motion.span
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
-          className="font-display text-overline uppercase tracking-[0.08em] text-primary-700"
-        >
-          {eyebrow}
-        </motion.span>
-        <motion.h1
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-          className="mt-2 font-display text-display font-semibold text-balance text-neutral-ink"
-        >
-          {title}
-        </motion.h1>
+        <div className="flex items-center gap-3.5">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-primary-200/60 bg-white shadow-xs"
+          >
+            <Image
+              src={logoUrl}
+              alt="MiTR Journey Logo"
+              fill
+              className="object-cover"
+              priority
+            />
+          </motion.div>
+          <div className="min-w-0">
+            <motion.span
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+              className="block font-display text-overline uppercase tracking-[0.08em] text-primary-700"
+            >
+              {eyebrow}
+            </motion.span>
+            <motion.h1
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+              className="mt-0.5 font-display text-display font-semibold text-balance text-neutral-ink leading-tight"
+            >
+              {title}
+            </motion.h1>
+          </div>
+        </div>
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.35, ease: "easeOut" }}
-          className="mt-3 font-display text-h3 font-medium text-primary-800"
+          className="mt-4 font-display text-h3 font-medium text-primary-800"
         >
           {subtitle}
         </motion.p>

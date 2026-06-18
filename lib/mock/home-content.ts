@@ -47,10 +47,10 @@ export const HOME_CONTENT: HomeContent = {
         cta: "See packages",
     },
     contact: {
-        phone: "+66 2 123 4567",
+        phone: "095-686-6966",
         address:
-            "MiTR Journey Studio · 99 Sukhumvit 24, Khlong Tan, Bangkok 10110",
-        mapQuery: "MiTR Journey Yoga Studio Sukhumvit 24 Bangkok",
+            "MiTR Journey Studio · ซอยเสือใหญ่อุทิศ (ถนน รัชดาภิเษก36), Bangkok",
+        mapQuery: "Mitr Journey Yoga Studio ซอยเสือใหญ่อุทิศ",
         lineBasicId: "@mitrjourney",
     },
     quoteOfWeek: {

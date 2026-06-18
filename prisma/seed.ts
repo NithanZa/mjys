@@ -34,6 +34,26 @@ const INSTRUCTORS = [
         order: 2,
     },
     {
+        id: "ins_krish",
+        slug: "master-krish",
+        name: "Master Krish",
+        title: "Stretching · Hatha Flow",
+        bio: "Master Krish integrates traditional Hatha alignments with therapeutic stretches to help students build flexible, balanced, and injury-free bodies.",
+        photoUrl: null,
+        initials: "MK",
+        order: 3,
+    },
+    {
+        id: "ins_ex",
+        slug: "kru-ex",
+        name: "Kru EX",
+        title: "Inversions · Workshops",
+        bio: "Kru EX specializes in advanced inversions, arm balances, and specialized workshops, making complex transitions simple and safe.",
+        photoUrl: null,
+        initials: "KE",
+        order: 4,
+    },
+    {
         id: "ins_anup",
         slug: "master-anup",
         name: "Master Anup",
@@ -41,7 +61,7 @@ const INSTRUCTORS = [
         bio: "A traditional Ashtanga teacher with a modern mobility lens. Master Anup's classes build heat, then strength, then stillness — in that order.",
         photoUrl: null,
         initials: "MA",
-        order: 3,
+        order: 5,
     },
     {
         id: "ins_x",
@@ -51,11 +71,155 @@ const INSTRUCTORS = [
         bio: "Kru X is known for breaking down complex inversions into simple, repeatable progressions.",
         photoUrl: null,
         initials: "KX",
-        order: 4,
+        order: 6,
     },
 ];
 
 const CLASS_TEMPLATES = [
+    {
+        id: "tpl_easy_flow",
+        name: "Easy Flow",
+        description: "A gentle and slow-paced flow focused on foundational postures, alignment, and simple transitions. Perfect for beginners and those seeking a mindful, relaxing practice.",
+        durationMin: 60,
+        intensity: "Gentle",
+        tagline: "Find your flow, ease your mind.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_morning_stretching",
+        name: "Morning Stretching",
+        description: "Awaken your body with gentle stretches and movements that release tension built up during sleep. Great for flexibility and starting the day with energy.",
+        durationMin: 60,
+        intensity: "Gentle",
+        tagline: "Awaken and energize.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_open_shoulder",
+        name: "Open Shoulder",
+        description: "Targeted stretches and strengthening postures to open up the shoulders, neck, and upper back, relieving tension from desk work and poor posture.",
+        durationMin: 60,
+        intensity: "Balanced",
+        tagline: "Release tension, open your heart.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_stretching",
+        name: "Stretching",
+        description: "A full-body stretching session designed to improve overall flexibility, enhance range of motion, and promote deep relaxation of tight muscles.",
+        durationMin: 60,
+        intensity: "Gentle",
+        tagline: "Lengthen and loosen.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_hatha_flow",
+        name: "Hatha Flow",
+        description: "A classic practice integrating breath with holding postures to build strength, balance, and mental clarity. Conducted at a steady, deliberate pace.",
+        durationMin: 60,
+        intensity: "Balanced",
+        tagline: "Balance strength and stillness.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_vinyasa",
+        name: "Vinyasa Flow",
+        description: "A breath-paced flow that builds heat, strength, and a quiet mind. Suitable for steady beginners and confident regulars.",
+        durationMin: 60,
+        intensity: "Balanced",
+        tagline: "Move with the breath.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_strong_core",
+        name: "Strong Core",
+        description: "A dynamic yoga session emphasizing core strength, stability, and abdominal power. Prepare to sweat and build deep core heat.",
+        durationMin: 60,
+        intensity: "Strong",
+        tagline: "Build strength from within.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_office_syndrome",
+        name: "Office Syndrome",
+        description: "Specially designed for office workers to target common problem areas: neck, shoulders, back, and hips. Alleviate chronic pain and stiffness.",
+        durationMin: 60,
+        intensity: "Balanced",
+        tagline: "Relieve tension from desk work.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_side_bend",
+        name: "Side Bend",
+        description: "Focus on lateral stretches and spine elongation to expand lung capacity, open up the ribs, and improve side body flexibility.",
+        durationMin: 60,
+        intensity: "Balanced",
+        tagline: "Stretch and expand your sides.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_flexibility",
+        name: "Flexibility",
+        description: "Focuses on deep stretches and passive holds to improve flexibility, release deep tissue tightness, and increase joint mobility.",
+        durationMin: 60,
+        intensity: "Gentle",
+        tagline: "Unlock your body's flexibility.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_backbending",
+        name: "Backbending",
+        description: "Learn the anatomy and mechanics of safe backbends. Strengthen the spine, open the chest, and build flexibility in a controlled and safe environment.",
+        durationMin: 60,
+        intensity: "Strong",
+        tagline: "Open your front, strengthen your back.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_hip_opening",
+        name: "Hip Opening",
+        description: "A deep, nourishing practice focused entirely on opening the hips, releasing stored physical and emotional tension.",
+        durationMin: 60,
+        intensity: "Balanced",
+        tagline: "Release tension in the hips.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_balance_flow",
+        name: "Balance Flow",
+        description: "A flowing sequence emphasizing both physical and mental balance. Connect with your center through steady standing poses and transitions.",
+        durationMin: 60,
+        intensity: "Balanced",
+        tagline: "Find your steady center.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_inversion_special",
+        name: "* Special Class * Inversion",
+        description: "A 3-hour comprehensive workshop breaking down headstands, forearm stands, and handstands with step-by-step progressions, safety, and alignment.",
+        durationMin: 180,
+        intensity: "Strong",
+        tagline: "Invert your practice with safety.",
+        isSpecial: true,
+    },
+    {
+        id: "tpl_gentle_flow",
+        name: "Gentle Flow",
+        description: "A soft, nurturing yoga practice featuring gentle movements and breathing exercises to calm the nervous system and build gentle strength.",
+        durationMin: 60,
+        intensity: "Gentle",
+        tagline: "Be kind to your body.",
+        isSpecial: false,
+    },
+    {
+        id: "tpl_twist",
+        name: "Twist",
+        description: "A detoxifying sequence of seated and standing twists designed to massage internal organs, improve digestion, and restore spinal mobility.",
+        durationMin: 60,
+        intensity: "Balanced",
+        tagline: "Twist, detoxify, and restore.",
+        isSpecial: false,
+    },
     {
         id: "tpl_breath",
         name: "Breath & Restore",
@@ -63,15 +227,6 @@ const CLASS_TEMPLATES = [
         durationMin: 60,
         intensity: "Gentle",
         tagline: "Breathe out the week.",
-        isSpecial: false,
-    },
-    {
-        id: "tpl_vinyasa",
-        name: "Vinyasa Flow",
-        description: "A breath-paced flow that builds heat, strength, and a quiet mind. Suitable for steady beginners and confident regulars.",
-        durationMin: 75,
-        intensity: "Balanced",
-        tagline: "Move with the breath.",
         isSpecial: false,
     },
     {
@@ -163,16 +318,6 @@ const PACKAGE_OFFERS = [
     },
 ];
 
-const WEEKDAY_SLOTS = [
-    { hour: 9, minute: 0, templateId: "tpl_breath", instructorId: "ins_nop", capacity: 12, pre: 4 },
-    { hour: 18, minute: 30, templateId: "tpl_vinyasa", instructorId: "ins_shubham", capacity: 14, pre: 9 },
-];
-
-const WEEKEND_SLOTS = [
-    { hour: 8, minute: 0, templateId: "tpl_strong", instructorId: "ins_anup", capacity: 12, pre: 12 },
-    { hour: 17, minute: 0, templateId: "tpl_yin", instructorId: "ins_nop", capacity: 16, pre: 7 },
-];
-
 async function main() {
     console.log("🌱 Starting seeding...");
 
@@ -256,57 +401,102 @@ async function main() {
     }
     console.log("✅ Seeded Milestones");
 
-    // 7. Seed Class Occurrences for the next 30 days
-    const today = setSeconds(setMinutes(setHours(new Date(), 0), 0), 0);
-    console.log("📅 Generating 30 days of class occurrences...");
+    // 7. Seed Class Occurrences for June 2026
+    console.log("📅 Generating Class Occurrences for June 2026...");
 
     // Delete existing occurrences first to prevent primary key duplicates or bloat on multiple seeds
     await prisma.classOccurrence.deleteMany({});
 
-    for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
-        const currentDate = addDays(today, dayOffset);
-        const dow = currentDate.getDay(); // 0 Sun, 6 Sat
-        const mday = currentDate.getDate();
+    const DAILY_SCHEDULE_MAP: { [mday: number]: { hour: number; minute: number; templateId: string; instructorId: string; capacity: number; pre: number; durationMin?: number }[] } = {
+        // Week 1 (Monday June 1st to Sunday June 7th)
+        1: [{ hour: 7, minute: 0, templateId: "tpl_easy_flow", instructorId: "ins_shubham", capacity: 15, pre: 5 }],
+        2: [{ hour: 7, minute: 0, templateId: "tpl_morning_stretching", instructorId: "ins_nop", capacity: 15, pre: 4 }],
+        3: [], // Wednesday Closed
+        4: [{ hour: 7, minute: 0, templateId: "tpl_open_shoulder", instructorId: "ins_nop", capacity: 15, pre: 6 }],
+        5: [
+            { hour: 18, minute: 0, templateId: "tpl_stretching", instructorId: "ins_krish", capacity: 15, pre: 7 },
+            { hour: 19, minute: 10, templateId: "tpl_hatha_flow", instructorId: "ins_krish", capacity: 15, pre: 5 }
+        ],
+        6: [
+            { hour: 16, minute: 0, templateId: "tpl_vinyasa", instructorId: "ins_shubham", capacity: 15, pre: 8 },
+            { hour: 17, minute: 10, templateId: "tpl_strong_core", instructorId: "ins_shubham", capacity: 15, pre: 6 }
+        ],
+        7: [], // Sunday Closed
 
-        if (dow === 0) {
-            // Sunday Special Masterclass!
-            const templateId = mday % 2 === 0 ? "tpl_handstand_mc" : "tpl_scorpion_mc";
-            const preBooked = mday % 2 === 0 ? 12 : 10;
-            const startsAt = setSeconds(setMinutes(setHours(currentDate, 9), 0), 0);
+        // Week 2 (Monday June 8th to Sunday June 14th)
+        8: [{ hour: 7, minute: 0, templateId: "tpl_office_syndrome", instructorId: "ins_shubham", capacity: 15, pre: 9 }],
+        9: [{ hour: 7, minute: 0, templateId: "tpl_side_bend", instructorId: "ins_nop", capacity: 15, pre: 5 }],
+        10: [], // Wednesday Closed
+        11: [{ hour: 7, minute: 0, templateId: "tpl_stretching", instructorId: "ins_nop", capacity: 15, pre: 4 }],
+        12: [
+            { hour: 18, minute: 0, templateId: "tpl_flexibility", instructorId: "ins_krish", capacity: 15, pre: 8 },
+            { hour: 19, minute: 10, templateId: "tpl_backbending", instructorId: "ins_krish", capacity: 15, pre: 6 }
+        ],
+        13: [
+            { hour: 16, minute: 0, templateId: "tpl_hip_opening", instructorId: "ins_shubham", capacity: 15, pre: 10 },
+            { hour: 17, minute: 10, templateId: "tpl_balance_flow", instructorId: "ins_shubham", capacity: 15, pre: 7 }
+        ],
+        14: [], // Sunday Closed
+
+        // Week 3 (Monday June 15th to Sunday June 21st)
+        15: [{ hour: 7, minute: 0, templateId: "tpl_easy_flow", instructorId: "ins_shubham", capacity: 15, pre: 6 }],
+        16: [{ hour: 7, minute: 0, templateId: "tpl_morning_stretching", instructorId: "ins_nop", capacity: 15, pre: 5 }],
+        17: [], // Wednesday Closed
+        18: [{ hour: 7, minute: 0, templateId: "tpl_open_shoulder", instructorId: "ins_nop", capacity: 15, pre: 8 }],
+        19: [
+            { hour: 18, minute: 0, templateId: "tpl_stretching", instructorId: "ins_krish", capacity: 15, pre: 12 },
+            { hour: 19, minute: 10, templateId: "tpl_hatha_flow", instructorId: "ins_krish", capacity: 15, pre: 10 }
+        ],
+        20: [
+            { hour: 16, minute: 0, templateId: "tpl_vinyasa", instructorId: "ins_shubham", capacity: 15, pre: 14 },
+            { hour: 17, minute: 10, templateId: "tpl_strong_core", instructorId: "ins_shubham", capacity: 15, pre: 15 }
+        ],
+        21: [], // Sunday Closed
+
+        // Week 4 (Monday June 22nd to Sunday June 28th)
+        22: [{ hour: 7, minute: 0, templateId: "tpl_office_syndrome", instructorId: "ins_shubham", capacity: 15, pre: 9 }],
+        23: [{ hour: 7, minute: 0, templateId: "tpl_side_bend", instructorId: "ins_nop", capacity: 15, pre: 6 }],
+        24: [], // Wednesday Closed
+        25: [{ hour: 7, minute: 0, templateId: "tpl_stretching", instructorId: "ins_nop", capacity: 15, pre: 7 }],
+        26: [
+            { hour: 18, minute: 0, templateId: "tpl_flexibility", instructorId: "ins_krish", capacity: 15, pre: 11 },
+            { hour: 19, minute: 10, templateId: "tpl_backbending", instructorId: "ins_krish", capacity: 15, pre: 9 }
+        ],
+        27: [
+            { hour: 16, minute: 0, templateId: "tpl_hip_opening", instructorId: "ins_shubham", capacity: 15, pre: 12 },
+            { hour: 17, minute: 10, templateId: "tpl_balance_flow", instructorId: "ins_shubham", capacity: 15, pre: 11 }
+        ],
+        28: [{ hour: 9, minute: 0, templateId: "tpl_inversion_special", instructorId: "ins_ex", capacity: 15, pre: 13, durationMin: 180 }],
+
+        // Week 5 (Monday June 29th to Tuesday June 30th)
+        29: [{ hour: 7, minute: 0, templateId: "tpl_gentle_flow", instructorId: "ins_shubham", capacity: 15, pre: 10 }],
+        30: [{ hour: 7, minute: 0, templateId: "tpl_twist", instructorId: "ins_nop", capacity: 15, pre: 8 }]
+    };
+
+    for (let mday = 1; mday <= 30; mday++) {
+        const dateStr = `2026-06-${String(mday).padStart(2, "0")}`;
+        const slots = DAILY_SCHEDULE_MAP[mday] || [];
+        for (let i = 0; i < slots.length; i++) {
+            const slot = slots[i];
+            const startsAt = new Date(`${dateStr}T${String(slot.hour).padStart(2, "0")}:${String(slot.minute).padStart(2, "0")}:00+07:00`);
+            const template = CLASS_TEMPLATES.find((t) => t.id === slot.templateId)!;
+            const durationMin = slot.durationMin ?? template.durationMin;
 
             await prisma.classOccurrence.create({
                 data: {
-                    id: `occ_${currentDate.toISOString().slice(0, 10)}_0`,
-                    templateId,
-                    instructorId: "ins_x",
+                    id: `occ_${dateStr}_${i}`,
+                    templateId: slot.templateId,
+                    instructorId: slot.instructorId,
                     startsAt,
-                    durationMin: 90,
-                    capacity: 15,
-                    bookedCount: preBooked,
+                    durationMin,
+                    capacity: slot.capacity,
+                    bookedCount: slot.pre,
                 },
             });
-        } else {
-            const slots = dow === 6 ? WEEKEND_SLOTS : WEEKDAY_SLOTS;
-            for (let i = 0; i < slots.length; i++) {
-                const slot = slots[i];
-                const startsAt = setSeconds(setMinutes(setHours(currentDate, slot.hour), slot.minute), 0);
-
-                await prisma.classOccurrence.create({
-                    data: {
-                        id: `occ_${currentDate.toISOString().slice(0, 10)}_${i}`,
-                        templateId: slot.templateId,
-                        instructorId: slot.instructorId,
-                        startsAt,
-                        durationMin: slot.templateId === "tpl_vinyasa" ? 75 : 60,
-                        capacity: slot.capacity,
-                        bookedCount: slot.pre,
-                    },
-                });
-            }
         }
     }
 
-    console.log("✅ Seeded 30 days of Class Occurrences successfully!");
+    console.log("✅ Seeded Class Occurrences for June 2026 successfully!");
     console.log("🌿 Database seeding completed successfully!");
 }
 

@@ -8,3 +8,7 @@ export { QuoteCard } from "./QuoteCard";
 export type { QuoteCardProps } from "./QuoteCard";
 export { PoseCard } from "./PoseCard";
 export type { PoseCardProps } from "./PoseCard";
+export { WelcomeBanner } from "./WelcomeBanner";
+export type { WelcomeBannerProps } from "./WelcomeBanner";
+export { WorkshopPromo } from "./WorkshopPromo";
+export type { WorkshopPromoProps } from "./WorkshopPromo";

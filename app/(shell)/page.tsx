@@ -6,6 +6,8 @@ import {
     PoseCard,
     PromoBanner,
     QuoteCard,
+    WelcomeBanner,
+    WorkshopPromo,
 } from "@/components/home";
 import { MilestoneCelebrationCard } from "@/components/rewards";
 import { HOME_CONTENT } from "@/lib/mock/home-content";
@@ -72,6 +74,10 @@ export default function HomePage() {
                     />
                 </motion.div>
 
+                <motion.div variants={itemVariants}>
+                    <WelcomeBanner displayName={member?.displayName} />
+                </motion.div>
+
                 {nextMilestone && (
                     <motion.div variants={itemVariants}>
                         <MilestoneCelebrationCard
@@ -80,6 +86,10 @@ export default function HomePage() {
                         />
                     </motion.div>
                 )}
+
+                <motion.div variants={itemVariants}>
+                    <WorkshopPromo />
+                </motion.div>
 
                 <motion.div variants={itemVariants}>
                     <QuoteCard
