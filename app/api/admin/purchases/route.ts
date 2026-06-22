@@ -1,0 +1,107 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { addDays } from "date-fns";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * GET /api/admin/purchases
+ * Fetches all PendingPurchase rows (pending, approved, or rejected).
+ * Supports filtering by status: ?status=PENDING
+ */
+export async function GET(request: NextRequest) {
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status");
+
+    try {
+        const where: any = {};
+        if (status) {
+            where.status = status;
+        }
+
+        const purchases = await prisma.pendingPurchase.findMany({
+            where,
+            include: {
+                member: true,
+                offer: true,
+            },
+            orderBy: { createdAt: "desc" },
+        });
+
+        return NextResponse.json({ purchases });
+    } catch (error) {
+        console.error("[api-admin-purchases-get] Error loading purchases:", error);
+        return NextResponse.json({ error: "Failed to load purchases" }, { status: 500 });
+    }
+}
+
+/**
+ * POST /api/admin/purchases
+ * Resolves a pending purchase slip (APPROVED or REJECTED).
+ * If APPROVED: creates a member active Package.
+ */
+export async function POST(request: NextRequest) {
+    try {
+        const body = await request.json();
+        const { purchaseId, status } = body;
+
+        if (!purchaseId || !status || !["APPROVED", "REJECTED"].includes(status)) {
+            return NextResponse.json(
+                { error: "purchaseId and valid status ('APPROVED' | 'REJECTED') are required" },
+                { status: 400 },
+            );
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const pending = await tx.pendingPurchase.findUnique({
+                where: { id: purchaseId },
+                include: { offer: true },
+            });
+
+            if (!pending) throw new Error("PURCHASE_NOT_FOUND");
+            if (pending.status !== "PENDING") throw new Error("ALREADY_REVIEWED");
+
+            // 1. Update purchase status
+            const updatedPending = await tx.pendingPurchase.update({
+                where: { id: purchaseId },
+                data: {
+                    status: status,
+                    reviewedAt: new Date(),
+                },
+                include: {
+                    member: true,
+                    offer: true,
+                },
+            });
+
+            // 2. If approved, create member active Package record
+            let memberPackage = null;
+            if (status === "APPROVED") {
+                const expiresAt = addDays(new Date(), pending.offer.validityDays);
+                memberPackage = await tx.package.create({
+                    data: {
+                        memberId: pending.memberId,
+                        packageOfferId: pending.packageOfferId,
+                        classesRemaining: pending.offer.classCount,
+                        expiresAt: expiresAt,
+                        status: "ACTIVE",
+                    },
+                    include: { offer: true },
+                });
+            }
+
+            return { pending: updatedPending, package: memberPackage };
+        });
+
+        return NextResponse.json({ success: true, ...result });
+    } catch (error: any) {
+        console.error("[api-admin-purchases-post] Error updating purchase status:", error);
+        if (error.message === "PURCHASE_NOT_FOUND") {
+            return NextResponse.json({ error: "Purchase record not found." }, { status: 404 });
+        }
+        if (error.message === "ALREADY_REVIEWED") {
+            return NextResponse.json({ error: "This purchase has already been reviewed." }, { status: 409 });
+        }
+        return NextResponse.json({ error: "Database transaction failed." }, { status: 500 });
+    }
+}

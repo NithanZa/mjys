@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { packageOfferId } = await request.json();
+        const { packageOfferId, proofImageUrl } = await request.json();
         if (!packageOfferId) {
             return NextResponse.json(
                 { error: "packageOfferId is required" },
@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
             data: {
                 memberId: member.id,
                 packageOfferId,
+                proofImageUrl: proofImageUrl ?? null,
                 status: "PENDING",
             },
             include: { offer: true },

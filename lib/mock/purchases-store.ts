@@ -24,6 +24,8 @@ export interface MockPurchase {
     expiresAt: string | null; // ISO; null until APPROVED
     createdAt: string;
     reviewedAt: string | null;
+    /** Public URL of the uploaded bank-transfer slip, if any. */
+    proofImageUrl: string | null;
 }
 
 export interface ActivePackageView {
@@ -76,8 +78,10 @@ export interface UsePurchasesResult {
     pendingPurchases: MockPurchase[];
     activePackage: ActivePackageView | null;
     loading: boolean;
+    /** Upload a bank-transfer slip image. Returns its public URL (or a data URL in mock mode). */
+    uploadSlip: (file: File) => Promise<string>;
     /** Create a new PENDING purchase for the given offer. Returns the new purchase id. */
-    createPending: (offerId: string) => Promise<string>;
+    createPending: (offerId: string, proofImageUrl?: string) => Promise<string>;
     /** Simulate studio approval of a PENDING purchase (frontend stub for AC5). */
     approvePending: (purchaseId: string) => Promise<void>;
     /** Reject a PENDING purchase. */
@@ -124,6 +128,7 @@ export function usePurchases(): UsePurchasesResult {
                     expiresAt: null,
                     createdAt: p.createdAt,
                     reviewedAt: p.reviewedAt,
+                    proofImageUrl: p.proofImageUrl ?? null,
                 }));
 
                 // Map active Package table records
@@ -135,6 +140,7 @@ export function usePurchases(): UsePurchasesResult {
                     expiresAt: p.expiresAt,
                     createdAt: p.createdAt,
                     reviewedAt: p.updatedAt,
+                    proofImageUrl: null,
                 }));
 
                 // Merge and filter out duplicates (packages that were derived from pending)
@@ -163,8 +169,38 @@ export function usePurchases(): UsePurchasesResult {
     const pendingPurchases = activePurchases.filter((p) => p.status === "PENDING");
     const activePackage = pickActivePackage(activePurchases);
 
+    const uploadSlip = useCallback(
+        async (file: File): Promise<string> => {
+            if (isMock) {
+                // Mock mode: embed the image as a data URL so the preview persists locally.
+                return await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.onerror = () => reject(new Error("Failed to read file"));
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            const token = liff.getIDToken();
+            const form = new FormData();
+            form.append("file", file);
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+                body: form,
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || "Failed to upload slip");
+            }
+            const data = await res.json();
+            return data.url as string;
+        },
+        [isMock, liff],
+    );
+
     const createPending = useCallback(
-        async (offerId: string): Promise<string> => {
+        async (offerId: string, proofImageUrl?: string): Promise<string> => {
             if (isMock) {
                 const offer = getPackageOffer(offerId);
                 if (!offer) throw new Error(`Unknown package offer: ${offerId}`);
@@ -176,6 +212,7 @@ export function usePurchases(): UsePurchasesResult {
                     expiresAt: null,
                     createdAt: new Date().toISOString(),
                     reviewedAt: null,
+                    proofImageUrl: proofImageUrl ?? null,
                 };
                 writeSnapshot([...readSnapshot(), purchase]);
                 return purchase.id;
@@ -190,7 +227,7 @@ export function usePurchases(): UsePurchasesResult {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify({ packageOfferId: offerId }),
+                    body: JSON.stringify({ packageOfferId: offerId, proofImageUrl }),
                 });
 
                 if (!res.ok) {
@@ -227,6 +264,7 @@ export function usePurchases(): UsePurchasesResult {
                     classesRemaining: offer.classCount,
                     expiresAt,
                     reviewedAt: now.toISOString(),
+                    proofImageUrl: target.proofImageUrl ?? null,
                 };
                 writeSnapshot(list.map((p) => (p.id === purchaseId ? updated : p)));
                 return;
@@ -332,6 +370,7 @@ export function usePurchases(): UsePurchasesResult {
         pendingPurchases,
         activePackage,
         loading,
+        uploadSlip,
         createPending,
         approvePending,
         rejectPending,

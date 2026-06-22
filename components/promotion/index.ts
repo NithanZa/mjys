@@ -4,3 +4,5 @@ export { PaymentSheet } from "./PaymentSheet";
 export type { PaymentSheetProps } from "./PaymentSheet";
 export { ActivePackageStrip } from "./ActivePackageStrip";
 export type { ActivePackageStripProps } from "./ActivePackageStrip";
+export { SlipUpload } from "./SlipUpload";
+export type { SlipUploadProps } from "./SlipUpload";
