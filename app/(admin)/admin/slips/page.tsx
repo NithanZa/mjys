@@ -22,6 +22,7 @@ interface Purchase {
     id: string;
     status: "PENDING" | "APPROVED" | "REJECTED";
     proofImageUrl: string | null;
+    rejectionReason?: string | null;
     createdAt: string;
     reviewedAt: string | null;
     member: {
@@ -67,16 +68,23 @@ export default function AdminSlipsPage() {
 
     const handleResolve = async (status: "APPROVED" | "REJECTED") => {
         if (!selectedPurchase) return;
-        if (
-            !confirm(
-                `Are you sure you want to mark this transaction as ${status}?${
-                    status === "APPROVED"
-                        ? "\n\nThis will instantly activate the package and credit classes to the member's account."
-                        : "\n\nThis will deny the purchase request."
-                }`,
-            )
-        ) {
-            return;
+
+        let reason: string | null = null;
+        if (status === "REJECTED") {
+            reason = prompt("Please enter a reason for rejecting this transfer slip (e.g., 'Amount mismatch', 'Incorrect slip'):");
+            if (reason === null) return; // cancelled prompt
+            if (!reason.trim()) {
+                alert("A rejection reason is required.");
+                return;
+            }
+        } else {
+            if (
+                !confirm(
+                    `Are you sure you want to mark this transaction as APPROVED?\n\nThis will instantly activate the package and credit classes to the member's account.`,
+                )
+            ) {
+                return;
+            }
         }
 
         setSubmitting(true);
@@ -87,6 +95,7 @@ export default function AdminSlipsPage() {
                 body: JSON.stringify({
                     purchaseId: selectedPurchase.id,
                     status,
+                    rejectionReason: reason,
                 }),
             });
 
@@ -344,13 +353,18 @@ export default function AdminSlipsPage() {
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="border-t border-neutral-line pt-4 text-center shrink-0">
+                                <div className="border-t border-neutral-line pt-4 text-center shrink-0 flex flex-col items-center gap-2">
                                     <Badge
                                         tone={selectedPurchase.status === "APPROVED" ? "success" : "error"}
                                         className="text-body-sm font-semibold px-4 py-1.5"
                                     >
                                         Already {selectedPurchase.status.toLowerCase()}
                                     </Badge>
+                                    {selectedPurchase.status === "REJECTED" && selectedPurchase.rejectionReason && (
+                                        <p className="text-caption text-error-fg bg-error-bg/20 border border-error-border rounded-sm p-2 w-full text-left mt-1">
+                                            <strong>Reason:</strong> {selectedPurchase.rejectionReason}
+                                        </p>
+                                    )}
                                 </div>
                             )}
                         </div>

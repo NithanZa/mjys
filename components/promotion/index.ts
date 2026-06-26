@@ -6,3 +6,5 @@ export { ActivePackageStrip } from "./ActivePackageStrip";
 export type { ActivePackageStripProps } from "./ActivePackageStrip";
 export { SlipUpload } from "./SlipUpload";
 export type { SlipUploadProps } from "./SlipUpload";
+export { TransactionHistory } from "./TransactionHistory";
+export type { TransactionHistoryProps } from "./TransactionHistory";

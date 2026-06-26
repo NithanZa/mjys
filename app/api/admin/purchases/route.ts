@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { purchaseId, status } = body;
+        const { purchaseId, status, rejectionReason } = body;
 
         if (!purchaseId || !status || !["APPROVED", "REJECTED"].includes(status)) {
             return NextResponse.json(
@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
                 data: {
                     status: status,
                     reviewedAt: new Date(),
+                    rejectionReason: status === "REJECTED" ? (rejectionReason || null) : null,
                 },
                 include: {
                     member: true,

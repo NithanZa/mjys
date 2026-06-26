@@ -194,6 +194,7 @@ export const PendingPurchaseScalarFieldEnum = {
   packageOfferId: 'packageOfferId',
   proofImageUrl: 'proofImageUrl',
   status: 'status',
+  rejectionReason: 'rejectionReason',
   createdAt: 'createdAt',
   reviewedAt: 'reviewedAt'
 } as const

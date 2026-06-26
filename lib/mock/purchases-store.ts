@@ -26,6 +26,7 @@ export interface MockPurchase {
     reviewedAt: string | null;
     /** Public URL of the uploaded bank-transfer slip, if any. */
     proofImageUrl: string | null;
+    rejectionReason?: string | null;
 }
 
 export interface ActivePackageView {
@@ -129,6 +130,7 @@ export function usePurchases(): UsePurchasesResult {
                     createdAt: p.createdAt,
                     reviewedAt: p.reviewedAt,
                     proofImageUrl: p.proofImageUrl ?? null,
+                    rejectionReason: p.rejectionReason ?? null,
                 }));
 
                 // Map active Package table records

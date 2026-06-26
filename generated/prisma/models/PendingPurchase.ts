@@ -30,6 +30,7 @@ export type PendingPurchaseMinAggregateOutputType = {
   packageOfferId: string | null
   proofImageUrl: string | null
   status: $Enums.PurchaseStatus | null
+  rejectionReason: string | null
   createdAt: Date | null
   reviewedAt: Date | null
 }
@@ -40,6 +41,7 @@ export type PendingPurchaseMaxAggregateOutputType = {
   packageOfferId: string | null
   proofImageUrl: string | null
   status: $Enums.PurchaseStatus | null
+  rejectionReason: string | null
   createdAt: Date | null
   reviewedAt: Date | null
 }
@@ -50,6 +52,7 @@ export type PendingPurchaseCountAggregateOutputType = {
   packageOfferId: number
   proofImageUrl: number
   status: number
+  rejectionReason: number
   createdAt: number
   reviewedAt: number
   _all: number
@@ -62,6 +65,7 @@ export type PendingPurchaseMinAggregateInputType = {
   packageOfferId?: true
   proofImageUrl?: true
   status?: true
+  rejectionReason?: true
   createdAt?: true
   reviewedAt?: true
 }
@@ -72,6 +76,7 @@ export type PendingPurchaseMaxAggregateInputType = {
   packageOfferId?: true
   proofImageUrl?: true
   status?: true
+  rejectionReason?: true
   createdAt?: true
   reviewedAt?: true
 }
@@ -82,6 +87,7 @@ export type PendingPurchaseCountAggregateInputType = {
   packageOfferId?: true
   proofImageUrl?: true
   status?: true
+  rejectionReason?: true
   createdAt?: true
   reviewedAt?: true
   _all?: true
@@ -165,6 +171,7 @@ export type PendingPurchaseGroupByOutputType = {
   packageOfferId: string
   proofImageUrl: string | null
   status: $Enums.PurchaseStatus
+  rejectionReason: string | null
   createdAt: Date
   reviewedAt: Date | null
   _count: PendingPurchaseCountAggregateOutputType | null
@@ -196,6 +203,7 @@ export type PendingPurchaseWhereInput = {
   packageOfferId?: Prisma.StringFilter<"PendingPurchase"> | string
   proofImageUrl?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   status?: Prisma.EnumPurchaseStatusFilter<"PendingPurchase"> | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PendingPurchase"> | Date | string
   reviewedAt?: Prisma.DateTimeNullableFilter<"PendingPurchase"> | Date | string | null
   member?: Prisma.XOR<Prisma.MemberScalarRelationFilter, Prisma.MemberWhereInput>
@@ -208,6 +216,7 @@ export type PendingPurchaseOrderByWithRelationInput = {
   packageOfferId?: Prisma.SortOrder
   proofImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  rejectionReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   reviewedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   member?: Prisma.MemberOrderByWithRelationInput
@@ -223,6 +232,7 @@ export type PendingPurchaseWhereUniqueInput = Prisma.AtLeast<{
   packageOfferId?: Prisma.StringFilter<"PendingPurchase"> | string
   proofImageUrl?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   status?: Prisma.EnumPurchaseStatusFilter<"PendingPurchase"> | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PendingPurchase"> | Date | string
   reviewedAt?: Prisma.DateTimeNullableFilter<"PendingPurchase"> | Date | string | null
   member?: Prisma.XOR<Prisma.MemberScalarRelationFilter, Prisma.MemberWhereInput>
@@ -235,6 +245,7 @@ export type PendingPurchaseOrderByWithAggregationInput = {
   packageOfferId?: Prisma.SortOrder
   proofImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  rejectionReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   reviewedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.PendingPurchaseCountOrderByAggregateInput
@@ -251,6 +262,7 @@ export type PendingPurchaseScalarWhereWithAggregatesInput = {
   packageOfferId?: Prisma.StringWithAggregatesFilter<"PendingPurchase"> | string
   proofImageUrl?: Prisma.StringNullableWithAggregatesFilter<"PendingPurchase"> | string | null
   status?: Prisma.EnumPurchaseStatusWithAggregatesFilter<"PendingPurchase"> | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.StringNullableWithAggregatesFilter<"PendingPurchase"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PendingPurchase"> | Date | string
   reviewedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"PendingPurchase"> | Date | string | null
 }
@@ -259,6 +271,7 @@ export type PendingPurchaseCreateInput = {
   id?: string
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
   member: Prisma.MemberCreateNestedOneWithoutPendingPurchasesInput
@@ -271,6 +284,7 @@ export type PendingPurchaseUncheckedCreateInput = {
   packageOfferId: string
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
 }
@@ -279,6 +293,7 @@ export type PendingPurchaseUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   member?: Prisma.MemberUpdateOneRequiredWithoutPendingPurchasesNestedInput
@@ -291,6 +306,7 @@ export type PendingPurchaseUncheckedUpdateInput = {
   packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -301,6 +317,7 @@ export type PendingPurchaseCreateManyInput = {
   packageOfferId: string
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
 }
@@ -309,6 +326,7 @@ export type PendingPurchaseUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -319,6 +337,7 @@ export type PendingPurchaseUncheckedUpdateManyInput = {
   packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -339,6 +358,7 @@ export type PendingPurchaseCountOrderByAggregateInput = {
   packageOfferId?: Prisma.SortOrder
   proofImageUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  rejectionReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   reviewedAt?: Prisma.SortOrder
 }
@@ -349,6 +369,7 @@ export type PendingPurchaseMaxOrderByAggregateInput = {
   packageOfferId?: Prisma.SortOrder
   proofImageUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  rejectionReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   reviewedAt?: Prisma.SortOrder
 }
@@ -359,6 +380,7 @@ export type PendingPurchaseMinOrderByAggregateInput = {
   packageOfferId?: Prisma.SortOrder
   proofImageUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  rejectionReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   reviewedAt?: Prisma.SortOrder
 }
@@ -455,6 +477,7 @@ export type PendingPurchaseCreateWithoutMemberInput = {
   id?: string
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
   offer: Prisma.PackageOfferCreateNestedOneWithoutPendingPurchasesInput
@@ -465,6 +488,7 @@ export type PendingPurchaseUncheckedCreateWithoutMemberInput = {
   packageOfferId: string
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
 }
@@ -504,6 +528,7 @@ export type PendingPurchaseScalarWhereInput = {
   packageOfferId?: Prisma.StringFilter<"PendingPurchase"> | string
   proofImageUrl?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   status?: Prisma.EnumPurchaseStatusFilter<"PendingPurchase"> | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PendingPurchase"> | Date | string
   reviewedAt?: Prisma.DateTimeNullableFilter<"PendingPurchase"> | Date | string | null
 }
@@ -512,6 +537,7 @@ export type PendingPurchaseCreateWithoutOfferInput = {
   id?: string
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
   member: Prisma.MemberCreateNestedOneWithoutPendingPurchasesInput
@@ -522,6 +548,7 @@ export type PendingPurchaseUncheckedCreateWithoutOfferInput = {
   memberId: string
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
 }
@@ -557,6 +584,7 @@ export type PendingPurchaseCreateManyMemberInput = {
   packageOfferId: string
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
 }
@@ -565,6 +593,7 @@ export type PendingPurchaseUpdateWithoutMemberInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   offer?: Prisma.PackageOfferUpdateOneRequiredWithoutPendingPurchasesNestedInput
@@ -575,6 +604,7 @@ export type PendingPurchaseUncheckedUpdateWithoutMemberInput = {
   packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -584,6 +614,7 @@ export type PendingPurchaseUncheckedUpdateManyWithoutMemberInput = {
   packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -593,6 +624,7 @@ export type PendingPurchaseCreateManyOfferInput = {
   memberId: string
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
 }
@@ -601,6 +633,7 @@ export type PendingPurchaseUpdateWithoutOfferInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   member?: Prisma.MemberUpdateOneRequiredWithoutPendingPurchasesNestedInput
@@ -611,6 +644,7 @@ export type PendingPurchaseUncheckedUpdateWithoutOfferInput = {
   memberId?: Prisma.StringFieldUpdateOperationsInput | string
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -620,6 +654,7 @@ export type PendingPurchaseUncheckedUpdateManyWithoutOfferInput = {
   memberId?: Prisma.StringFieldUpdateOperationsInput | string
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -632,6 +667,7 @@ export type PendingPurchaseSelect<ExtArgs extends runtime.Types.Extensions.Inter
   packageOfferId?: boolean
   proofImageUrl?: boolean
   status?: boolean
+  rejectionReason?: boolean
   createdAt?: boolean
   reviewedAt?: boolean
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
@@ -644,6 +680,7 @@ export type PendingPurchaseSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   packageOfferId?: boolean
   proofImageUrl?: boolean
   status?: boolean
+  rejectionReason?: boolean
   createdAt?: boolean
   reviewedAt?: boolean
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
@@ -656,6 +693,7 @@ export type PendingPurchaseSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   packageOfferId?: boolean
   proofImageUrl?: boolean
   status?: boolean
+  rejectionReason?: boolean
   createdAt?: boolean
   reviewedAt?: boolean
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
@@ -668,11 +706,12 @@ export type PendingPurchaseSelectScalar = {
   packageOfferId?: boolean
   proofImageUrl?: boolean
   status?: boolean
+  rejectionReason?: boolean
   createdAt?: boolean
   reviewedAt?: boolean
 }
 
-export type PendingPurchaseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "memberId" | "packageOfferId" | "proofImageUrl" | "status" | "createdAt" | "reviewedAt", ExtArgs["result"]["pendingPurchase"]>
+export type PendingPurchaseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "memberId" | "packageOfferId" | "proofImageUrl" | "status" | "rejectionReason" | "createdAt" | "reviewedAt", ExtArgs["result"]["pendingPurchase"]>
 export type PendingPurchaseInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
   offer?: boolean | Prisma.PackageOfferDefaultArgs<ExtArgs>
@@ -698,6 +737,7 @@ export type $PendingPurchasePayload<ExtArgs extends runtime.Types.Extensions.Int
     packageOfferId: string
     proofImageUrl: string | null
     status: $Enums.PurchaseStatus
+    rejectionReason: string | null
     createdAt: Date
     reviewedAt: Date | null
   }, ExtArgs["result"]["pendingPurchase"]>
@@ -1130,6 +1170,7 @@ export interface PendingPurchaseFieldRefs {
   readonly packageOfferId: Prisma.FieldRef<"PendingPurchase", 'String'>
   readonly proofImageUrl: Prisma.FieldRef<"PendingPurchase", 'String'>
   readonly status: Prisma.FieldRef<"PendingPurchase", 'PurchaseStatus'>
+  readonly rejectionReason: Prisma.FieldRef<"PendingPurchase", 'String'>
   readonly createdAt: Prisma.FieldRef<"PendingPurchase", 'DateTime'>
   readonly reviewedAt: Prisma.FieldRef<"PendingPurchase", 'DateTime'>
 }

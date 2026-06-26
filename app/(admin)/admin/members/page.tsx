@@ -329,6 +329,36 @@ export default function AdminMembersPage() {
                             </div>
                         </Card>
 
+                        {/* Milestones & Achievements */}
+                        <div className="border-t border-neutral-line pt-5 flex flex-col gap-3">
+                            <h3 className="font-display text-body font-semibold text-neutral-ink flex items-center gap-2">
+                                Unlocked Milestones & Achievements <Badge tone="primary">{milestones.length}</Badge>
+                            </h3>
+                            <div className="border border-neutral-line bg-neutral-card rounded-md p-3.5">
+                                {loadingDetail ? (
+                                    <div className="flex items-center justify-center p-4">
+                                        <Loader className="h-5 w-5 animate-spin text-neutral-text-3" />
+                                    </div>
+                                ) : milestones.length === 0 ? (
+                                    <div className="text-center text-caption text-neutral-text-3 italic py-2">
+                                        No milestones or toy rewards unlocked yet.
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-wrap gap-2">
+                                        {milestones.map((m) => (
+                                            <div
+                                                key={m.id}
+                                                className="flex items-center gap-1.5 bg-primary-50 border border-primary-200 text-primary-800 rounded-sm px-2.5 py-1 text-caption font-medium"
+                                            >
+                                                <Award className="h-3.5 w-3.5 text-primary-500" />
+                                                <span>{m.milestone.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Pass adjustments */}
                         <div className="border-t border-neutral-line pt-5 flex flex-col gap-3">
                             <div className="flex justify-between items-center">

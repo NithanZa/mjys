@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyLineIdToken } from "@/lib/line/verify-id-token";
 import { randomUUID } from "crypto";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +17,7 @@ const ALLOWED_TYPES: Record<string, string> = {
 /**
  * POST /api/upload
  * Receives a multipart/form-data image (field: "file"), validates type/size,
- * writes it to /public/uploads/slips, and returns the public URL.
+ * uploads it to Supabase Storage bucket 'slips', and returns the public URL.
  * Authenticated via the member's LINE ID token.
  */
 export async function POST(request: NextRequest) {
@@ -67,12 +66,30 @@ export async function POST(request: NextRequest) {
 
         const bytes = Buffer.from(await file.arrayBuffer());
         const fileName = `slip_${Date.now()}_${randomUUID().slice(0, 8)}.${ext}`;
-        const uploadDir = path.join(process.cwd(), "public", "uploads", "slips");
 
-        await mkdir(uploadDir, { recursive: true });
-        await writeFile(path.join(uploadDir, fileName), bytes);
+        // Upload to Supabase Storage bucket 'slips'
+        const { error: uploadError } = await supabase.storage
+            .from("slips")
+            .upload(fileName, bytes, {
+                contentType: file.type,
+                cacheControl: "31536000",
+                upsert: false,
+            });
 
-        const url = `/uploads/slips/${fileName}`;
+        if (uploadError) {
+            console.error("[api-upload] Supabase upload failed:", uploadError);
+            return NextResponse.json(
+                { error: "Upload to cloud storage failed. Please ensure the 'slips' bucket exists." },
+                { status: 500 },
+            );
+        }
+
+        // Generate public URL
+        const { data: urlData } = supabase.storage
+            .from("slips")
+            .getPublicUrl(fileName);
+
+        const url = urlData.publicUrl;
         return NextResponse.json({ url });
     } catch (error) {
         console.error("[api-upload] Error saving file:", error);

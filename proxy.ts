@@ -4,7 +4,7 @@ import { jwtVerify } from "jose";
 
 export const config = {
     // Intercept requests to admin pages and admin API endpoints
-    matcher: ["/admin/:path*", "/api/admin/:path*"],
+    matcher: ["/admin", "/admin/:path*", "/api/admin/:path*"],
 };
 
 export async function proxy(request: NextRequest) {

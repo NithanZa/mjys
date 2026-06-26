@@ -1,17 +1,38 @@
 "use client";
 
 import { TopBar } from "@/components/layout";
-import { ActivePackageStrip, PackageCard } from "@/components/promotion";
+import {
+  ActivePackageStrip,
+  PackageCard,
+  TransactionHistory,
+} from "@/components/promotion";
 import { PACKAGE_OFFERS } from "@/lib/mock/packages";
 import { usePurchases } from "@/lib/mock/purchases-store";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 export default function PromotionPage() {
-  const { activePackage, pendingPurchases } = usePurchases();
-  const sorted = useMemo(
-    () => [...PACKAGE_OFFERS].sort((a, b) => a.sortOrder - b.sortOrder),
-    [],
-  );
+  const { activePackage, pendingPurchases, purchases } = usePurchases();
+  const [dbOffers, setDbOffers] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchOffers() {
+      try {
+        const res = await fetch("/api/packages");
+        if (res.ok) {
+          const data = await res.json();
+          setDbOffers(data.offers);
+        }
+      } catch (err) {
+        console.error("Failed to fetch package offers:", err);
+      }
+    }
+    fetchOffers();
+  }, []);
+
+  const sorted = useMemo(() => {
+    const offers = dbOffers.length > 0 ? dbOffers : PACKAGE_OFFERS;
+    return [...offers].sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [dbOffers]);
 
   return (
     <>
@@ -42,6 +63,8 @@ export default function PromotionPage() {
             <PackageCard key={offer.id} offer={offer} />
           ))}
         </div>
+
+        <TransactionHistory purchases={purchases} />
       </div>
     </>
   );

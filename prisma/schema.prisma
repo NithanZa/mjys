@@ -171,6 +171,7 @@ model PendingPurchase {
   packageOfferId String
   proofImageUrl  String?
   status         PurchaseStatus @default(PENDING)
+  rejectionReason String?
   createdAt      DateTime       @default(now())
   reviewedAt     DateTime?
 
