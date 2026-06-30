@@ -3,7 +3,7 @@
 import { useLiff } from "@/lib/liff";
 import { useCallback, useEffect, useState } from "react";
 import { useMockMember } from "./mock-store";
-import { newlyCrossedThresholds, type Level } from "@/lib/levels";
+import { type Level } from "@/lib/levels";
 
 export interface Member {
     id: string;
@@ -32,13 +32,20 @@ export interface UseMemberResult {
         dob: string;
         address: string;
         tocAccepted: boolean;
+        password?: string;
     }) => Promise<Member>;
-    addClasses: (delta: number) => Promise<number[]>;
+    login: (input: {
+        email: string;
+        password?: string;
+    }) => Promise<Member>;
     markCelebrated: (threshold: number) => Promise<void>;
     reset: () => Promise<void>;
 }
 
 const DEV = process.env.NODE_ENV !== "production";
+
+/** True when the app is running in standalone (non-LINE) mode. */
+const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
 
 function getRequiredIDToken(liff: any): string {
     const token = liff?.getIDToken();
@@ -57,8 +64,9 @@ export function useMember(): UseMemberResult {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Use mock fallback when not running inside LINE client or not logged in
-    const isMock = status !== "ready" || !isLoggedIn || !liff;
+    // In standalone mode the app uses real APIs with cookie auth — never mock.
+    // In LIFF mode fall back to mock when LIFF is not ready or user is not logged in.
+    const isMock = isStandalone ? false : status !== "ready" || !isLoggedIn || !liff;
 
     const fetchMember = useCallback(async () => {
         if (isMock) {
@@ -67,24 +75,30 @@ export function useMember(): UseMemberResult {
         }
 
         try {
-            const token = liff.getIDToken();
-            if (!token) {
-                setError("No LINE ID token available");
-                setLoading(false);
-                return;
+            let data: any;
+            if (isStandalone) {
+                // Cookie is sent automatically by the browser
+                const res = await fetch("/api/members/me");
+                if (!res.ok) throw new Error(`Failed to fetch profile: ${res.statusText}`);
+                data = await res.json();
+            } else {
+                if (!liff) {
+                    setError("LIFF not initialized");
+                    setLoading(false);
+                    return;
+                }
+                const token = liff.getIDToken();
+                if (!token) {
+                    setError("No LINE ID token available");
+                    setLoading(false);
+                    return;
+                }
+                const res = await fetch("/api/members/me", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) throw new Error(`Failed to fetch profile: ${res.statusText}`);
+                data = await res.json();
             }
-
-            const res = await fetch("/api/members/me", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (!res.ok) {
-                throw new Error(`Failed to fetch profile: ${res.statusText}`);
-            }
-
-            const data = await res.json();
             setMember(data.member);
             setError(null);
         } catch (err: any) {
@@ -106,6 +120,7 @@ export function useMember(): UseMemberResult {
             dob: string;
             address: string;
             tocAccepted: boolean;
+            password?: string;
         }) => {
             if (isMock) {
                 const registeredMock = mockStore.register(input);
@@ -122,15 +137,24 @@ export function useMember(): UseMemberResult {
 
             setLoading(true);
             try {
-                const token = getRequiredIDToken(liff);
-                const res = await fetch("/api/members", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(input),
-                });
+                let res: Response;
+                if (isStandalone) {
+                    res = await fetch("/api/members", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(input),
+                    });
+                } else {
+                    const token = getRequiredIDToken(liff);
+                    res = await fetch("/api/members", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify(input),
+                    });
+                }
 
                 if (!res.ok) {
                     const errData = await res.json();
@@ -150,44 +174,52 @@ export function useMember(): UseMemberResult {
         [isMock, liff, mockStore],
     );
 
-    const addClasses = useCallback(
-        async (delta: number) => {
+    const login = useCallback(
+        async (input: { email: string; password?: string }) => {
             if (isMock) {
-                return mockStore.addClasses(delta);
+                // In mock mode (e.g. dev outside LINE and standalone is false), just mock-register or mock-login
+                const mockReg = mockStore.register({
+                    displayName: "Mock Member",
+                    email: input.email,
+                    phone: "0812345678",
+                    dob: "2000-01-01",
+                    address: "123 Mock Lane",
+                    tocAccepted: true,
+                });
+                const mapped: Member = {
+                    ...mockReg,
+                    lineUserId: mockReg.lineUserId ?? "",
+                    celebratedLevels: mockReg.celebrated.map((t) =>
+                        t === 20 ? "TIGER" : t === 50 ? "LEOPARD" : "CAT",
+                    ),
+                };
+                return mapped;
             }
 
-            if (!member) return [];
-
-            const nextCount = Math.max(0, member.classesAttended + delta);
-            const crossed = newlyCrossedThresholds(
-                member.classesAttended,
-                nextCount,
-            );
-
+            setLoading(true);
             try {
-                const token = getRequiredIDToken(liff);
-                const res = await fetch("/api/members", {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        classesAttended: nextCount,
-                    }),
+                const res = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(input),
                 });
 
-                if (!res.ok) throw new Error("Failed to update classes");
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error || "Failed to log in");
+                }
 
                 const data = await res.json();
                 setMember(data.member);
-                return crossed;
+                return data.member;
             } catch (err: any) {
-                console.error("Failed to update classes:", err);
-                return [];
+                setError(err.message);
+                throw err;
+            } finally {
+                setLoading(false);
             }
         },
-        [isMock, member, mockStore, liff],
+        [isMock, mockStore],
     );
 
     const markCelebrated = useCallback(
@@ -208,17 +240,24 @@ export function useMember(): UseMemberResult {
             const nextCelebrated = [...member.celebratedLevels, crossedLevel];
 
             try {
-                const token = getRequiredIDToken(liff);
-                const res = await fetch("/api/members", {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        celebratedLevels: nextCelebrated,
-                    }),
-                });
+                let res: Response;
+                if (isStandalone) {
+                    res = await fetch("/api/members", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ celebratedLevels: nextCelebrated }),
+                    });
+                } else {
+                    const token = getRequiredIDToken(liff);
+                    res = await fetch("/api/members", {
+                        method: "PATCH",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ celebratedLevels: nextCelebrated }),
+                    });
+                }
 
                 if (!res.ok) throw new Error("Failed to update celebration");
 
@@ -234,6 +273,19 @@ export function useMember(): UseMemberResult {
     const reset = useCallback(async () => {
         if (isMock) {
             mockStore.reset();
+            return;
+        }
+        if (isStandalone) {
+            try {
+                const res = await fetch("/api/auth/logout", {
+                    method: "POST",
+                });
+                if (res.ok) {
+                    setMember(null);
+                }
+            } catch (err) {
+                console.error("Failed to log out:", err);
+            }
             return;
         }
 
@@ -273,7 +325,7 @@ export function useMember(): UseMemberResult {
         loading: activeLoading,
         error,
         register,
-        addClasses,
+        login,
         markCelebrated,
         reset,
     };

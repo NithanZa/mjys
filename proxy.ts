@@ -32,7 +32,18 @@ export async function proxy(request: NextRequest) {
     }
 
     try {
-        const secretString = process.env.QR_SIGNING_SECRET || "mjys-default-secure-signing-secret-2026";
+        const secretString = process.env.QR_SIGNING_SECRET;
+        if (!secretString) {
+            console.error("[proxy-auth] QR_SIGNING_SECRET is not configured in environment variables.");
+            if (pathname.startsWith("/api/")) {
+                return NextResponse.json(
+                    { error: "Server authentication misconfigured." },
+                    { status: 500 },
+                );
+            }
+            return NextResponse.redirect(new URL("/admin/login", request.url));
+        }
+
         const secret = new TextEncoder().encode(secretString);
 
         // Verify JWT token signature and expiry

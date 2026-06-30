@@ -21,3 +21,5 @@ export { ProfileHeroCard } from "./ProfileHeroCard";
 export type { ProfileHeroCardProps } from "./ProfileHeroCard";
 export { StatsRow } from "./StatsRow";
 export type { StatsRowProps } from "./StatsRow";
+export { LoginForm } from "./LoginForm";
+export type { LoginFormProps, LoginInput } from "./LoginForm";

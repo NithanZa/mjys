@@ -285,14 +285,13 @@ export default function AdminMembersPage() {
                 )}
             </div>
 
-            {/* MEMBER PROFILE SHEET SLIDEOUT */}
             <Sheet
                 open={selectedMember !== null}
                 onClose={() => setSelectedMember(null)}
                 title={selectedMember?.displayName ?? "Member Profile"}
             >
                 {selectedMember && (
-                    <div className="flex flex-col gap-6 mt-6 overflow-hidden h-full font-sans">
+                    <div className="flex flex-col gap-6 mt-6 font-sans pb-4">
                         {/* Level progress strip */}
                         <div className="bg-primary-50/50 border border-primary-200 rounded-md p-4 flex justify-between items-center gap-4">
                             <div>

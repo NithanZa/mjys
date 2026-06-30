@@ -1,14 +1,15 @@
 import { cn } from "@/lib/cn";
-import { getRecentActivity } from "@/lib/mock/activity";
+import type { ActivityItem } from "@/lib/profile/use-class-history";
 import { getISOWeek, getMonth, getYear } from "date-fns";
 
 export interface StatsRowProps {
     classesAttended: number;
+    history?: ActivityItem[];
     className?: string;
 }
 
-function deriveStats(classesAttended: number) {
-    const activity = getRecentActivity(classesAttended);
+function deriveStats(classesAttended: number, history?: ActivityItem[]) {
+    const activity = history ?? [];
     const now = new Date();
     const thisMonth = getMonth(now);
     const thisYear = getYear(now);
@@ -61,8 +62,8 @@ function StatTile({ value, label }: StatTileProps) {
     );
 }
 
-export function StatsRow({ classesAttended, className }: StatsRowProps) {
-    const { classesThisMonth, weekStreak } = deriveStats(classesAttended);
+export function StatsRow({ classesAttended, history, className }: StatsRowProps) {
+    const { classesThisMonth, weekStreak } = deriveStats(classesAttended, history);
 
     return (
         <div className={cn("flex gap-3", className)}>

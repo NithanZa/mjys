@@ -1,52 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyLineIdToken } from "@/lib/line/verify-id-token";
+import { parseSessionCookie } from "@/lib/standalone-auth";
 import { addDays } from "date-fns";
+import type { Member } from "@/generated/prisma/client";
+
+async function resolveMember(request: NextRequest): Promise<Member | null | { _err: string; _status: number }> {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+        const lineClaims = await verifyLineIdToken(authHeader.substring(7));
+        if (!lineClaims) return { _err: "Invalid LINE ID token", _status: 401 };
+        return prisma.member.findUnique({ where: { lineUserId: lineClaims.lineUserId } });
+    }
+    if (process.env.NEXT_PUBLIC_STANDALONE_MODE === "true") {
+        const memberId = parseSessionCookie(request);
+        if (!memberId) return { _err: "Not authenticated", _status: 401 };
+        return prisma.member.findUnique({ where: { id: memberId } });
+    }
+    return { _err: "Missing or invalid authorization header", _status: 401 };
+}
+
+function isAuthError(v: unknown): v is { _err: string; _status: number } {
+    return typeof v === "object" && v !== null && "_err" in v;
+}
 
 export const dynamic = "force-dynamic";
 
 // GET: Retrieve purchases and active packages for the logged-in member
 export async function GET(request: NextRequest) {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return NextResponse.json(
-            { error: "Missing or invalid authorization header" },
-            { status: 401 },
-        );
-    }
-
-    const idToken = authHeader.substring(7);
-    const lineClaims = await verifyLineIdToken(idToken);
-    if (!lineClaims) {
-        return NextResponse.json(
-            { error: "Invalid LINE ID token" },
-            { status: 401 },
-        );
-    }
-
     try {
-        const member = await prisma.member.findUnique({
-            where: { lineUserId: lineClaims.lineUserId },
-        });
+        const result = await resolveMember(request);
+        if (isAuthError(result)) return NextResponse.json({ error: result._err }, { status: result._status });
+        if (!result) return NextResponse.json({ error: "Member not registered" }, { status: 404 });
+        const member = result;
 
-        if (!member) {
-            return NextResponse.json(
-                { error: "Member not registered" },
-                { status: 404 },
-            );
-        }
-
-        const pendingPurchases = await prisma.pendingPurchase.findMany({
-            where: { memberId: member.id },
-            include: { offer: true },
-            orderBy: { createdAt: "desc" },
-        });
-
-        const activePackages = await prisma.package.findMany({
-            where: { memberId: member.id },
-            include: { offer: true },
-            orderBy: { createdAt: "desc" },
-        });
+        const [pendingPurchases, activePackages] = await Promise.all([
+            prisma.pendingPurchase.findMany({
+                where: { memberId: member.id },
+                include: { offer: true },
+                orderBy: { createdAt: "desc" },
+            }),
+            prisma.package.findMany({
+                where: { memberId: member.id },
+                include: { offer: true },
+                orderBy: { createdAt: "desc" },
+            }),
+        ]);
 
         return NextResponse.json({ pendingPurchases, activePackages });
     } catch (error) {
@@ -57,61 +56,24 @@ export async function GET(request: NextRequest) {
 
 // POST: Create a PENDING purchase for a package offer
 export async function POST(request: NextRequest) {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return NextResponse.json(
-            { error: "Missing or invalid authorization header" },
-            { status: 401 },
-        );
-    }
-
-    const idToken = authHeader.substring(7);
-    const lineClaims = await verifyLineIdToken(idToken);
-    if (!lineClaims) {
-        return NextResponse.json(
-            { error: "Invalid LINE ID token" },
-            { status: 401 },
-        );
-    }
-
     try {
+        const result = await resolveMember(request);
+        if (isAuthError(result)) return NextResponse.json({ error: result._err }, { status: result._status });
+        if (!result) return NextResponse.json({ error: "Member not registered" }, { status: 404 });
+        const member = result;
+
         const { packageOfferId, proofImageUrl } = await request.json();
         if (!packageOfferId) {
-            return NextResponse.json(
-                { error: "packageOfferId is required" },
-                { status: 400 },
-            );
+            return NextResponse.json({ error: "packageOfferId is required" }, { status: 400 });
         }
 
-        const member = await prisma.member.findUnique({
-            where: { lineUserId: lineClaims.lineUserId },
-        });
-
-        if (!member) {
-            return NextResponse.json(
-                { error: "Member not registered" },
-                { status: 404 },
-            );
-        }
-
-        const offer = await prisma.packageOffer.findUnique({
-            where: { id: packageOfferId },
-        });
-
+        const offer = await prisma.packageOffer.findUnique({ where: { id: packageOfferId } });
         if (!offer) {
-            return NextResponse.json(
-                { error: "Package offer not found" },
-                { status: 404 },
-            );
+            return NextResponse.json({ error: "Package offer not found" }, { status: 404 });
         }
 
         const pendingPurchase = await prisma.pendingPurchase.create({
-            data: {
-                memberId: member.id,
-                packageOfferId,
-                proofImageUrl: proofImageUrl ?? null,
-                status: "PENDING",
-            },
+            data: { memberId: member.id, packageOfferId, proofImageUrl: proofImageUrl ?? null, status: "PENDING" },
             include: { offer: true },
         });
 
@@ -124,22 +86,9 @@ export async function POST(request: NextRequest) {
 
 // PATCH: Approve or Reject a pending purchase (Simulating admin/studio side)
 export async function PATCH(request: NextRequest) {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return NextResponse.json(
-            { error: "Missing or invalid authorization header" },
-            { status: 401 },
-        );
-    }
-
-    const idToken = authHeader.substring(7);
-    const lineClaims = await verifyLineIdToken(idToken);
-    if (!lineClaims) {
-        return NextResponse.json(
-            { error: "Invalid LINE ID token" },
-            { status: 401 },
-        );
-    }
+    const authResult = await resolveMember(request);
+    if (isAuthError(authResult)) return NextResponse.json({ error: authResult._err }, { status: authResult._status });
+    if (!authResult) return NextResponse.json({ error: "Member not registered" }, { status: 404 });
 
     try {
         const { purchaseId, status } = await request.json();
@@ -200,36 +149,15 @@ export async function PATCH(request: NextRequest) {
     }
 }
 export async function PUT(request: NextRequest) {
-    // Dev reset endpoint: Clear all pending purchases and packages to start over
     if (process.env.NODE_ENV === "production") {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return NextResponse.json(
-            { error: "Missing or invalid authorization header" },
-            { status: 401 },
-        );
-    }
-
-    const idToken = authHeader.substring(7);
-    const lineClaims = await verifyLineIdToken(idToken);
-    if (!lineClaims) {
-        return NextResponse.json(
-            { error: "Invalid LINE ID token" },
-            { status: 401 },
-        );
-    }
-
     try {
-        const member = await prisma.member.findUnique({
-            where: { lineUserId: lineClaims.lineUserId },
-        });
-
-        if (!member) {
-            return NextResponse.json({ error: "Member not found" }, { status: 404 });
-        }
+        const result = await resolveMember(request);
+        if (isAuthError(result)) return NextResponse.json({ error: result._err }, { status: result._status });
+        if (!result) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+        const member = result;
 
         await prisma.pendingPurchase.deleteMany({ where: { memberId: member.id } });
         await prisma.package.deleteMany({ where: { memberId: member.id } });

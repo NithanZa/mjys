@@ -3,7 +3,6 @@
 import { TopBar } from "@/components/layout";
 import {
     CelebrationToast,
-    ClassCountSlider,
     LevelProgress,
     MemberQRCard,
     NextClassStrip,
@@ -16,9 +15,8 @@ import { RecentActivityList } from "@/components/rewards";
 import { Button, Card, EmptyState } from "@/components/ui";
 import { useLiff } from "@/lib/liff";
 import { getLevel } from "@/lib/levels";
-import { getRecentActivity } from "@/lib/mock/activity";
-import { getNextBooking } from "@/lib/mock/bookings-store";
 import { useMember } from "@/lib/profile/use-member";
+import { useClassHistory } from "@/lib/profile/use-class-history";
 import { usePurchases } from "@/lib/mock/purchases-store";
 import { LockIcon, LogOut, Smartphone } from "lucide-react";
 import Link from "next/link";
@@ -33,10 +31,11 @@ const CELEBRATION_MESSAGES: Record<number, string> = {
 const DEV = process.env.NODE_ENV !== "production";
 
 export default function ProfilePage() {
-    const { status, isInClient, error: liffError } = useLiff();
-    const { member, loading, register, addClasses, markCelebrated, reset } =
+    const { status, isInClient, error: liffError, liff, isLoggedIn } = useLiff();
+    const { member, loading, register, markCelebrated, reset } =
         useMember();
     const { activePackage } = usePurchases();
+    const { history: classHistory } = useClassHistory();
     const [devRegOpen, setDevRegOpen] = useState(false);
 
     // Map DB celebratedLevels strings (Level enum) back to celebration thresholds
@@ -65,16 +64,32 @@ export default function ProfilePage() {
         if (pendingCelebration !== null) markCelebrated(pendingCelebration);
     }
 
+    const nextBooking = useMemo(() => {
+        const upcoming = classHistory
+            .filter((item) => item.status === "BOOKED" && new Date(item.occurredAt).getTime() > Date.now())
+            .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime());
+        const raw = upcoming[0] ?? null;
+        if (!raw) return null;
+        return {
+            ...raw,
+            startsAt: raw.occurredAt,
+            durationMin: raw.template.durationMin,
+        };
+    }, [classHistory]);
+
+    const recentActivity = useMemo(() => {
+        if (!member) return [];
+        // Past activity: either not "BOOKED", or "BOOKED" but occurredAt is in the past.
+        return classHistory
+            .filter((item) => item.status !== "BOOKED" || new Date(item.occurredAt).getTime() <= Date.now())
+            .slice(0, 4);
+    }, [classHistory, member]);
+
     if (!member) {
         return null;
     }
 
     const level = getLevel(member.classesAttended);
-    const recentActivity = getRecentActivity(member.classesAttended).slice(
-        0,
-        4,
-    );
-    const nextBooking = getNextBooking();
 
     return (
         <>
@@ -120,7 +135,7 @@ export default function ProfilePage() {
                 )}
 
                 {/* 4. Stats row */}
-                <StatsRow classesAttended={member.classesAttended} />
+                <StatsRow classesAttended={member.classesAttended} history={classHistory} />
 
                 {/* 5. Level progress */}
                 <Card>
@@ -129,18 +144,6 @@ export default function ProfilePage() {
                         classesAttended={member.classesAttended}
                     />
                 </Card>
-
-                {/* 6. Dev: class count slider */}
-                {DEV && (
-                    <Card elevation="sm">
-                        <ClassCountSlider
-                            value={member.classesAttended}
-                            onChange={(v) =>
-                                addClasses(v - member.classesAttended)
-                            }
-                        />
-                    </Card>
-                )}
 
                 {/* 7. Recent classes (latest 4 inline) */}
                 <Card>
@@ -187,6 +190,7 @@ export default function ProfilePage() {
                                 onSubmit={({
                                     displayName,
                                     email,
+                                    password,
                                     phone,
                                     dob,
                                     address,
@@ -195,6 +199,7 @@ export default function ProfilePage() {
                                     register({
                                         displayName,
                                         email,
+                                        password,
                                         phone,
                                         dob,
                                         address,

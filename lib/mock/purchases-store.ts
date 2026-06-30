@@ -91,12 +91,16 @@ export interface UsePurchasesResult {
     reset: () => Promise<void>;
 }
 
+/** True when the app is running in standalone (non-LINE) mode. */
+const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+
 export function usePurchases(): UsePurchasesResult {
     const { liff, status, isLoggedIn } = useLiff();
     const [realPurchases, setRealPurchases] = useState<MockPurchase[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const isMock = status !== "ready" || !isLoggedIn || !liff;
+    // In standalone mode use real APIs with cookie auth — never mock.
+    const isMock = isStandalone ? false : status !== "ready" || !isLoggedIn || !liff;
 
     const mockPurchases = useSyncExternalStore(
         subscribe,
@@ -111,12 +115,14 @@ export function usePurchases(): UsePurchasesResult {
         }
 
         try {
-            const token = liff.getIDToken();
-            if (!token) return;
+            let fetchOptions: RequestInit = {};
+            if (!isStandalone) {
+                const token = liff!.getIDToken();
+                if (!token) return;
+                fetchOptions = { headers: { Authorization: `Bearer ${token}` } };
+            }
 
-            const res = await fetch("/api/purchases", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await fetch("/api/purchases", fetchOptions);
             if (res.ok) {
                 const data = await res.json();
                 
@@ -174,7 +180,6 @@ export function usePurchases(): UsePurchasesResult {
     const uploadSlip = useCallback(
         async (file: File): Promise<string> => {
             if (isMock) {
-                // Mock mode: embed the image as a data URL so the preview persists locally.
                 return await new Promise<string>((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result as string);
@@ -183,12 +188,16 @@ export function usePurchases(): UsePurchasesResult {
                 });
             }
 
-            const token = liff.getIDToken();
             const form = new FormData();
             form.append("file", file);
+            const uploadHeaders: Record<string, string> = {};
+            if (!isStandalone) {
+                const token = liff!.getIDToken();
+                if (token) uploadHeaders["Authorization"] = `Bearer ${token}`;
+            }
             const res = await fetch("/api/upload", {
                 method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
+                headers: uploadHeaders,
                 body: form,
             });
             if (!res.ok) {
@@ -222,13 +231,11 @@ export function usePurchases(): UsePurchasesResult {
 
             setLoading(true);
             try {
-                const token = liff.getIDToken();
+                const headers: Record<string, string> = { "Content-Type": "application/json" };
+                if (!isStandalone) headers["Authorization"] = `Bearer ${liff!.getIDToken()}`;
                 const res = await fetch("/api/purchases", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers,
                     body: JSON.stringify({ packageOfferId: offerId, proofImageUrl }),
                 });
 
@@ -274,13 +281,11 @@ export function usePurchases(): UsePurchasesResult {
 
             setLoading(true);
             try {
-                const token = liff.getIDToken();
+                const headers: Record<string, string> = { "Content-Type": "application/json" };
+                if (!isStandalone) headers["Authorization"] = `Bearer ${liff!.getIDToken()}`;
                 const res = await fetch("/api/purchases", {
                     method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers,
                     body: JSON.stringify({ purchaseId, status: "APPROVED" }),
                 });
 
@@ -321,13 +326,11 @@ export function usePurchases(): UsePurchasesResult {
 
             setLoading(true);
             try {
-                const token = liff.getIDToken();
+                const headers: Record<string, string> = { "Content-Type": "application/json" };
+                if (!isStandalone) headers["Authorization"] = `Bearer ${liff!.getIDToken()}`;
                 const res = await fetch("/api/purchases", {
                     method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers,
                     body: JSON.stringify({ purchaseId, status: "REJECTED" }),
                 });
 
@@ -354,11 +357,9 @@ export function usePurchases(): UsePurchasesResult {
 
         setLoading(true);
         try {
-            const token = liff.getIDToken();
-            await fetch("/api/purchases", {
-                method: "PUT",
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const headers: Record<string, string> = {};
+            if (!isStandalone) headers["Authorization"] = `Bearer ${liff!.getIDToken()}`;
+            await fetch("/api/purchases", { method: "PUT", headers });
             await fetchRealPurchases();
         } catch (err) {
             console.error("Failed to reset purchases:", err);

@@ -33,11 +33,20 @@ export default function AdminPricingPage() {
     const [offers, setOffers] = useState<Offer[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+    const [addModalOpen, setAddModalOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
-    // Edit form states
+    // Delete modal states
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [offerToDelete, setOfferToDelete] = useState<Offer | null>(null);
+    const [deleteAction, setDeleteAction] = useState<"CASCADE" | "MOVE">("CASCADE");
+    const [targetOfferId, setTargetOfferId] = useState<string>("");
+
+    // Form states
     const [formName, setFormName] = useState("");
+    const [formType, setFormType] = useState("CLASSES_5");
     const [formPrice, setFormPrice] = useState(0);
+    const [formClassCount, setFormClassCount] = useState<number | "">(5);
     const [formTagline, setFormTagline] = useState("");
     const [formPerksStr, setFormPerksStr] = useState("");
     const [formValidity, setFormValidity] = useState(30);
@@ -64,16 +73,47 @@ export default function AdminPricingPage() {
         loadOffers();
     }, [loadOffers]);
 
+    const handleAddClick = () => {
+        setFormName("");
+        setFormType("CLASSES_5");
+        setFormPrice(0);
+        setFormClassCount(5);
+        setFormTagline("");
+        setFormPerksStr("");
+        setFormValidity(30);
+        setFormActive(true);
+        setFormHighlight(false);
+        setFormSortOrder(0);
+        setAddModalOpen(true);
+    };
+
     const handleEditClick = (offer: Offer) => {
         setSelectedOffer(offer);
         setFormName(offer.name);
+        setFormType(offer.type);
         setFormPrice(offer.priceTHB);
+        setFormClassCount(offer.classCount ?? "");
         setFormTagline(offer.tagline);
         setFormPerksStr(offer.perks.join("\n"));
         setFormValidity(offer.validityDays);
         setFormActive(offer.active);
         setFormHighlight(offer.highlight);
         setFormSortOrder(offer.sortOrder);
+    };
+
+    const handleDeleteClick = (offer: Offer) => {
+        setOfferToDelete(offer);
+        setDeleteAction("CASCADE");
+        
+        // Default target is the first package that is NOT the one being deleted
+        const candidates = offers.filter((o) => o.id !== offer.id);
+        if (candidates.length > 0) {
+            setTargetOfferId(candidates[0].id);
+        } else {
+            setTargetOfferId("");
+        }
+        
+        setDeleteModalOpen(true);
     };
 
     const handleToggleActive = async (offer: Offer) => {
@@ -94,7 +134,49 @@ export default function AdminPricingPage() {
         }
     };
 
-    const handleFormSubmit = async (e: React.FormEvent) => {
+    const handleCreateSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmitting(true);
+        try {
+            const perks = formPerksStr
+                .split("\n")
+                .map((p) => p.trim())
+                .filter((p) => p.length > 0);
+
+            const res = await fetch("/api/admin/packages", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: formName,
+                    type: formType,
+                    priceTHB: formPrice,
+                    classCount: formType === "UNLIMITED" ? null : (formClassCount === "" ? null : parseInt(String(formClassCount), 10)),
+                    validityDays: formValidity,
+                    tagline: formTagline,
+                    perks,
+                    active: formActive,
+                    highlight: formHighlight,
+                    sortOrder: formSortOrder,
+                }),
+            });
+
+            if (res.ok) {
+                alert("Package offer created successfully!");
+                setAddModalOpen(false);
+                loadOffers();
+            } else {
+                const err = await res.json();
+                alert(err.error || "Failed to create package offer.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Network error.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedOffer) return;
 
@@ -110,10 +192,12 @@ export default function AdminPricingPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: formName,
+                    type: formType,
                     priceTHB: formPrice,
+                    classCount: formType === "UNLIMITED" ? null : (formClassCount === "" ? null : parseInt(String(formClassCount), 10)),
+                    validityDays: formValidity,
                     tagline: formTagline,
                     perks,
-                    validityDays: formValidity,
                     active: formActive,
                     highlight: formHighlight,
                     sortOrder: formSortOrder,
@@ -136,15 +220,67 @@ export default function AdminPricingPage() {
         }
     };
 
+    const handleDeleteSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!offerToDelete) return;
+
+        if (deleteAction === "MOVE" && !targetOfferId) {
+            alert("Please select a target package to move members to.");
+            return;
+        }
+
+        const confirmMsg = deleteAction === "CASCADE"
+            ? `Are you absolutely sure you want to delete this package offer "${offerToDelete.name}"?\n\nALL existing member subscriptions on this plan will be DELETED immediately! They will lose access.`
+            : `Are you sure you want to move all members currently subscribed to "${offerToDelete.name}" to the new plan, and then delete "${offerToDelete.name}"?`;
+
+        if (!confirm(confirmMsg)) return;
+
+        setSubmitting(true);
+        try {
+            const res = await fetch(`/api/admin/packages/${offerToDelete.id}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: deleteAction,
+                    targetOfferId: deleteAction === "MOVE" ? targetOfferId : null,
+                }),
+            });
+
+            if (res.ok) {
+                alert("Package offer deleted successfully!");
+                setDeleteModalOpen(false);
+                setOfferToDelete(null);
+                loadOffers();
+            } else {
+                const err = await res.json();
+                alert(err.error || "Failed to delete package offer.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Network error.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
         <div className="p-6 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto h-full font-sans">
-            <div>
-                <h1 className="font-display text-h1 font-semibold text-neutral-ink">
-                    Pricing & Packs
-                </h1>
-                <p className="text-body-sm text-neutral-text-2">
-                    Manage studio package rates, taglines, perks, and toggle active status on the client-facing shop.
-                </p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="font-display text-h1 font-semibold text-neutral-ink">
+                        Pricing & Packs
+                    </h1>
+                    <p className="text-body-sm text-neutral-text-2">
+                        Manage studio package rates, taglines, perks, and toggle active status on the client-facing shop.
+                    </p>
+                </div>
+                <Button
+                    variant="primary"
+                    leftIcon={<Plus className="h-5 w-5" />}
+                    onClick={handleAddClick}
+                >
+                    Add Package
+                </Button>
             </div>
 
             {/* OFFERS LISTING */}
@@ -185,7 +321,7 @@ export default function AdminPricingPage() {
                             <div className="flex flex-col gap-3">
                                 <div>
                                     <span className="text-[11px] font-semibold text-neutral-text-3 uppercase tracking-wider">
-                                        Display Order #{offer.sortOrder}
+                                        Display Order #{offer.sortOrder} · {offer.type}
                                     </span>
                                     <h2 className="font-display text-h2 font-bold text-neutral-ink mt-0.5">
                                         {offer.name}
@@ -219,7 +355,16 @@ export default function AdminPricingPage() {
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 border-t border-neutral-line pt-4 mt-auto">
+                            <div className="flex gap-2 border-t border-neutral-line pt-4 mt-auto items-center">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteClick(offer)}
+                                    className="hover:bg-error-bg hover:text-error-fg shrink-0 p-2 text-neutral-text-3 border border-neutral-line"
+                                    title="Delete Package"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
                                 <Button
                                     variant="secondary"
                                     size="sm"
@@ -227,7 +372,7 @@ export default function AdminPricingPage() {
                                     leftIcon={offer.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     onClick={() => handleToggleActive(offer)}
                                 >
-                                    {offer.active ? "Hide Pack" : "Publish Pack"}
+                                    {offer.active ? "Hide" : "Publish"}
                                 </Button>
                                 <Button
                                     variant="primary"
@@ -244,6 +389,162 @@ export default function AdminPricingPage() {
                 </div>
             )}
 
+            {/* ADD PRICE MODAL */}
+            <Modal
+                open={addModalOpen}
+                onClose={() => setAddModalOpen(false)}
+                title="Create Pricing Package"
+            >
+                <form onSubmit={handleCreateSubmit} className="flex flex-col gap-4 max-w-xl font-sans mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <TextField
+                            label="Package Name"
+                            value={formName}
+                            onChange={(e) => setFormName(e.target.value)}
+                            placeholder="E.g. 5-Class Pack"
+                            required
+                        />
+                        <TextField
+                            label="Price (THB)"
+                            type="number"
+                            value={formPrice}
+                            onChange={(e) => setFormPrice(parseInt(e.target.value, 10))}
+                            placeholder="Price in Baht"
+                            required
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-caption font-medium text-neutral-text-2">Package Type</label>
+                            <select
+                                required
+                                value={formType}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setFormType(val);
+                                    if (val === "CLASSES_5") setFormClassCount(5);
+                                    else if (val === "CLASSES_10") setFormClassCount(10);
+                                    else if (val === "CLASSES_20") setFormClassCount(20);
+                                    else if (val === "WALK_IN") setFormClassCount(1);
+                                    else if (val === "UNLIMITED") setFormClassCount("");
+                                }}
+                                className="w-full h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500"
+                            >
+                                <option value="CLASSES_5">5 Classes</option>
+                                <option value="CLASSES_10">10 Classes</option>
+                                <option value="CLASSES_20">20 Classes</option>
+                                <option value="UNLIMITED">Unlimited Classes</option>
+                                <option value="WALK_IN">Walk-in (1 Class)</option>
+                            </select>
+                        </div>
+
+                        {formType !== "UNLIMITED" ? (
+                            <TextField
+                                label="Class Count"
+                                type="number"
+                                value={formClassCount}
+                                onChange={(e) => setFormClassCount(e.target.value === "" ? "" : parseInt(e.target.value, 10))}
+                                required
+                            />
+                        ) : (
+                            <div className="flex flex-col gap-1.5 justify-end">
+                                <label className="text-caption font-medium text-neutral-text-2">Class Count</label>
+                                <div className="h-11 flex items-center px-3 bg-neutral-bg border border-neutral-line rounded-sm text-neutral-text-3 text-body-sm italic">
+                                    Unlimited (Null value)
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <TextField
+                            label="Validity (Days)"
+                            type="number"
+                            value={formValidity}
+                            onChange={(e) => setFormValidity(parseInt(e.target.value, 10))}
+                            required
+                        />
+                        <TextField
+                            label="Sort Order"
+                            type="number"
+                            value={formSortOrder}
+                            onChange={(e) => setFormSortOrder(parseInt(e.target.value, 10))}
+                            hint="Lower number displays first"
+                            required
+                        />
+                    </div>
+
+                    <TextField
+                        label="Tagline / Description slogan"
+                        value={formTagline}
+                        onChange={(e) => setFormTagline(e.target.value)}
+                        placeholder="E.g. Valid for all regular yoga sessions"
+                        required
+                    />
+
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-caption font-medium text-neutral-text-2">
+                            Included Perks (One per line)
+                        </label>
+                        <textarea
+                            value={formPerksStr}
+                            onChange={(e) => setFormPerksStr(e.target.value)}
+                            rows={4}
+                            className="w-full p-3 text-body-sm rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500"
+                            placeholder="E.g. Full mat access&#10;Complimentary water&#10;30 days validity"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border-t border-neutral-line pt-4">
+                        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={formActive}
+                                onChange={(e) => setFormActive(e.target.checked)}
+                                className="h-5 w-5 rounded border-neutral-line text-primary-500 focus:ring-primary-500"
+                            />
+                            <div className="flex flex-col">
+                                <span className="text-body-sm font-semibold text-neutral-ink">Active (Published)</span>
+                                <span className="text-[10px] text-neutral-text-3">Show in member store list</span>
+                            </div>
+                        </label>
+
+                        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={formHighlight}
+                                onChange={(e) => setFormHighlight(e.target.checked)}
+                                className="h-5 w-5 rounded border-neutral-line text-primary-500 focus:ring-primary-500"
+                            />
+                            <div className="flex flex-col">
+                                <span className="text-body-sm font-semibold text-neutral-ink">Highlight / Feature</span>
+                                <span className="text-[10px] text-neutral-text-3">Add 'Best Value' label</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div className="flex gap-3 justify-end border-t border-neutral-line pt-4 mt-2 shrink-0">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setAddModalOpen(false)}
+                            disabled={submitting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            loading={submitting}
+                            disabled={submitting}
+                        >
+                            Create Package
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
             {/* EDIT PRICE MODAL */}
             <Modal
                 open={selectedOffer !== null}
@@ -251,7 +552,7 @@ export default function AdminPricingPage() {
                 title="Edit Pricing Package"
             >
                 {selectedOffer && (
-                    <form onSubmit={handleFormSubmit} className="flex flex-col gap-4 max-w-xl font-sans mt-4">
+                    <form onSubmit={handleEditSubmit} className="flex flex-col gap-4 max-w-xl font-sans mt-4">
                         <div className="grid grid-cols-2 gap-4">
                             <TextField
                                 label="Package Name"
@@ -266,6 +567,49 @@ export default function AdminPricingPage() {
                                 onChange={(e) => setFormPrice(parseInt(e.target.value, 10))}
                                 required
                             />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-caption font-medium text-neutral-text-2">Package Type</label>
+                                <select
+                                    required
+                                    value={formType}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setFormType(val);
+                                        if (val === "CLASSES_5") setFormClassCount(5);
+                                        else if (val === "CLASSES_10") setFormClassCount(10);
+                                        else if (val === "CLASSES_20") setFormClassCount(20);
+                                        else if (val === "WALK_IN") setFormClassCount(1);
+                                        else if (val === "UNLIMITED") setFormClassCount("");
+                                    }}
+                                    className="w-full h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500"
+                                >
+                                    <option value="CLASSES_5">5 Classes</option>
+                                    <option value="CLASSES_10">10 Classes</option>
+                                    <option value="CLASSES_20">20 Classes</option>
+                                    <option value="UNLIMITED">Unlimited Classes</option>
+                                    <option value="WALK_IN">Walk-in (1 Class)</option>
+                                </select>
+                            </div>
+
+                            {formType !== "UNLIMITED" ? (
+                                <TextField
+                                    label="Class Count"
+                                    type="number"
+                                    value={formClassCount}
+                                    onChange={(e) => setFormClassCount(e.target.value === "" ? "" : parseInt(e.target.value, 10))}
+                                    required
+                                />
+                            ) : (
+                                <div className="flex flex-col gap-1.5 justify-end">
+                                    <label className="text-caption font-medium text-neutral-text-2">Class Count</label>
+                                    <div className="h-11 flex items-center px-3 bg-neutral-bg border border-neutral-line rounded-sm text-neutral-text-3 text-body-sm italic">
+                                        Unlimited (Null value)
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -350,6 +694,126 @@ export default function AdminPricingPage() {
                                 disabled={submitting}
                             >
                                 Save Changes
+                            </Button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
+
+            {/* DELETE MODAL WITH MEMBERSHIP MIGRATION / CASCADE OPTIONS */}
+            <Modal
+                open={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false);
+                    setOfferToDelete(null);
+                }}
+                title={`Delete Package: ${offerToDelete?.name ?? ""}`}
+            >
+                {offerToDelete && (
+                    <form onSubmit={handleDeleteSubmit} className="flex flex-col gap-5 max-w-xl font-sans mt-4">
+                        <div className="flex gap-3 items-start p-3.5 rounded-sm bg-warning-bg/20 border border-warning-line/40 text-neutral-ink">
+                            <AlertTriangle className="h-5 w-5 shrink-0 text-warning-fg mt-0.5" />
+                            <div className="flex flex-col gap-1 text-body-sm text-neutral-text">
+                                <p className="font-semibold text-neutral-ink">Warning: This package offer will be permanently removed.</p>
+                                <p>You must decide how to handle members who are currently on this plan, or who have pending purchase slips.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <label className="text-caption font-bold text-neutral-ink uppercase tracking-wider">
+                                Subscriptions & Slips Handling
+                            </label>
+                            
+                            <div className="flex flex-col gap-3">
+                                {/* Option 1: CASCADE */}
+                                <label className="flex items-start gap-3 p-3 rounded-md border border-neutral-line bg-neutral-card hover:bg-neutral-bg cursor-pointer select-none transition-colors">
+                                    <input
+                                        type="radio"
+                                        name="deleteAction"
+                                        value="CASCADE"
+                                        checked={deleteAction === "CASCADE"}
+                                        onChange={() => setDeleteAction("CASCADE")}
+                                        className="h-5 w-5 mt-0.5 text-primary-500 focus:ring-primary-500"
+                                    />
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="text-body-sm font-semibold text-neutral-ink">
+                                            Delete all current subscriptions
+                                        </span>
+                                        <span className="text-caption text-neutral-text-3">
+                                            Immediately gets rid of all current members' packages and pending purchases on this plan. Members will lose access to classes.
+                                        </span>
+                                    </div>
+                                </label>
+
+                                {/* Option 2: MOVE (Migrate) */}
+                                <label className={`flex items-start gap-3 p-3 rounded-md border cursor-pointer select-none transition-colors ${
+                                    offers.filter(o => o.id !== offerToDelete.id).length === 0
+                                        ? "opacity-50 pointer-events-none bg-neutral-bg/60 border-neutral-line"
+                                        : "border-neutral-line bg-neutral-card hover:bg-neutral-bg"
+                                }`}>
+                                    <input
+                                        type="radio"
+                                        name="deleteAction"
+                                        value="MOVE"
+                                        disabled={offers.filter(o => o.id !== offerToDelete.id).length === 0}
+                                        checked={deleteAction === "MOVE"}
+                                        onChange={() => setDeleteAction("MOVE")}
+                                        className="h-5 w-5 mt-0.5 text-primary-500 focus:ring-primary-500"
+                                    />
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="text-body-sm font-semibold text-neutral-ink">
+                                            Move members to another plan
+                                        </span>
+                                        <span className="text-caption text-neutral-text-3">
+                                            Move all current member packages and pending purchases on this plan to another existing plan, preserving their subscriptions.
+                                        </span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Migration Dropdown (only visible when MOVE is selected) */}
+                        {deleteAction === "MOVE" && (
+                            <div className="flex flex-col gap-1.5 animate-fadeIn">
+                                <label className="text-caption font-semibold text-neutral-text-2">
+                                    Select New Destination Plan
+                                </label>
+                                <select
+                                    required
+                                    value={targetOfferId}
+                                    onChange={(e) => setTargetOfferId(e.target.value)}
+                                    className="w-full h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500"
+                                >
+                                    {offers
+                                        .filter((o) => o.id !== offerToDelete.id)
+                                        .map((o) => (
+                                            <option key={o.id} value={o.id}>
+                                                {o.name} (฿{o.priceTHB.toLocaleString()} · {o.classCount ?? "Unlimited"} classes)
+                                            </option>
+                                        ))}
+                                </select>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3 justify-end border-t border-neutral-line pt-4 mt-2 shrink-0">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => {
+                                    setDeleteModalOpen(false);
+                                    setOfferToDelete(null);
+                                }}
+                                disabled={submitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="destructive"
+                                loading={submitting}
+                                disabled={submitting}
+                            >
+                                Delete Package
                             </Button>
                         </div>
                     </form>

@@ -3,12 +3,24 @@
 import { TopBar } from "@/components/layout";
 import { RecentActivityList } from "@/components/rewards";
 import { Card, EmptyState } from "@/components/ui";
-import { getRecentActivity } from "@/lib/mock/activity";
-import { useMockMember } from "@/lib/profile/mock-store";
+import { useMember } from "@/lib/profile/use-member";
+import { useClassHistory } from "@/lib/profile/use-class-history";
 import { CalendarCheck } from "lucide-react";
 
 export default function MyClassesPage() {
-    const { member } = useMockMember();
+    const { member, loading: memberLoading } = useMember();
+    const { history: allActivity, loading: historyLoading } = useClassHistory();
+
+    if (memberLoading || historyLoading) {
+        return (
+            <>
+                <TopBar title="My Classes" back="/profile" />
+                <div className="flex justify-center py-12 text-neutral-text-3">
+                    Loading class history...
+                </div>
+            </>
+        );
+    }
 
     if (!member) {
         return (
@@ -24,8 +36,6 @@ export default function MyClassesPage() {
             </>
         );
     }
-
-    const allActivity = getRecentActivity(member.classesAttended);
 
     if (allActivity.length === 0) {
         return (

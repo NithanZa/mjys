@@ -8,6 +8,8 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 
+const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+
 const RegistrationSchema = z.object({
     displayName: z
         .string()
@@ -24,6 +26,9 @@ const RegistrationSchema = z.object({
     tocAccepted: z.literal(true, {
         error: "You must agree to the Terms & Conditions",
     }),
+    password: isStandalone
+        ? z.string().min(6, "Password must be at least 6 characters")
+        : z.string().optional(),
 });
 
 export type RegistrationInput = z.infer<typeof RegistrationSchema>;
@@ -33,15 +38,18 @@ export interface RegistrationFormProps {
         input: RegistrationInput & { lineUserId: string | null },
     ) => void;
     submitting?: boolean;
+    onSwitchToLogin?: () => void;
 }
 
 export function RegistrationForm({
     onSubmit,
     submitting,
+    onSwitchToLogin,
 }: RegistrationFormProps) {
     const { liff, status, isInClient } = useLiff();
     const [displayName, setDisplayName] = useState("");
     const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [phone, setPhone] = useState("");
     const [dob, setDob] = useState("");
     const [address, setAddress] = useState("");
@@ -79,6 +87,7 @@ export function RegistrationForm({
             dob,
             address,
             tocAccepted,
+            password: isStandalone ? password : undefined,
         });
         if (!parsed.success) {
             const fieldErrors: Partial<
@@ -128,6 +137,17 @@ export function RegistrationForm({
                     required
                     errorText={errors.email}
                 />
+                {isStandalone && (
+                    <TextField
+                        label="Password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="new-password"
+                        required
+                        errorText={errors.password}
+                    />
+                )}
                 <TextField
                     label="Phone number"
                     value={phone}
@@ -207,6 +227,19 @@ export function RegistrationForm({
                 <Button type="submit" loading={submitting} fullWidth>
                     Create profile
                 </Button>
+
+                {onSwitchToLogin && (
+                    <p className="text-center font-sans text-caption text-neutral-text-2 mt-2">
+                        Already have an account?{" "}
+                        <button
+                            type="button"
+                            onClick={onSwitchToLogin}
+                            className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800"
+                        >
+                            Sign in
+                        </button>
+                    </p>
+                )}
             </form>
         </Card>
     );

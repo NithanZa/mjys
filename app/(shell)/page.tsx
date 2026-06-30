@@ -11,9 +11,10 @@ import {
 } from "@/components/home";
 import { MilestoneCelebrationCard } from "@/components/rewards";
 import { HOME_CONTENT } from "@/lib/mock/home-content";
-import { useMockMember } from "@/lib/profile/mock-store";
+import { useMember } from "@/lib/profile/use-member";
 import { getUnseenUnlockedMilestones } from "@/lib/rewards";
 import { motion } from "motion/react";
+import { useMemo, useCallback } from "react";
 
 const containerVariants = {
     hidden: {},
@@ -46,16 +47,49 @@ export default function HomePage() {
         quoteOfWeek,
         poseOfWeek,
     } = HOME_CONTENT;
-    const { member, markMilestoneSeen } = useMockMember();
+    const { member, markCelebrated } = useMember();
+
+    const celebratedNumbers = useMemo<number[]>(() => {
+        if (!member) return [];
+        const nums: number[] = [];
+        if (member.celebratedLevels.includes("TIGER")) nums.push(20);
+        if (member.celebratedLevels.includes("LEOPARD")) nums.push(50);
+        if (member.celebratedLevels.includes("CAT")) nums.push(100);
+        return nums;
+    }, [member]);
+
+    const seenMilestones = useMemo<string[]>(() => {
+        if (!member) return [];
+        const seen: string[] = [];
+        if (celebratedNumbers.includes(20)) seen.push("tiger");
+        if (celebratedNumbers.includes(50)) seen.push("leopard");
+        if (celebratedNumbers.includes(100)) seen.push("century");
+        return seen;
+    }, [member, celebratedNumbers]);
 
     // Show the first unseen unlocked milestone, if any.
-    const unseenMilestones = member
-        ? getUnseenUnlockedMilestones(
-              member.classesAttended,
-              member.seenMilestones,
-          )
-        : [];
+    const unseenMilestones = useMemo(() => {
+        if (!member) return [];
+        return getUnseenUnlockedMilestones(
+            member.classesAttended,
+            seenMilestones,
+        );
+    }, [member, seenMilestones]);
+
     const nextMilestone = unseenMilestones[0] ?? null;
+
+    const handleDismiss = useCallback(async () => {
+        if (!nextMilestone) return;
+        const thresholdMap: Record<string, number> = {
+            tiger: 20,
+            leopard: 50,
+            century: 100,
+        };
+        const threshold = thresholdMap[nextMilestone.code];
+        if (threshold) {
+            await markCelebrated(threshold);
+        }
+    }, [nextMilestone, markCelebrated]);
 
     return (
         <>
@@ -82,7 +116,7 @@ export default function HomePage() {
                     <motion.div variants={itemVariants}>
                         <MilestoneCelebrationCard
                             milestone={nextMilestone}
-                            onDismiss={() => markMilestoneSeen(nextMilestone.code)}
+                            onDismiss={handleDismiss}
                         />
                     </motion.div>
                 )}

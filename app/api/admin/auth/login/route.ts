@@ -6,7 +6,24 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
     try {
         const { passphrase } = await request.json();
-        const securePassphrase = process.env.ADMIN_PASSPHRASE || "mitryoga2026";
+        const securePassphrase = process.env.ADMIN_PASSPHRASE;
+        const secretString = process.env.QR_SIGNING_SECRET;
+
+        if (!securePassphrase) {
+            console.error("[api-admin-login] ADMIN_PASSPHRASE is not configured in environment variables.");
+            return NextResponse.json(
+                { error: "Server authentication misconfigured." },
+                { status: 500 },
+            );
+        }
+
+        if (!secretString) {
+            console.error("[api-admin-login] QR_SIGNING_SECRET is not configured in environment variables.");
+            return NextResponse.json(
+                { error: "Server authentication misconfigured." },
+                { status: 500 },
+            );
+        }
 
         if (!passphrase || passphrase !== securePassphrase) {
             return NextResponse.json(
@@ -16,7 +33,6 @@ export async function POST(request: NextRequest) {
         }
 
         // Generate session JWT with a 7-day expiration
-        const secretString = process.env.QR_SIGNING_SECRET || "mjys-default-secure-signing-secret-2026";
         const secret = new TextEncoder().encode(secretString);
 
         const token = await new SignJWT({ role: "admin" })

@@ -91,8 +91,6 @@ export interface UseMockMemberResult {
         tocAccepted: boolean;
         lineUserId?: string | null;
     }) => MockMember;
-    /** Add `delta` classes; returns thresholds that were newly crossed. */
-    addClasses: (delta: number) => number[];
     /** Mark a celebration threshold as shown so the toast does not fire again. */
     markCelebrated: (threshold: number) => void;
     /** Mark a milestone code as seen so the Home celebration card is dismissed. */
@@ -129,25 +127,6 @@ export function useMockMember(): UseMockMemberResult {
         return fresh;
     }, []);
 
-    const addClasses: UseMockMemberResult["addClasses"] = useCallback(
-        (delta) => {
-            const current = readSnapshot();
-            if (!current) return [];
-            const nextCount = Math.max(0, current.classesAttended + delta);
-            const crossed = newlyCrossedThresholds(
-                current.classesAttended,
-                nextCount,
-            );
-            writeSnapshot({
-                ...current,
-                classesAttended: nextCount,
-                updatedAt: new Date().toISOString(),
-            });
-            return crossed;
-        },
-        [],
-    );
-
     const markCelebrated: UseMockMemberResult["markCelebrated"] = useCallback(
         (threshold) => {
             const current = readSnapshot();
@@ -182,7 +161,6 @@ export function useMockMember(): UseMockMemberResult {
     return {
         member,
         register,
-        addClasses,
         markCelebrated,
         markMilestoneSeen,
         reset,

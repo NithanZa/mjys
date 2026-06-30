@@ -391,7 +391,19 @@ export default function AdminScannerPage() {
 
               {/* Viewfinder Container */}
               <div className="flex-1 flex flex-col items-center justify-center bg-neutral-ink text-neutral-bg rounded-lg overflow-hidden border border-neutral-line relative min-h-[300px] shadow-inner">
-                {cameraPermissionError ? (
+                {/* HTML5 Qrcode Mount Point — always in DOM so startScanning can find it */}
+                <div className={cn("relative w-full h-full", !scanning && "hidden")}>
+                  <div id="scanner-viewfinder" className="w-full h-full" />
+                  {/* Scanner Framing Overlay */}
+                  <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+                    <div className="text-neutral-bg/60 text-caption bg-neutral-ink/80 px-4 py-1.5 rounded-full mb-4 flex items-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Align Member Pass QR inside the box
+                    </div>
+                  </div>
+                </div>
+
+                {/* Camera error state */}
+                {!scanning && cameraPermissionError && (
                   <div className="p-6 text-center flex flex-col items-center gap-3 max-w-sm">
                     <AlertTriangle className="h-10 w-10 text-warning-fg" />
                     <h3 className="font-display text-h3 font-semibold text-neutral-bg">Camera Error</h3>
@@ -417,19 +429,10 @@ export default function AdminScannerPage() {
                       <RotateCcw className="h-4 w-4 mr-2" /> Retry Camera Check
                     </Button>
                   </div>
-                ) : scanning ? (
-                  <div className="relative w-full h-full flex flex-col items-center justify-center">
-                    {/* HTML5 Qrcode Mount Point */}
-                    <div id="scanner-viewfinder" className="w-full max-w-md h-full aspect-square" />
-                    
-                    {/* Scanner Framing Overlay */}
-                    <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-                      <div className="text-neutral-bg/60 text-caption bg-neutral-ink/80 px-4 py-1.5 rounded-full mb-4 flex items-center gap-2">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Align Member Pass QR inside the box
-                      </div>
-                    </div>
-                  </div>
-                ) : (
+                )}
+
+                {/* Idle state */}
+                {!scanning && !cameraPermissionError && (
                   <div className="p-6 text-center flex flex-col items-center gap-3 max-w-sm text-neutral-text-3">
                     <Camera className="h-12 w-12 text-neutral-text-3 opacity-40" />
                     <p className="font-sans text-body-sm">

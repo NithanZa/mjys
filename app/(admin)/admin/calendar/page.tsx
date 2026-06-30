@@ -110,8 +110,9 @@ export default function AdminCalendarPage() {
     const loadCalendarData = useCallback(async () => {
         setLoading(true);
         try {
-            const startStr = weekStart.toISOString();
-            const endStr = addDays(weekStart, 7).toISOString();
+            const localWeekStart = startOfWeek(toZonedTime(currentDate, STUDIO_TZ), { weekStartsOn: 1 });
+            const startStr = localWeekStart.toISOString();
+            const endStr = addDays(localWeekStart, 7).toISOString();
             const res = await fetch(`/api/admin/calendar?start=${startStr}&end=${endStr}`);
             if (res.ok) {
                 const data = await res.json();
@@ -124,7 +125,7 @@ export default function AdminCalendarPage() {
         } finally {
             setLoading(false);
         }
-    }, [weekStart]);
+    }, [currentDate]);
 
     useEffect(() => {
         loadCalendarData();
@@ -574,7 +575,7 @@ export default function AdminCalendarPage() {
                 title={selectedOcc?.template.name ?? "Class Details"}
             >
                 {selectedOcc && (
-                    <div className="flex flex-col gap-6 mt-6 overflow-hidden h-full font-sans">
+                    <div className="flex flex-col gap-6 mt-6 font-sans pb-4">
                         <p className="text-caption font-semibold text-primary-700 -mt-4 bg-primary-50/50 px-3 py-1.5 rounded-sm border border-primary-200">
                             🕒 {format(toZonedTime(parseISO(selectedOcc.startsAt), STUDIO_TZ), "EEEE, d MMMM yyyy · HH:mm")} ({selectedOcc.durationMin} min)
                         </p>
@@ -668,14 +669,14 @@ export default function AdminCalendarPage() {
                         </div>
 
                         {/* Bookings Roster */}
-                        <div className="flex-1 flex flex-col min-h-0">
+                        <div className="flex flex-col">
                             <div className="flex justify-between items-center mb-3">
                                 <h3 className="font-display text-body font-semibold text-neutral-ink flex items-center gap-2">
                                     Roster List <Badge tone="neutral">{selectedOcc.bookedCount} Booked</Badge>
                                 </h3>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto border border-neutral-line rounded-md bg-neutral-card min-h-[180px]">
+                            <div className="border border-neutral-line rounded-md bg-neutral-card overflow-hidden">
                                 {loadingRoster ? (
                                     <div className="flex flex-col items-center justify-center h-full gap-2 p-12">
                                         <Loader className="h-6 w-6 animate-spin text-neutral-text-3" />

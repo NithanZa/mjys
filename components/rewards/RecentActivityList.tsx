@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 import { formatTime } from "@/lib/dates";
-import type { ActivityItem, ActivityStatus } from "@/lib/mock/activity";
+import type { ActivityItem, ActivityStatus } from "@/lib/profile/use-class-history";
 import { format } from "date-fns";
 
 export interface RecentActivityListProps {

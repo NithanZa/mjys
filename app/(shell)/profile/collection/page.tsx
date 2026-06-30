@@ -3,12 +3,23 @@
 import { TopBar } from "@/components/layout";
 import { MilestoneCard, ToyGrid } from "@/components/rewards";
 import { Card, EmptyState } from "@/components/ui";
-import { useMockMember } from "@/lib/profile/mock-store";
+import { useMember } from "@/lib/profile/use-member";
 import { getMilestoneStatuses, getToyPartStatuses } from "@/lib/rewards";
 import { Sparkles } from "lucide-react";
 
 export default function CollectionPage() {
-    const { member } = useMockMember();
+    const { member, loading } = useMember();
+
+    if (loading) {
+        return (
+            <>
+                <TopBar title="Collection" back="/profile" />
+                <div className="flex justify-center py-12 text-neutral-text-3">
+                    Loading collection...
+                </div>
+            </>
+        );
+    }
 
     if (!member) {
         return (

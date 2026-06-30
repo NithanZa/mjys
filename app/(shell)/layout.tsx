@@ -6,17 +6,20 @@ import {
   Container,
   TopBar,
 } from "@/components/layout";
-import { RegistrationForm } from "@/components/profile";
+import { LoginForm, RegistrationForm } from "@/components/profile";
 import { Button, EmptyState } from "@/components/ui";
 import { useLiff } from "@/lib/liff";
 import { useMember } from "@/lib/profile/use-member";
 import { Smartphone, Loader2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+
 export default function ShellLayout({ children }: { children: ReactNode }) {
   const { status, isInClient, isLoggedIn, liff, error: liffError } = useLiff();
-  const { member, loading, register } = useMember();
+  const { member, loading, register, login } = useMember();
   const [bypassLineCheck, setBypassLineCheck] = useState(false);
+  const [showLogin, setShowLogin] = useState(isStandalone);
 
   // Determine if we should show the LINE fallback
   const isMock = status !== "ready" || !isLoggedIn || !liff;
@@ -78,32 +81,46 @@ export default function ShellLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // If not registered, force registration form
+  // If not registered, show the authentication gate.
+  // In standalone mode we toggle between login and signup.
+  // In LINE mode we only show the registration form.
   if (!member) {
     return (
       <div className="flex min-h-dvh flex-col bg-neutral-bg">
         <TopBar title="Welcome to MiTR" />
         <main className="flex-1">
           <Container className="py-4">
-            <RegistrationForm
-              onSubmit={({
-                displayName,
-                email,
-                phone,
-                dob,
-                address,
-                tocAccepted,
-              }) => {
-                register({
+            {isStandalone && showLogin ? (
+              <LoginForm
+                onSubmit={async ({ email, password }) => {
+                  await login({ email, password });
+                }}
+                onSwitchToRegister={() => setShowLogin(false)}
+              />
+            ) : (
+              <RegistrationForm
+                onSubmit={({
                   displayName,
                   email,
+                  password,
                   phone,
                   dob,
                   address,
                   tocAccepted,
-                });
-              }}
-            />
+                }) => {
+                  register({
+                    displayName,
+                    email,
+                    password,
+                    phone,
+                    dob,
+                    address,
+                    tocAccepted,
+                  });
+                }}
+                onSwitchToLogin={isStandalone ? () => setShowLogin(true) : undefined}
+              />
+            )}
           </Container>
         </main>
       </div>
