@@ -12,13 +12,13 @@ import {
     StatsRow,
 } from "@/components/profile";
 import { RecentActivityList } from "@/components/rewards";
-import { Button, Card, EmptyState } from "@/components/ui";
+import { Button, Card, EmptyState, Modal, Input } from "@/components/ui";
 import { useLiff } from "@/lib/liff";
 import { getLevel } from "@/lib/levels";
 import { useMember } from "@/lib/profile/use-member";
 import { useClassHistory } from "@/lib/profile/use-class-history";
 import { usePurchases } from "@/lib/mock/purchases-store";
-import { LockIcon, LogOut, Smartphone } from "lucide-react";
+import { LockIcon, LogOut, Smartphone, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -32,11 +32,28 @@ const DEV = process.env.NODE_ENV !== "production";
 
 export default function ProfilePage() {
     const { status, isInClient, error: liffError, liff, isLoggedIn } = useLiff();
-    const { member, loading, register, markCelebrated, reset } =
+    const { member, loading, register, markCelebrated, reset, deleteAccount } =
         useMember();
     const { activePackage } = usePurchases();
     const { history: classHistory } = useClassHistory();
     const [devRegOpen, setDevRegOpen] = useState(false);
+
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [confirmText, setConfirmText] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+
+    const handleDeleteConfirm = async () => {
+        if (confirmText !== "DELETE") return;
+        setIsDeleting(true);
+        setDeleteError(null);
+        try {
+            await deleteAccount();
+        } catch (err: any) {
+            setDeleteError(err.message || "Failed to delete account");
+            setIsDeleting(false);
+        }
+    };
 
     // Map DB celebratedLevels strings (Level enum) back to celebration thresholds
     const celebratedNumbers = useMemo<number[]>(() => {
@@ -175,6 +192,30 @@ export default function ProfilePage() {
                     you.
                 </p>
 
+                {/* 11. Danger Zone */}
+                <Card className="border border-error-border bg-error-bg/10 p-5 mt-4">
+                    <h3 className="font-display text-body font-bold text-error-fg flex items-center gap-2">
+                        <Trash2 className="h-4 w-4" /> Danger Zone
+                    </h3>
+                    <p className="font-sans text-caption text-neutral-text-2 mt-1.5 leading-relaxed">
+                        Permanently delete your studio account, bookings, remaining class packages, rewards, and all personal data. This action is irreversible.
+                    </p>
+                    <div className="mt-4">
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => {
+                                setDeleteModalOpen(true);
+                                setConfirmText("");
+                                setDeleteError(null);
+                            }}
+                            className="w-full text-caption h-10 rounded-sm font-semibold"
+                        >
+                            Delete Account & Personal Data
+                        </Button>
+                    </div>
+                </Card>
+
                 {/* 10. Dev: new member registration collapsible */}
                 {DEV && (
                     <div className="flex flex-col gap-2">
@@ -224,6 +265,70 @@ export default function ProfilePage() {
                 }
                 onClose={dismissCelebration}
             />
+
+            <Modal
+                open={deleteModalOpen}
+                onClose={() => !isDeleting && setDeleteModalOpen(false)}
+                title={
+                    <span className="text-red-600 font-bold flex items-center gap-2">
+                        <Trash2 className="h-5 w-5" /> Delete Your Account?
+                    </span>
+                }
+            >
+                <div className="flex flex-col gap-4 font-sans text-body-sm text-neutral-text-2 mt-2">
+                    <p className="font-semibold text-neutral-ink">
+                        This action is irreversible and will permanently delete:
+                    </p>
+                    <ul className="list-disc pl-5 flex flex-col gap-1 text-caption">
+                        <li>Your member profile and credentials</li>
+                        <li>All future and past class bookings ({classHistory.length} bookings)</li>
+                        <li>All active and remaining class packages</li>
+                        <li>All unlocked milestones and earned toy rewards</li>
+                    </ul>
+
+                    {deleteError && (
+                        <div className="bg-red-50 border border-red-200 text-red-600 rounded-sm p-3 text-caption">
+                            {deleteError}
+                        </div>
+                    )}
+
+                    <div className="flex flex-col gap-1.5 border-t border-neutral-line pt-4">
+                        <label className="text-caption font-semibold text-neutral-ink uppercase tracking-wider">
+                            Type <span className="text-red-600 font-bold">DELETE</span> to confirm:
+                        </label>
+                        <Input
+                            type="text"
+                            placeholder="Type DELETE"
+                            value={confirmText}
+                            onChange={(e) => setConfirmText(e.target.value)}
+                            disabled={isDeleting}
+                            className="text-center font-bold tracking-widest uppercase focus-visible:outline-red-500"
+                        />
+                    </div>
+
+                    <div className="flex gap-3 justify-end border-t border-neutral-line pt-4 mt-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setDeleteModalOpen(false)}
+                            disabled={isDeleting}
+                            className="h-10 text-caption rounded-sm"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={handleDeleteConfirm}
+                            loading={isDeleting}
+                            disabled={isDeleting || confirmText !== "DELETE"}
+                            className="h-10 text-caption rounded-sm font-semibold"
+                        >
+                            Confirm Delete
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </>
     );
 }

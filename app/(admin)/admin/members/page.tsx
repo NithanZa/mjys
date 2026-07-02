@@ -21,6 +21,7 @@ import {
     ArrowUpRight,
     Loader,
     ChevronRight,
+    Trash2,
 } from "lucide-react";
 
 interface Member {
@@ -86,6 +87,35 @@ export default function AdminMembersPage() {
     const [packageOffers, setPackageOffers] = useState<Array<{ id: string; name: string; priceTHB: number }>>([]);
     const [selectedOfferId, setSelectedOfferId] = useState("");
     const [submittingGrant, setSubmittingGrant] = useState(false);
+
+    // Administrative Deletion state
+    const [adminDeleteModalOpen, setAdminDeleteModalOpen] = useState(false);
+    const [adminConfirmText, setAdminConfirmText] = useState("");
+    const [isDeletingMember, setIsDeletingMember] = useState(false);
+
+    const handleDeleteMember = async () => {
+        if (!selectedMember || adminConfirmText !== "DELETE") return;
+        setIsDeletingMember(true);
+        try {
+            const res = await fetch(`/api/admin/members/${selectedMember.id}`, {
+                method: "DELETE",
+            });
+            if (res.ok) {
+                alert("Member and all their associated data have been permanently deleted.");
+                setAdminDeleteModalOpen(false);
+                setSelectedMember(null);
+                loadMembers(searchQuery);
+            } else {
+                const err = await res.json();
+                alert(err.error || "Failed to delete member.");
+            }
+        } catch (err) {
+            console.error("Error deleting member:", err);
+            alert("Network error.");
+        } finally {
+            setIsDeletingMember(false);
+        }
+    };
 
     const loadMembers = useCallback(async (q: string) => {
         setLoading(true);
@@ -478,6 +508,27 @@ export default function AdminMembersPage() {
                                 )}
                             </div>
                         </div>
+
+                        {/* Danger zone / deletion */}
+                        <div className="border-t border-red-100 pt-5 mt-4">
+                            <h3 className="font-display text-body font-bold text-error-fg mb-2 flex items-center gap-1.5">
+                                <Trash2 className="h-4 w-4" /> Danger Zone
+                            </h3>
+                            <p className="font-sans text-caption text-neutral-text-3 mb-3 leading-relaxed">
+                                Permanently delete this customer profile, remaining package balances, unlocked rewards, and all historical booking logs. This action is irreversible.
+                            </p>
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={() => {
+                                    setAdminDeleteModalOpen(true);
+                                    setAdminConfirmText("");
+                                }}
+                                className="w-full text-caption h-10 rounded-sm font-semibold"
+                            >
+                                Permanent Hard Delete Member
+                            </Button>
+                        </div>
                     </div>
                 )}
             </Sheet>
@@ -541,6 +592,64 @@ export default function AdminMembersPage() {
                             </Button>
                         </div>
                     </form>
+                )}
+            </Modal>
+
+            {/* ADMIN DELETE MODAL */}
+            <Modal
+                open={adminDeleteModalOpen}
+                onClose={() => !isDeletingMember && setAdminDeleteModalOpen(false)}
+                title={
+                    <span className="text-error-fg font-bold flex items-center gap-2">
+                        <Trash2 className="h-5 w-5" /> Delete Member Profile?
+                    </span>
+                }
+            >
+                {selectedMember && (
+                    <div className="flex flex-col gap-4 font-sans text-body-sm text-neutral-text-2 mt-2">
+                        <p className="font-semibold text-neutral-ink">
+                            Are you absolutely sure you want to delete <span className="font-bold">{selectedMember.displayName}</span>?
+                        </p>
+                        <p className="text-caption text-neutral-text-2 bg-error-bg/10 border border-error-border rounded-sm p-3">
+                            <strong>Warning:</strong> This administrative action cannot be undone. All their remaining classes, purchase history, reward collections, and future bookings will be completely wiped from the studio database.
+                        </p>
+
+                        <div className="flex flex-col gap-1.5 border-t border-neutral-line pt-4">
+                            <label className="text-caption font-semibold text-neutral-ink uppercase tracking-wider">
+                                Type <span className="text-red-600 font-bold">DELETE</span> to confirm:
+                            </label>
+                            <Input
+                                type="text"
+                                placeholder="Type DELETE"
+                                value={adminConfirmText}
+                                onChange={(e) => setAdminConfirmText(e.target.value)}
+                                disabled={isDeletingMember}
+                                className="text-center font-bold tracking-widest uppercase focus-visible:outline-red-500"
+                            />
+                        </div>
+
+                        <div className="flex gap-3 justify-end border-t border-neutral-line pt-4 mt-2 shrink-0">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setAdminDeleteModalOpen(false)}
+                                disabled={isDeletingMember}
+                                className="h-10 text-caption rounded-sm"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={handleDeleteMember}
+                                loading={isDeletingMember}
+                                disabled={isDeletingMember || adminConfirmText !== "DELETE"}
+                                className="h-10 text-caption rounded-sm font-semibold"
+                            >
+                                Permanent Delete
+                            </Button>
+                        </div>
+                    </div>
                 )}
             </Modal>
         </div>

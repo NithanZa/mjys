@@ -40,6 +40,7 @@ export interface UseMemberResult {
     }) => Promise<Member>;
     markCelebrated: (threshold: number) => Promise<void>;
     reset: () => Promise<void>;
+    deleteAccount: () => Promise<void>;
 }
 
 const DEV = process.env.NODE_ENV !== "production";
@@ -306,6 +307,45 @@ export function useMember(): UseMemberResult {
         }
     }, [isMock, mockStore, liff]);
 
+    const deleteAccount = useCallback(async () => {
+        if (isMock) {
+            mockStore.reset();
+            setMember(null);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            let res: Response;
+            if (isStandalone) {
+                res = await fetch("/api/members/me", {
+                    method: "DELETE",
+                });
+            } else {
+                const token = getRequiredIDToken(liff);
+                res = await fetch("/api/members/me", {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+            }
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || "Failed to delete account");
+            }
+
+            setMember(null);
+            window.location.href = "/";
+        } catch (err: any) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [isMock, isStandalone, liff, mockStore]);
+
     const activeMember = isMock
         ? mockStore.member
             ? {
@@ -328,5 +368,6 @@ export function useMember(): UseMemberResult {
         login,
         markCelebrated,
         reset,
+        deleteAccount,
     };
 }
