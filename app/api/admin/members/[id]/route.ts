@@ -126,13 +126,17 @@ export async function POST(
 
 /**
  * DELETE /api/admin/members/[id]
- * Administrative action: Permanently delete a member and all their personal/activity data.
+ * Administrative action: Either resets user activity and wipes slips, or deletes completely.
+ * Query parameter: ?action=reset OR ?action=delete (defaults to delete)
  */
 export async function DELETE(
     request: NextRequest,
     props: { params: Promise<{ id: string }> },
 ) {
     const { id } = await props.params;
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get("action") || "delete";
+
     try {
         const member = await prisma.member.findUnique({
             where: { id },
@@ -142,25 +146,82 @@ export async function DELETE(
             return NextResponse.json({ error: "Member profile not found" }, { status: 404 });
         }
 
-        // Delete from Supabase Auth if standalone
-        if (member.lineUserId.startsWith("sa_")) {
-            const supabaseUserId = member.lineUserId.substring(3);
+        // Find all purchases that have a payment slip to delete files from Supabase Storage
+        const purchasesWithSlips = await prisma.pendingPurchase.findMany({
+            where: {
+                memberId: id,
+                proofImageUrl: { not: null },
+            },
+            select: { proofImageUrl: true },
+        });
+
+        // Delete slip files from Supabase Storage 'slips' bucket
+        if (purchasesWithSlips.length > 0) {
             const { supabase } = await import("@/lib/supabase");
-            const { error: authError } = await supabase.auth.admin.deleteUser(supabaseUserId);
-            if (authError) {
-                console.error("[api-admin-members-delete] Error deleting Supabase auth user:", authError);
-                // Continue with database deletion anyway
+            const fileNames = purchasesWithSlips
+                .map((p) => {
+                    const parts = p.proofImageUrl?.split("/slips/");
+                    return parts && parts.length > 1 ? parts[1] : null;
+                })
+                .filter((name): name is string => name !== null);
+
+            if (fileNames.length > 0) {
+                const { error: storageError } = await supabase.storage
+                    .from("slips")
+                    .remove(fileNames);
+                if (storageError) {
+                    console.error("[api-admin-members-delete] Error deleting slips from Supabase storage:", storageError);
+                }
             }
         }
 
-        // Delete member from database (cascades automatically to all associated tables)
-        await prisma.member.delete({
-            where: { id },
-        });
+        if (action === "reset") {
+            // Action 1: Wipe activity logs and reset as new, keeping credentials
+            await prisma.$transaction([
+                prisma.attendance.deleteMany({ where: { memberId: id } }),
+                prisma.pendingPurchase.deleteMany({ where: { memberId: id } }),
+                prisma.package.deleteMany({ where: { memberId: id } }),
+                prisma.memberToyPart.deleteMany({ where: { memberId: id } }),
+                prisma.memberMilestone.deleteMany({ where: { memberId: id } }),
+                prisma.member.update({
+                    where: { id },
+                    data: {
+                        classesAttended: 0,
+                        level: "CAT",
+                        celebratedLevels: [],
+                    },
+                }),
+            ]);
 
-        return NextResponse.json({ success: true, message: "Member and all personal data deleted successfully" });
+            return NextResponse.json({
+                success: true,
+                message: "Member activity and payment slips wiped successfully. Profile reset to brand new.",
+            });
+        } else {
+            // Action 2: Delete completely (including Auth account)
+            // Delete from Supabase Auth if standalone
+            if (member.lineUserId.startsWith("sa_")) {
+                const supabaseUserId = member.lineUserId.substring(3);
+                const { supabase } = await import("@/lib/supabase");
+                const { error: authError } = await supabase.auth.admin.deleteUser(supabaseUserId);
+                if (authError) {
+                    console.error("[api-admin-members-delete] Error deleting Supabase auth user:", authError);
+                    // Continue with database deletion anyway
+                }
+            }
+
+            // Delete member from database (cascades automatically to all associated tables)
+            await prisma.member.delete({
+                where: { id },
+            });
+
+            return NextResponse.json({
+                success: true,
+                message: "Member and all personal data deleted completely from system.",
+            });
+        }
     } catch (error) {
-        console.error("[api-admin-members-delete] Error deleting member:", error);
-        return NextResponse.json({ error: "Failed to delete member profile" }, { status: 500 });
+        console.error("[api-admin-members-delete] Error executing action:", error);
+        return NextResponse.json({ error: "Failed to perform administrative action" }, { status: 500 });
     }
 }

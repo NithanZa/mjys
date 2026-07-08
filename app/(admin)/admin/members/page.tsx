@@ -93,11 +93,16 @@ export default function AdminMembersPage() {
     const [adminConfirmText, setAdminConfirmText] = useState("");
     const [isDeletingMember, setIsDeletingMember] = useState(false);
 
+    // Administrative Reset state
+    const [adminResetModalOpen, setAdminResetModalOpen] = useState(false);
+    const [adminResetConfirmText, setAdminResetConfirmText] = useState("");
+    const [isResettingMember, setIsResettingMember] = useState(false);
+
     const handleDeleteMember = async () => {
-        if (!selectedMember || adminConfirmText !== "DELETE") return;
+        if (!selectedMember || adminConfirmText.trim().toUpperCase() !== "DELETE") return;
         setIsDeletingMember(true);
         try {
-            const res = await fetch(`/api/admin/members/${selectedMember.id}`, {
+            const res = await fetch(`/api/admin/members/${selectedMember.id}?action=delete`, {
                 method: "DELETE",
             });
             if (res.ok) {
@@ -114,6 +119,30 @@ export default function AdminMembersPage() {
             alert("Network error.");
         } finally {
             setIsDeletingMember(false);
+        }
+    };
+
+    const handleResetMember = async () => {
+        if (!selectedMember || adminResetConfirmText.trim().toUpperCase() !== "WIPE") return;
+        setIsResettingMember(true);
+        try {
+            const res = await fetch(`/api/admin/members/${selectedMember.id}?action=reset`, {
+                method: "DELETE",
+            });
+            if (res.ok) {
+                alert("Member's class history, packages, milestones, and payment slips have been completely wiped. Profile reset to brand new CAT level.");
+                setAdminResetModalOpen(false);
+                setSelectedMember(null);
+                loadMembers(searchQuery);
+            } else {
+                const err = await res.json();
+                alert(err.error || "Failed to reset member.");
+            }
+        } catch (err) {
+            console.error("Error resetting member:", err);
+            alert("Network error.");
+        } finally {
+            setIsResettingMember(false);
         }
     };
 
@@ -317,7 +346,11 @@ export default function AdminMembersPage() {
 
             <Sheet
                 open={selectedMember !== null}
-                onClose={() => setSelectedMember(null)}
+                onClose={() => {
+                    setSelectedMember(null);
+                    setAdminDeleteModalOpen(false);
+                    setAdminResetModalOpen(false);
+                }}
                 title={selectedMember?.displayName ?? "Member Profile"}
             >
                 {selectedMember && (
@@ -514,20 +547,33 @@ export default function AdminMembersPage() {
                             <h3 className="font-display text-body font-bold text-error-fg mb-2 flex items-center gap-1.5">
                                 <Trash2 className="h-4 w-4" /> Danger Zone
                             </h3>
-                            <p className="font-sans text-caption text-neutral-text-3 mb-3 leading-relaxed">
-                                Permanently delete this customer profile, remaining package balances, unlocked rewards, and all historical booking logs. This action is irreversible.
+                            <p className="font-sans text-caption text-neutral-text-3 mb-4 leading-relaxed">
+                                Choose whether to reset the customer&apos;s activity so they can start fresh, or completely erase their entire presence and account from the system.
                             </p>
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                onClick={() => {
-                                    setAdminDeleteModalOpen(true);
-                                    setAdminConfirmText("");
-                                }}
-                                className="w-full text-caption h-10 rounded-sm font-semibold"
-                            >
-                                Permanent Hard Delete Member
-                            </Button>
+                            <div className="flex flex-col gap-2.5">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => {
+                                        setAdminResetModalOpen(true);
+                                        setAdminResetConfirmText("");
+                                    }}
+                                    className="w-full text-caption h-10 rounded-sm font-semibold border-error-border text-error-fg hover:bg-error-bg/5"
+                                >
+                                    Wipe Activity & Reset as New (Keep Login)
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={() => {
+                                        setAdminDeleteModalOpen(true);
+                                        setAdminConfirmText("");
+                                    }}
+                                    className="w-full text-caption h-10 rounded-sm font-semibold"
+                                >
+                                    Delete Member Completely (Erase Everything)
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -595,9 +641,76 @@ export default function AdminMembersPage() {
                 )}
             </Modal>
 
+            {/* ADMIN RESET MODAL */}
+            <Modal
+                open={adminResetModalOpen && !!selectedMember}
+                onClose={() => !isResettingMember && setAdminResetModalOpen(false)}
+                title={
+                    <span className="text-warning-fg font-bold flex items-center gap-2">
+                        <Trash2 className="h-5 w-5" /> Wipe Activity & Reset?
+                    </span>
+                }
+            >
+                {selectedMember && (
+                    <div className="flex flex-col gap-4 font-sans text-body-sm text-neutral-text-2 mt-2">
+                        <p className="font-semibold text-neutral-ink">
+                            Are you sure you want to reset <span className="font-bold">{selectedMember.displayName}</span>?
+                        </p>
+                        <p className="text-caption text-neutral-text-2 bg-warning-bg/10 border border-warning-border rounded-sm p-3">
+                            <strong>This will permanently delete:</strong>
+                            <span className="block mt-1">
+                                • All active/remaining packages and passes<br />
+                                • Entire class attendance/booking logs<br />
+                                • Earned toy rewards and milestones<br />
+                                • All uploaded transfer payment slips
+                            </span>
+                            <span className="block mt-2 font-medium">
+                                Contact credentials, registration date, and LINE Auth links will be preserved. The customer will start over as a brand new CAT level user.
+                            </span>
+                        </p>
+
+                        <div className="flex flex-col gap-1.5 border-t border-neutral-line pt-4">
+                            <label className="text-caption font-semibold text-neutral-ink uppercase tracking-wider">
+                                Type <span className="text-warning-fg font-bold">WIPE</span> to confirm:
+                            </label>
+                            <Input
+                                type="text"
+                                placeholder="Type WIPE"
+                                value={adminResetConfirmText}
+                                onChange={(e) => setAdminResetConfirmText(e.target.value.toUpperCase())}
+                                disabled={isResettingMember}
+                                className="text-center font-bold tracking-widest uppercase focus-visible:outline-warning-500"
+                            />
+                        </div>
+
+                        <div className="flex gap-3 justify-end border-t border-neutral-line pt-4 mt-2 shrink-0">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setAdminResetModalOpen(false)}
+                                disabled={isResettingMember}
+                                className="h-10 text-caption rounded-sm"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={handleResetMember}
+                                loading={isResettingMember}
+                                disabled={isResettingMember || adminResetConfirmText.trim().toUpperCase() !== "WIPE"}
+                                className="h-10 text-caption rounded-sm font-semibold border-warning-border text-warning-fg hover:bg-warning-bg/5"
+                            >
+                                Wipe & Reset
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
             {/* ADMIN DELETE MODAL */}
             <Modal
-                open={adminDeleteModalOpen}
+                open={adminDeleteModalOpen && !!selectedMember}
                 onClose={() => !isDeletingMember && setAdminDeleteModalOpen(false)}
                 title={
                     <span className="text-error-fg font-bold flex items-center gap-2">
@@ -611,7 +724,7 @@ export default function AdminMembersPage() {
                             Are you absolutely sure you want to delete <span className="font-bold">{selectedMember.displayName}</span>?
                         </p>
                         <p className="text-caption text-neutral-text-2 bg-error-bg/10 border border-error-border rounded-sm p-3">
-                            <strong>Warning:</strong> This administrative action cannot be undone. All their remaining classes, purchase history, reward collections, and future bookings will be completely wiped from the studio database.
+                            <strong>Warning:</strong> This administrative action cannot be undone. All their remaining classes, purchase history, reward collections, uploaded payment slips, and future bookings will be completely wiped. Their LINE/Supabase login credentials will also be permanently deleted.
                         </p>
 
                         <div className="flex flex-col gap-1.5 border-t border-neutral-line pt-4">
@@ -622,7 +735,7 @@ export default function AdminMembersPage() {
                                 type="text"
                                 placeholder="Type DELETE"
                                 value={adminConfirmText}
-                                onChange={(e) => setAdminConfirmText(e.target.value)}
+                                onChange={(e) => setAdminConfirmText(e.target.value.toUpperCase())}
                                 disabled={isDeletingMember}
                                 className="text-center font-bold tracking-widest uppercase focus-visible:outline-red-500"
                             />
@@ -643,7 +756,7 @@ export default function AdminMembersPage() {
                                 variant="destructive"
                                 onClick={handleDeleteMember}
                                 loading={isDeletingMember}
-                                disabled={isDeletingMember || adminConfirmText !== "DELETE"}
+                                disabled={isDeletingMember || adminConfirmText.trim().toUpperCase() !== "DELETE"}
                                 className="h-10 text-caption rounded-sm font-semibold"
                             >
                                 Permanent Delete

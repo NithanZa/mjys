@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { TextField } from "@/components/ui/Input";
 import { useLiff } from "@/lib/liff";
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 
 const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
@@ -16,7 +16,7 @@ const RegistrationSchema = z.object({
         .trim()
         .min(2, "Name must be at least 2 characters")
         .max(60, "Name is too long"),
-    email: z.string().trim().email("Enter a valid email address"),
+    email: z.email("Enter a valid email address"),
     phone: z
         .string()
         .trim()
@@ -36,14 +36,12 @@ export type RegistrationInput = z.infer<typeof RegistrationSchema>;
 export interface RegistrationFormProps {
     onSubmit: (
         input: RegistrationInput & { lineUserId: string | null },
-    ) => void;
-    submitting?: boolean;
+    ) => Promise<any>;
     onSwitchToLogin?: () => void;
 }
 
 export function RegistrationForm({
     onSubmit,
-    submitting,
     onSwitchToLogin,
 }: RegistrationFormProps) {
     const { liff, status, isInClient } = useLiff();
@@ -58,6 +56,12 @@ export function RegistrationForm({
     const [errors, setErrors] = useState<
         Partial<Record<keyof RegistrationInput, string>>
     >({});
+    const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+    const [resending, setResending] = useState(false);
+    const [resendMessage, setResendMessage] = useState<string | null>(null);
 
     // Pre-fill from LIFF when available.
     useEffect(() => {
@@ -78,8 +82,10 @@ export function RegistrationForm({
         };
     }, [liff, status, isInClient]);
 
-    function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
         e.preventDefault();
+        setSubmitError(null);
+        setSuccessMessage(null);
         const parsed = RegistrationSchema.safeParse({
             displayName,
             email,
@@ -101,7 +107,41 @@ export function RegistrationForm({
             return;
         }
         setErrors({});
-        onSubmit({ ...parsed.data, lineUserId });
+        setSubmitting(true);
+        try {
+            const result = await onSubmit({ ...parsed.data, lineUserId });
+            if (result && result.unverified) {
+                setSuccessMessage(result.message || "Profile created. Please check your email to verify your account.");
+                setUnverifiedEmail(result.email || email);
+            }
+        } catch (err: any) {
+            setSubmitError(err.message || "Failed to create profile.");
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    async function handleResend() {
+        if (!unverifiedEmail) return;
+        setResending(true);
+        setResendMessage(null);
+        try {
+            const res = await fetch("/api/auth/resend-confirmation", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: unverifiedEmail }),
+            });
+            const data = await res.json();
+            setResendMessage(
+                res.ok
+                    ? data.message || "Confirmation email sent."
+                    : data.error || "Failed to resend email.",
+            );
+        } catch {
+            setResendMessage("Failed to resend email.");
+        } finally {
+            setResending(false);
+        }
     }
 
     return (
@@ -120,6 +160,29 @@ export function RegistrationForm({
                     </p>
                 </div>
 
+                {submitError && (
+                    <div className="rounded-lg bg-red-50 p-3 text-caption text-red-600 border border-red-200 font-sans">
+                        {submitError}
+                    </div>
+                )}
+
+                {successMessage && (
+                    <div className="rounded-lg bg-green-50 p-3 text-caption text-green-700 border border-green-200 font-sans flex flex-col gap-2">
+                        <span>{successMessage}</span>
+                        {unverifiedEmail && (
+                            <button
+                                type="button"
+                                onClick={handleResend}
+                                disabled={resending}
+                                className="self-start font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800 disabled:opacity-60"
+                            >
+                                {resending ? "Sending..." : "Didn't get it? Resend email"}
+                            </button>
+                        )}
+                        {resendMessage && <span>{resendMessage}</span>}
+                    </div>
+                )}
+
                 <TextField
                     label="Full name"
                     value={displayName}
@@ -130,6 +193,7 @@ export function RegistrationForm({
                 />
                 <TextField
                     label="Email address"
+                    type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     inputMode="email"

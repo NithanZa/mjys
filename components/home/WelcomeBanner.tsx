@@ -28,6 +28,7 @@ export function WelcomeBanner({ displayName, className }: WelcomeBannerProps) {
           alt="Welcome to MiTR Journey"
           fill
           sizes="(max-width: 640px) 100vw, 640px"
+          style={{ objectFit: "cover" }}
           className="object-cover"
           priority
         />

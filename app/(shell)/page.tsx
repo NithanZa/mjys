@@ -14,6 +14,7 @@ import { HOME_CONTENT } from "@/lib/mock/home-content";
 import { useMember } from "@/lib/profile/use-member";
 import { getUnseenUnlockedMilestones } from "@/lib/rewards";
 import { motion } from "motion/react";
+import Image from "next/image";
 import { useMemo, useCallback } from "react";
 
 const containerVariants = {
@@ -99,6 +100,18 @@ export default function HomePage() {
                 initial="hidden"
                 animate="visible"
             >
+                <motion.div variants={itemVariants} className="flex justify-start px-1">
+                    <div className="relative h-12 w-full max-w-[240px]">
+                        <Image
+                            src="/mitr logo.jpg"
+                            alt="MiTR Journey Logo"
+                            fill
+                            className="object-contain object-left"
+                            priority
+                        />
+                    </div>
+                </motion.div>
+
                 <motion.div variants={itemVariants}>
                     <HeroCard
                         eyebrow={heroEyebrow}

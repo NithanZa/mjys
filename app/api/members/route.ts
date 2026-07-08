@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import { verifyLineIdToken } from "@/lib/line/verify-id-token";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
     createSessionToken,
     parseSessionCookie,
@@ -62,17 +63,42 @@ export async function POST(request: NextRequest) {
                 );
             }
 
+            const rateLimitResponse = await checkRateLimit(request, "register", email);
+            if (rateLimitResponse) {
+                return rateLimitResponse;
+            }
+
+            // Check if member already exists in our database with this email
+            const existingMember = await prisma.member.findFirst({
+                where: { email },
+            });
+
+            if (existingMember) {
+                return NextResponse.json(
+                    { error: "An account with this email already exists. Try signing in or resetting your password." },
+                    { status: 409 },
+                );
+            }
+
+            const origin =
+                process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+
             // Create user in Supabase Auth
             const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
+                options: {
+                    emailRedirectTo: `${origin}/auth/confirm?next=/`,
+                },
             });
 
             if (signUpError) {
-                return NextResponse.json(
-                    { error: signUpError.message },
-                    { status: 400 },
-                );
+                const message = /already registered|already exists/i.test(
+                    signUpError.message,
+                )
+                    ? "An account with this email already exists. Try signing in or resetting your password."
+                    : signUpError.message;
+                return NextResponse.json({ error: message }, { status: 400 });
             }
 
             if (!signUpData.user) {
@@ -83,21 +109,39 @@ export async function POST(request: NextRequest) {
             }
 
             lineUserId = "sa_" + signUpData.user.id;
+
+            const emailVerified = !!signUpData.user.email_confirmed_at;
+
+            const member = await prisma.member.create({
+                data: { lineUserId, displayName, email, phone, dob, address, tocAccepted },
+            });
+
+            if (!emailVerified) {
+                return NextResponse.json(
+                    {
+                        member: null,
+                        unverified: true,
+                        email,
+                        message: "Profile created! Please check your email to verify your account before signing in.",
+                    },
+                    { status: 201 },
+                );
+            }
+
+            const res = NextResponse.json({ member }, { status: 201 });
+            res.cookies.set(
+                SESSION_COOKIE_NAME,
+                createSessionToken(member.id),
+                SESSION_COOKIE_OPTIONS,
+            );
+            return res;
         }
 
         const member = await prisma.member.create({
             data: { lineUserId, displayName, email, phone, dob, address, tocAccepted },
         });
 
-        const res = NextResponse.json({ member }, { status: 201 });
-        if (isStandalone) {
-            res.cookies.set(
-                SESSION_COOKIE_NAME,
-                createSessionToken(member.id),
-                SESSION_COOKIE_OPTIONS,
-            );
-        }
-        return res;
+        return NextResponse.json({ member }, { status: 201 });
     } catch (error: any) {
         console.error("[api-members] Error registering member:", error);
         if (error.code === "P2002") {

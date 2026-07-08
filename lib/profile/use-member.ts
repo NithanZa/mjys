@@ -33,7 +33,7 @@ export interface UseMemberResult {
         address: string;
         tocAccepted: boolean;
         password?: string;
-    }) => Promise<Member>;
+    }) => Promise<any>;
     login: (input: {
         email: string;
         password?: string;
@@ -136,7 +136,6 @@ export function useMember(): UseMemberResult {
                 return mapped;
             }
 
-            setLoading(true);
             try {
                 let res: Response;
                 if (isStandalone) {
@@ -163,13 +162,15 @@ export function useMember(): UseMemberResult {
                 }
 
                 const data = await res.json();
+                if (data.unverified) {
+                    setMember(null);
+                    return data;
+                }
                 setMember(data.member);
                 return data.member;
             } catch (err: any) {
                 setError(err.message);
                 throw err;
-            } finally {
-                setLoading(false);
             }
         },
         [isMock, liff, mockStore],
@@ -197,7 +198,6 @@ export function useMember(): UseMemberResult {
                 return mapped;
             }
 
-            setLoading(true);
             try {
                 const res = await fetch("/api/auth/login", {
                     method: "POST",
@@ -207,7 +207,13 @@ export function useMember(): UseMemberResult {
 
                 if (!res.ok) {
                     const errData = await res.json();
-                    throw new Error(errData.error || "Failed to log in");
+                    const err = new Error(errData.error || "Failed to log in") as Error & {
+                        unverified?: boolean;
+                        email?: string;
+                    };
+                    err.unverified = errData.unverified;
+                    err.email = errData.email;
+                    throw err;
                 }
 
                 const data = await res.json();
@@ -216,8 +222,6 @@ export function useMember(): UseMemberResult {
             } catch (err: any) {
                 setError(err.message);
                 throw err;
-            } finally {
-                setLoading(false);
             }
         },
         [isMock, mockStore],

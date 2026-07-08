@@ -108,7 +108,7 @@ export default function ShellLayout({ children }: { children: ReactNode }) {
                   address,
                   tocAccepted,
                 }) => {
-                  register({
+                  return register({
                     displayName,
                     email,
                     password,

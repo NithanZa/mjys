@@ -28,6 +28,7 @@ export function PoseCard({
                     alt={name}
                     width={600}
                     height={160}
+                    style={{ objectFit: "cover" }}
                     className="h-40 w-full object-cover"
                 />
             ) : (

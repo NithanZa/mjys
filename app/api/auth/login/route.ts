@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
     createSessionToken,
     SESSION_COOKIE_NAME,
@@ -33,6 +34,11 @@ export async function POST(request: NextRequest) {
 
         const { email, password } = parsed.data;
 
+        const rateLimitResponse = await checkRateLimit(request, "login", email);
+        if (rateLimitResponse) {
+            return rateLimitResponse;
+        }
+
         // Authenticate with Supabase Auth using our service client
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
             email,
@@ -49,6 +55,18 @@ export async function POST(request: NextRequest) {
         if (!data.user) {
             return NextResponse.json(
                 { error: "Authentication failed. User not found." },
+                { status: 401 },
+            );
+        }
+
+        // Verify email confirmation status
+        if (!data.user.email_confirmed_at) {
+            return NextResponse.json(
+                {
+                    error: "Please verify your email address before logging in.",
+                    unverified: true,
+                    email: data.user.email,
+                },
                 { status: 401 },
             );
         }

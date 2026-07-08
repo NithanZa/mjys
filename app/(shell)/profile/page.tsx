@@ -8,7 +8,6 @@ import {
     NextClassStrip,
     PackageAlertBanner,
     ProfileHeroCard,
-    RegistrationForm,
     StatsRow,
 } from "@/components/profile";
 import { RecentActivityList } from "@/components/rewards";
@@ -32,11 +31,10 @@ const DEV = process.env.NODE_ENV !== "production";
 
 export default function ProfilePage() {
     const { status, isInClient, error: liffError, liff, isLoggedIn } = useLiff();
-    const { member, loading, register, markCelebrated, reset, deleteAccount } =
+    const { member, loading, markCelebrated, reset, deleteAccount } =
         useMember();
     const { activePackage } = usePurchases();
     const { history: classHistory } = useClassHistory();
-    const [devRegOpen, setDevRegOpen] = useState(false);
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [confirmText, setConfirmText] = useState("");
@@ -44,7 +42,7 @@ export default function ProfilePage() {
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
     const handleDeleteConfirm = async () => {
-        if (confirmText !== "DELETE") return;
+        if (confirmText.trim().toUpperCase() !== "DELETE") return;
         setIsDeleting(true);
         setDeleteError(null);
         try {
@@ -216,42 +214,6 @@ export default function ProfilePage() {
                     </div>
                 </Card>
 
-                {/* 10. Dev: new member registration collapsible */}
-                {DEV && (
-                    <div className="flex flex-col gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setDevRegOpen((o) => !o)}
-                            className="w-full rounded-xl bg-primary-600 py-3 font-sans text-body font-semibold text-white"
-                        >
-                            🌿 New Member Registration {devRegOpen ? "▲" : "▼"}
-                        </button>
-                        {devRegOpen && (
-                            <RegistrationForm
-                                onSubmit={({
-                                    displayName,
-                                    email,
-                                    password,
-                                    phone,
-                                    dob,
-                                    address,
-                                    tocAccepted,
-                                }) => {
-                                    register({
-                                        displayName,
-                                        email,
-                                        password,
-                                        phone,
-                                        dob,
-                                        address,
-                                        tocAccepted,
-                                    });
-                                    setDevRegOpen(false);
-                                }}
-                            />
-                        )}
-                    </div>
-                )}
             </div>
 
             <CelebrationToast
@@ -300,7 +262,7 @@ export default function ProfilePage() {
                             type="text"
                             placeholder="Type DELETE"
                             value={confirmText}
-                            onChange={(e) => setConfirmText(e.target.value)}
+                            onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
                             disabled={isDeleting}
                             className="text-center font-bold tracking-widest uppercase focus-visible:outline-red-500"
                         />
@@ -321,7 +283,7 @@ export default function ProfilePage() {
                             variant="destructive"
                             onClick={handleDeleteConfirm}
                             loading={isDeleting}
-                            disabled={isDeleting || confirmText !== "DELETE"}
+                            disabled={isDeleting || confirmText.trim().toUpperCase() !== "DELETE"}
                             className="h-10 text-caption rounded-sm font-semibold"
                         >
                             Confirm Delete

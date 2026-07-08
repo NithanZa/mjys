@@ -32,6 +32,7 @@ export function WorkshopPromo({ className }: WorkshopPromoProps) {
             alt="Kru EX Inversion Workshop"
             fill
             sizes="(max-width: 640px) 100vw, 640px"
+            style={{ objectFit: "cover", objectPosition: "center" }}
             className="object-cover object-center"
             priority
           />
