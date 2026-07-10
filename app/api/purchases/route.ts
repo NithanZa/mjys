@@ -4,6 +4,7 @@ import { verifyLineIdToken } from "@/lib/line/verify-id-token";
 import { parseSessionCookie } from "@/lib/standalone-auth";
 import { addDays } from "date-fns";
 import type { Member } from "@/generated/prisma/client";
+import { getSignedSlipUrl } from "@/lib/storage";
 
 async function resolveMember(request: NextRequest): Promise<Member | null | { _err: string; _status: number }> {
     const authHeader = request.headers.get("Authorization");
@@ -47,7 +48,16 @@ export async function GET(request: NextRequest) {
             }),
         ]);
 
-        return NextResponse.json({ pendingPurchases, activePackages });
+        const pendingPurchasesWithSignedSlips = await Promise.all(
+            pendingPurchases.map(async (p) => ({
+                ...p,
+                proofImageUrl: p.proofImageUrl
+                    ? await getSignedSlipUrl(p.proofImageUrl)
+                    : null,
+            })),
+        );
+
+        return NextResponse.json({ pendingPurchases: pendingPurchasesWithSignedSlips, activePackages });
     } catch (error) {
         console.error("[api-purchases-get] Error fetching purchases:", error);
         return NextResponse.json({ error: "Database error" }, { status: 500 });

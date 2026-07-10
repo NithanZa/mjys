@@ -95,7 +95,7 @@ export default function HomePage() {
     return (
         <>
             <motion.div
-                className="flex flex-col gap-5 pb-12"
+                className="mx-auto flex w-full max-w-screen-sm flex-col gap-5 pb-12"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"

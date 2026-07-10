@@ -158,11 +158,9 @@ export async function DELETE(
         // Delete slip files from Supabase Storage 'slips' bucket
         if (purchasesWithSlips.length > 0) {
             const { supabase } = await import("@/lib/supabase");
+            const { extractSlipPath } = await import("@/lib/storage");
             const fileNames = purchasesWithSlips
-                .map((p) => {
-                    const parts = p.proofImageUrl?.split("/slips/");
-                    return parts && parts.length > 1 ? parts[1] : null;
-                })
+                .map((p) => (p.proofImageUrl ? extractSlipPath(p.proofImageUrl) : null))
                 .filter((name): name is string => name !== null);
 
             if (fileNames.length > 0) {

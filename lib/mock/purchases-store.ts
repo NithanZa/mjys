@@ -79,7 +79,7 @@ export interface UsePurchasesResult {
     pendingPurchases: MockPurchase[];
     activePackage: ActivePackageView | null;
     loading: boolean;
-    /** Upload a bank-transfer slip image. Returns its public URL (or a data URL in mock mode). */
+    /** Upload a bank-transfer slip image. Returns its storage object path (or a data URL in mock mode). */
     uploadSlip: (file: File) => Promise<string>;
     /** Create a new PENDING purchase for the given offer. Returns the new purchase id. */
     createPending: (offerId: string, proofImageUrl?: string) => Promise<string>;
@@ -205,7 +205,7 @@ export function usePurchases(): UsePurchasesResult {
                 throw new Error(err.error || "Failed to upload slip");
             }
             const data = await res.json();
-            return data.url as string;
+            return data.path as string;
         },
         [isMock, liff],
     );

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { addDays } from "date-fns";
+import { getSignedSlipUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,16 @@ export async function GET(request: NextRequest) {
             orderBy: { createdAt: "desc" },
         });
 
-        return NextResponse.json({ purchases });
+        const purchasesWithSignedSlips = await Promise.all(
+            purchases.map(async (p) => ({
+                ...p,
+                proofImageUrl: p.proofImageUrl
+                    ? await getSignedSlipUrl(p.proofImageUrl)
+                    : null,
+            })),
+        );
+
+        return NextResponse.json({ purchases: purchasesWithSignedSlips });
     } catch (error) {
         console.error("[api-admin-purchases-get] Error loading purchases:", error);
         return NextResponse.json({ error: "Failed to load purchases" }, { status: 500 });

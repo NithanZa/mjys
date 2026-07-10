@@ -17,7 +17,9 @@ const ALLOWED_TYPES: Record<string, string> = {
 /**
  * POST /api/upload
  * Receives a multipart/form-data image (field: "file"), validates type/size,
- * uploads it to Supabase Storage bucket 'slips', and returns the public URL.
+ * uploads it to the private Supabase Storage bucket 'slips', and returns its
+ * object path. The path is stored as-is in `PendingPurchase.proofImageUrl`;
+ * callers must resolve a short-lived signed URL for display (see lib/storage.ts).
  * Authenticated via the member's LINE ID token.
  */
 export async function POST(request: NextRequest) {
@@ -84,13 +86,9 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Generate public URL
-        const { data: urlData } = supabase.storage
-            .from("slips")
-            .getPublicUrl(fileName);
-
-        const url = urlData.publicUrl;
-        return NextResponse.json({ url });
+        // Return the object path — the bucket is private, so display code must
+        // resolve a signed URL on read (see lib/storage.ts).
+        return NextResponse.json({ path: fileName });
     } catch (error) {
         console.error("[api-upload] Error saving file:", error);
         return NextResponse.json({ error: "Upload failed" }, { status: 500 });

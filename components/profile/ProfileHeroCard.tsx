@@ -33,9 +33,6 @@ export function ProfileHeroCard({
                         alt={displayName}
                         className="ring-2 ring-white"
                     />
-                    <span className="font-sans text-[10px] text-neutral-text-2 underline underline-offset-2 cursor-pointer">
-                        Change photo
-                    </span>
                 </div>
                 <div className="flex-1 min-w-0">
                     <h2 className="font-display text-h2 font-semibold text-neutral-ink truncate">
