@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { parseISO } from "date-fns";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,9 @@ export async function PATCH(
     request: NextRequest,
     props: { params: Promise<{ id: string }> },
 ) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
     const { id } = await props.params;
     try {
         const body = await request.json();
@@ -125,6 +129,9 @@ export async function DELETE(
     request: NextRequest,
     props: { params: Promise<{ id: string }> },
 ) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
     const { id } = await props.params;
     try {
         const occurrence = await prisma.classOccurrence.findUnique({

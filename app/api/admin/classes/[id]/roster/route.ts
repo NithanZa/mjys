@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +8,9 @@ export async function GET(
     request: NextRequest,
     props: { params: Promise<{ id: string }> },
 ) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
     const { id } = await props.params;
     try {
         const roster = await prisma.attendance.findMany({

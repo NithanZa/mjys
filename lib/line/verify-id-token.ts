@@ -17,36 +17,6 @@ export async function verifyLineIdToken(
 ): Promise<{ lineUserId: string; displayName?: string; email?: string } | null> {
     const channelId = process.env.LINE_LOGIN_CHANNEL_ID;
     
-    // Deeper logging for JWS investigation
-    console.log("=== [line-verify] DEBUG START ===");
-    console.log("LINE_LOGIN_CHANNEL_ID in env:", channelId ? `Set (Length: ${channelId.length})` : "MISSING!");
-    console.log("LINE_LOGIN_CHANNEL_ID value:", channelId);
-    console.log("Raw idToken type:", typeof idToken);
-    console.log("Raw idToken length:", idToken ? idToken.length : "null/undefined");
-    if (idToken) {
-        const parts = idToken.split(".");
-        console.log("Token dot-separated parts count:", parts.length);
-        parts.forEach((part, index) => {
-            console.log(`Part ${index + 1} length:`, part.length);
-            console.log(`Part ${index + 1} preview (first 15 chars):`, part.substring(0, 15));
-        });
-        
-        // Decode and print Part 2 (JWT Payload) safely
-        if (parts.length > 1) {
-            try {
-                const payloadBase64 = parts[1];
-                const decodedPayload = Buffer.from(
-                    payloadBase64.replace(/-/g, "+").replace(/_/g, "/"),
-                    "base64",
-                ).toString("utf-8");
-                console.log("Decoded Token Payload JSON:", decodedPayload);
-            } catch (decodeErr) {
-                console.error("Failed to decode token payload:", decodeErr);
-            }
-        }
-    }
-    console.log("=== [line-verify] DEBUG END ===");
-
     if (!channelId) {
         throw new Error("LINE_LOGIN_CHANNEL_ID is not configured");
     }

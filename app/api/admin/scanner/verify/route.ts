@@ -4,6 +4,7 @@ import { decodeMemberPassSecure, decodeMemberPass, isMemberPassExpired } from "@
 import { newlyCrossedThresholds } from "@/lib/levels";
 import { studioToday } from "@/lib/dates";
 import { addDays } from "date-fns";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,9 @@ export const dynamic = "force-dynamic";
  * Supports manual check-in via forceMemberId.
  */
 export async function POST(request: NextRequest) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
     try {
         const { token, forceMemberId } = await request.json();
         let memberId: string | null = null;

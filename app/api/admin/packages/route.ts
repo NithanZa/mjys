@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +8,10 @@ export const dynamic = "force-dynamic";
  * GET /api/admin/packages
  * Fetches all PackageOffer rows sorted by display order.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
     try {
         const offers = await prisma.packageOffer.findMany({
             orderBy: { sortOrder: "asc" },
@@ -24,6 +28,9 @@ export async function GET() {
  * Creates a new PackageOffer.
  */
 export async function POST(request: NextRequest) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
     try {
         const body = await request.json();
         const {

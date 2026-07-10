@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { addDays } from "date-fns";
 import { getSignedSlipUrl } from "@/lib/storage";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,9 @@ export const dynamic = "force-dynamic";
  * Supports filtering by status: ?status=PENDING
  */
 export async function GET(request: NextRequest) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
 
@@ -51,6 +55,9 @@ export async function GET(request: NextRequest) {
  * If APPROVED: creates a member active Package.
  */
 export async function POST(request: NextRequest) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
     try {
         const body = await request.json();
         const { purchaseId, status, rejectionReason } = body;

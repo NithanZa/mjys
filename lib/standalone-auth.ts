@@ -12,10 +12,11 @@ import type { NextRequest } from "next/server";
 const COOKIE_NAME = "mjys_sid";
 
 function sign(memberId: string): string {
-    const hmac = createHmac(
-        "sha256",
-        process.env.QR_SIGNING_SECRET ?? "dev_secret_change_in_production",
-    );
+    const secret = process.env.QR_SIGNING_SECRET;
+    if (!secret) {
+        throw new Error("QR_SIGNING_SECRET is not configured");
+    }
+    const hmac = createHmac("sha256", secret);
     hmac.update(memberId);
     return hmac.digest("hex").slice(0, 16);
 }
@@ -45,6 +46,7 @@ export function parseSessionCookie(request: NextRequest): string | null {
 export const SESSION_COOKIE_NAME = COOKIE_NAME;
 export const SESSION_COOKIE_OPTIONS = {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     path: "/",
     maxAge: 60 * 60 * 24 * 365, // 1 year

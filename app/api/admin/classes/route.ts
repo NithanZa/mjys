@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { parseISO } from "date-fns";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
     try {
         const body = await request.json();
         const { templateId, instructorId, startsAt, durationMin, capacity } = body;

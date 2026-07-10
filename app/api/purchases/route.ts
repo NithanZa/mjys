@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyLineIdToken } from "@/lib/line/verify-id-token";
 import { parseSessionCookie } from "@/lib/standalone-auth";
+import { verifyAdmin } from "@/lib/admin-auth";
 import { addDays } from "date-fns";
 import type { Member } from "@/generated/prisma/client";
 import { getSignedSlipUrl } from "@/lib/storage";
@@ -94,11 +95,10 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// PATCH: Approve or Reject a pending purchase (Simulating admin/studio side)
+// PATCH: Approve or Reject a pending purchase (admin only)
 export async function PATCH(request: NextRequest) {
-    const authResult = await resolveMember(request);
-    if (isAuthError(authResult)) return NextResponse.json({ error: authResult._err }, { status: authResult._status });
-    if (!authResult) return NextResponse.json({ error: "Member not registered" }, { status: 404 });
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
 
     try {
         const { purchaseId, status } = await request.json();

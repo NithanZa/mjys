@@ -11,7 +11,11 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const secretString = process.env.QR_SIGNING_SECRET || "mjys-default-secure-signing-secret-2026";
+        const secretString = process.env.QR_SIGNING_SECRET;
+        if (!secretString) {
+            console.error("[api-admin-session] QR_SIGNING_SECRET is not configured");
+            return NextResponse.json({ authenticated: false }, { status: 500 });
+        }
         const secret = new TextEncoder().encode(secretString);
         
         await jwtVerify(sessionCookie.value, secret, {

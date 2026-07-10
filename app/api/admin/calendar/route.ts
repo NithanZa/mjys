@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { parseISO, startOfDay, endOfDay } from "date-fns";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
     const { searchParams } = new URL(request.url);
     const startStr = searchParams.get("start");
     const endStr = searchParams.get("end");
