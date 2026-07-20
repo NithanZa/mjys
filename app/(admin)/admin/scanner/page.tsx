@@ -45,9 +45,7 @@ interface CheckInResponse {
   };
   classOccurrence: {
     startsAt: string;
-    template: {
-      name: string;
-    };
+    name: string;
     instructor: {
       name: string;
     };
@@ -585,7 +583,7 @@ export default function AdminScannerPage() {
                     <div className="border-b border-neutral-line pb-3">
                       <p className="text-caption text-neutral-text-3 font-semibold uppercase tracking-wider">Scheduled Class</p>
                       <h4 className="font-display text-body font-bold text-neutral-ink mt-0.5">
-                        {checkInResult.classOccurrence.template.name}
+                        {checkInResult.classOccurrence.name}
                       </h4>
                       <p className="text-caption text-neutral-text-2 mt-0.5">
                         Instructor: {checkInResult.classOccurrence.instructor.name}

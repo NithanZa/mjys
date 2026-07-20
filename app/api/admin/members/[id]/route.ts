@@ -32,7 +32,6 @@ export async function GET(
                 include: {
                     classOccurrence: {
                         include: {
-                            template: true,
                             instructor: true,
                         },
                     },

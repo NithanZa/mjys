@@ -386,7 +386,6 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   Member: 'Member',
   Instructor: 'Instructor',
-  ClassTemplate: 'ClassTemplate',
   ClassOccurrence: 'ClassOccurrence',
   Attendance: 'Attendance',
   HomeContent: 'HomeContent',
@@ -412,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "member" | "instructor" | "classTemplate" | "classOccurrence" | "attendance" | "homeContent" | "packageOffer" | "pendingPurchase" | "package" | "toyPart" | "memberToyPart" | "milestone" | "memberMilestone"
+    modelProps: "member" | "instructor" | "classOccurrence" | "attendance" | "homeContent" | "packageOffer" | "pendingPurchase" | "package" | "toyPart" | "memberToyPart" | "milestone" | "memberMilestone"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -561,80 +560,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.InstructorCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.InstructorCountAggregateOutputType> | number
-        }
-      }
-    }
-    ClassTemplate: {
-      payload: Prisma.$ClassTemplatePayload<ExtArgs>
-      fields: Prisma.ClassTemplateFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.ClassTemplateFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClassTemplatePayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.ClassTemplateFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClassTemplatePayload>
-        }
-        findFirst: {
-          args: Prisma.ClassTemplateFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClassTemplatePayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.ClassTemplateFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClassTemplatePayload>
-        }
-        findMany: {
-          args: Prisma.ClassTemplateFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClassTemplatePayload>[]
-        }
-        create: {
-          args: Prisma.ClassTemplateCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClassTemplatePayload>
-        }
-        createMany: {
-          args: Prisma.ClassTemplateCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.ClassTemplateCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClassTemplatePayload>[]
-        }
-        delete: {
-          args: Prisma.ClassTemplateDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClassTemplatePayload>
-        }
-        update: {
-          args: Prisma.ClassTemplateUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClassTemplatePayload>
-        }
-        deleteMany: {
-          args: Prisma.ClassTemplateDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.ClassTemplateUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.ClassTemplateUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClassTemplatePayload>[]
-        }
-        upsert: {
-          args: Prisma.ClassTemplateUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClassTemplatePayload>
-        }
-        aggregate: {
-          args: Prisma.ClassTemplateAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateClassTemplate>
-        }
-        groupBy: {
-          args: Prisma.ClassTemplateGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ClassTemplateGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.ClassTemplateCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ClassTemplateCountAggregateOutputType> | number
         }
       }
     }
@@ -1450,27 +1375,19 @@ export const InstructorScalarFieldEnum = {
 export type InstructorScalarFieldEnum = (typeof InstructorScalarFieldEnum)[keyof typeof InstructorScalarFieldEnum]
 
 
-export const ClassTemplateScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  description: 'description',
-  durationMin: 'durationMin',
-  intensity: 'intensity',
-  tagline: 'tagline',
-  isSpecial: 'isSpecial'
-} as const
-
-export type ClassTemplateScalarFieldEnum = (typeof ClassTemplateScalarFieldEnum)[keyof typeof ClassTemplateScalarFieldEnum]
-
-
 export const ClassOccurrenceScalarFieldEnum = {
   id: 'id',
-  templateId: 'templateId',
   instructorId: 'instructorId',
   startsAt: 'startsAt',
   durationMin: 'durationMin',
   capacity: 'capacity',
-  bookedCount: 'bookedCount'
+  bookedCount: 'bookedCount',
+  name: 'name',
+  description: 'description',
+  tagline: 'tagline',
+  intensity: 'intensity',
+  isSpecial: 'isSpecial',
+  isCancelled: 'isCancelled'
 } as const
 
 export type ClassOccurrenceScalarFieldEnum = (typeof ClassOccurrenceScalarFieldEnum)[keyof typeof ClassOccurrenceScalarFieldEnum]
@@ -1898,7 +1815,6 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   member?: Prisma.MemberOmit
   instructor?: Prisma.InstructorOmit
-  classTemplate?: Prisma.ClassTemplateOmit
   classOccurrence?: Prisma.ClassOccurrenceOmit
   attendance?: Prisma.AttendanceOmit
   homeContent?: Prisma.HomeContentOmit

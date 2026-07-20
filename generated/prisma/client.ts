@@ -52,11 +52,6 @@ export type Member = Prisma.MemberModel
  */
 export type Instructor = Prisma.InstructorModel
 /**
- * Model ClassTemplate
- * 
- */
-export type ClassTemplate = Prisma.ClassTemplateModel
-/**
  * Model ClassOccurrence
  * 
  */

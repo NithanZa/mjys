@@ -10,7 +10,6 @@
  */
 export type * from './models/Member'
 export type * from './models/Instructor'
-export type * from './models/ClassTemplate'
 export type * from './models/ClassOccurrence'
 export type * from './models/Attendance'
 export type * from './models/HomeContent'

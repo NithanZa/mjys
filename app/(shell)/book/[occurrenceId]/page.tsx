@@ -32,7 +32,7 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
     );
   }
 
-  const { template, instructor, startsAt, durationMin } = occurrence;
+  const { name, description, tagline, intensity, instructor, startsAt, durationMin } = occurrence;
   const booked = isBooked(occurrence.id);
   const isFull = occurrence.slotsLeft <= 0;
 
@@ -48,12 +48,12 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
           </span>
           <div className="flex items-start justify-between gap-3">
             <h1 className="font-display text-display font-semibold text-neutral-ink">
-              {template.name}
+              {name}
             </h1>
-            <Badge tone="primary">{template.intensity}</Badge>
+            <Badge tone="primary">{intensity}</Badge>
           </div>
           <p className="font-sans text-body text-neutral-text-2">
-            {template.tagline}
+            {tagline}
           </p>
           <div className="flex items-center gap-2 font-sans text-caption text-neutral-text-2">
             <Clock strokeWidth={1.75} className="h-4 w-4" aria-hidden />
@@ -67,7 +67,7 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
             About this class
           </h2>
           <p className="mt-2 font-sans text-body text-neutral-text-2">
-            {template.description}
+            {description}
           </p>
         </Card>
 

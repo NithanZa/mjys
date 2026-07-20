@@ -19,7 +19,7 @@ export interface ClassCardProps {
 }
 
 const intensityTone: Record<
-  OccurrenceView["template"]["intensity"],
+  OccurrenceView["intensity"],
   "neutral" | "accent" | "primary"
 > = {
   Gentle: "accent",
@@ -35,7 +35,7 @@ export function ClassCard({
   className,
 }: ClassCardProps) {
   const isFull = occurrence.slotsLeft <= 0;
-  const { template, instructor, startsAt, durationMin } = occurrence;
+  const { name, intensity, tagline, instructor, startsAt, durationMin } = occurrence;
 
   return (
     <Card elevation="sm" className={cn("flex flex-col gap-3", className)}>
@@ -50,10 +50,10 @@ export function ClassCard({
               {formatTime(startsAt)} · {durationMin} min
             </span>
             <h3 className="mt-0.5 font-display text-h2 font-medium text-neutral-ink">
-              {template.name}
+              {name}
             </h3>
           </div>
-          <Badge tone={intensityTone[template.intensity]}>{template.intensity}</Badge>
+          <Badge tone={intensityTone[intensity]}>{intensity}</Badge>
         </div>
 
         <div className="flex items-center gap-2">
@@ -69,7 +69,7 @@ export function ClassCard({
         </div>
 
         <p className="font-sans text-body-sm text-neutral-text-2 line-clamp-2">
-          {template.tagline}
+          {tagline}
         </p>
       </Link>
 

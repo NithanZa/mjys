@@ -20,7 +20,7 @@ export async function PATCH(
     const { id } = await props.params;
     try {
         const body = await request.json();
-        const { action, instructorId, capacity, durationMin, startsAt } = body;
+        const { action, instructorId, capacity, durationMin, startsAt, name, description, tagline, intensity, isSpecial } = body;
 
         // Action: Cancel the class session
         if (action === "CANCEL") {
@@ -30,6 +30,7 @@ export async function PATCH(
                 });
 
                 if (!occurrence) throw new Error("OCCURRENCE_NOT_FOUND");
+                if (occurrence.isCancelled) throw new Error("ALREADY_CANCELLED");
 
                 // Find all booked attendances
                 const bookings = await tx.attendance.findMany({
@@ -74,9 +75,9 @@ export async function PATCH(
                     where: { id },
                     data: {
                         bookedCount: 0,
+                        isCancelled: true,
                     },
                     include: {
-                        template: true,
                         instructor: true,
                     },
                 });
@@ -102,11 +103,26 @@ export async function PATCH(
             updateData.startsAt = parseISO(startsAt);
         }
 
+        if (name !== undefined) {
+            updateData.name = name;
+        }
+        if (description !== undefined) {
+            updateData.description = description;
+        }
+        if (tagline !== undefined) {
+            updateData.tagline = tagline;
+        }
+        if (intensity !== undefined) {
+            updateData.intensity = intensity;
+        }
+        if (isSpecial !== undefined) {
+            updateData.isSpecial = Boolean(isSpecial);
+        }
+
         const updated = await prisma.classOccurrence.update({
             where: { id },
             data: updateData,
             include: {
-                template: true,
                 instructor: true,
             },
         });
@@ -116,6 +132,9 @@ export async function PATCH(
         console.error("[api-admin-classes-patch] Error updating class:", error);
         if (error.message === "OCCURRENCE_NOT_FOUND") {
             return NextResponse.json({ error: "Class session not found." }, { status: 404 });
+        }
+        if (error.message === "ALREADY_CANCELLED") {
+            return NextResponse.json({ error: "This class has already been cancelled." }, { status: 409 });
         }
         return NextResponse.json({ error: "Failed to update class session." }, { status: 500 });
     }

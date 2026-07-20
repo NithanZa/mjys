@@ -63,32 +63,24 @@ model Instructor {
   occurrences ClassOccurrence[]
 }
 
-model ClassTemplate {
-  id          String  @id @default(cuid())
-  name        String
-  description String
-  durationMin Int
-  intensity   String  // "Gentle" | "Balanced" | "Strong"
-  tagline     String
-  isSpecial   Boolean @default(false)
-
-  occurrences ClassOccurrence[]
-}
-
 model ClassOccurrence {
   id           String   @id @default(cuid())
-  templateId   String
   instructorId String
   startsAt     DateTime
   durationMin  Int
   capacity     Int
   bookedCount  Int      @default(0)
 
-  template   ClassTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  instructor Instructor    @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  name         String
+  description  String
+  tagline      String
+  intensity    String   // "Gentle" | "Balanced" | "Strong"
+  isSpecial    Boolean  @default(false)
+  isCancelled  Boolean  @default(false)
+
+  instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
   attendances Attendance[]
 
-  @@index([templateId])
   @@index([instructorId])
   @@index([startsAt])
 }

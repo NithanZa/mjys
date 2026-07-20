@@ -88,7 +88,6 @@ export async function POST(request: NextRequest) {
                 include: {
                     classOccurrence: {
                         include: {
-                            template: true,
                             instructor: true,
                         },
                     },

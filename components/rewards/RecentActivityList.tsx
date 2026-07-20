@@ -54,7 +54,7 @@ export function RecentActivityList({
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <h4 className="truncate font-display text-body-lg font-medium text-neutral-ink">
-                  {item.template.name}
+                  {item.name}
                 </h4>
                 <Badge tone={statusTone[item.status]}>
                   {statusLabel[item.status]}

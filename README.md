@@ -34,3 +34,8 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+Make a plan with phase files under docs/plans/classes-change to do the following:
+1. Read @schema.prisma, get rid of the idea of class templates. Most of these classes will be different
+2. (hence,) when inputting class names etc. it should be a text input (with autocomplete from old classes)
+3. export to csv button

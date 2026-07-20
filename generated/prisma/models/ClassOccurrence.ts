@@ -40,32 +40,47 @@ export type ClassOccurrenceSumAggregateOutputType = {
 
 export type ClassOccurrenceMinAggregateOutputType = {
   id: string | null
-  templateId: string | null
   instructorId: string | null
   startsAt: Date | null
   durationMin: number | null
   capacity: number | null
   bookedCount: number | null
+  name: string | null
+  description: string | null
+  tagline: string | null
+  intensity: string | null
+  isSpecial: boolean | null
+  isCancelled: boolean | null
 }
 
 export type ClassOccurrenceMaxAggregateOutputType = {
   id: string | null
-  templateId: string | null
   instructorId: string | null
   startsAt: Date | null
   durationMin: number | null
   capacity: number | null
   bookedCount: number | null
+  name: string | null
+  description: string | null
+  tagline: string | null
+  intensity: string | null
+  isSpecial: boolean | null
+  isCancelled: boolean | null
 }
 
 export type ClassOccurrenceCountAggregateOutputType = {
   id: number
-  templateId: number
   instructorId: number
   startsAt: number
   durationMin: number
   capacity: number
   bookedCount: number
+  name: number
+  description: number
+  tagline: number
+  intensity: number
+  isSpecial: number
+  isCancelled: number
   _all: number
 }
 
@@ -84,32 +99,47 @@ export type ClassOccurrenceSumAggregateInputType = {
 
 export type ClassOccurrenceMinAggregateInputType = {
   id?: true
-  templateId?: true
   instructorId?: true
   startsAt?: true
   durationMin?: true
   capacity?: true
   bookedCount?: true
+  name?: true
+  description?: true
+  tagline?: true
+  intensity?: true
+  isSpecial?: true
+  isCancelled?: true
 }
 
 export type ClassOccurrenceMaxAggregateInputType = {
   id?: true
-  templateId?: true
   instructorId?: true
   startsAt?: true
   durationMin?: true
   capacity?: true
   bookedCount?: true
+  name?: true
+  description?: true
+  tagline?: true
+  intensity?: true
+  isSpecial?: true
+  isCancelled?: true
 }
 
 export type ClassOccurrenceCountAggregateInputType = {
   id?: true
-  templateId?: true
   instructorId?: true
   startsAt?: true
   durationMin?: true
   capacity?: true
   bookedCount?: true
+  name?: true
+  description?: true
+  tagline?: true
+  intensity?: true
+  isSpecial?: true
+  isCancelled?: true
   _all?: true
 }
 
@@ -201,12 +231,17 @@ export type ClassOccurrenceGroupByArgs<ExtArgs extends runtime.Types.Extensions.
 
 export type ClassOccurrenceGroupByOutputType = {
   id: string
-  templateId: string
   instructorId: string
   startsAt: Date
   durationMin: number
   capacity: number
   bookedCount: number
+  name: string
+  description: string
+  tagline: string
+  intensity: string
+  isSpecial: boolean
+  isCancelled: boolean
   _count: ClassOccurrenceCountAggregateOutputType | null
   _avg: ClassOccurrenceAvgAggregateOutputType | null
   _sum: ClassOccurrenceSumAggregateOutputType | null
@@ -234,26 +269,34 @@ export type ClassOccurrenceWhereInput = {
   OR?: Prisma.ClassOccurrenceWhereInput[]
   NOT?: Prisma.ClassOccurrenceWhereInput | Prisma.ClassOccurrenceWhereInput[]
   id?: Prisma.StringFilter<"ClassOccurrence"> | string
-  templateId?: Prisma.StringFilter<"ClassOccurrence"> | string
   instructorId?: Prisma.StringFilter<"ClassOccurrence"> | string
   startsAt?: Prisma.DateTimeFilter<"ClassOccurrence"> | Date | string
   durationMin?: Prisma.IntFilter<"ClassOccurrence"> | number
   capacity?: Prisma.IntFilter<"ClassOccurrence"> | number
   bookedCount?: Prisma.IntFilter<"ClassOccurrence"> | number
-  template?: Prisma.XOR<Prisma.ClassTemplateScalarRelationFilter, Prisma.ClassTemplateWhereInput>
+  name?: Prisma.StringFilter<"ClassOccurrence"> | string
+  description?: Prisma.StringFilter<"ClassOccurrence"> | string
+  tagline?: Prisma.StringFilter<"ClassOccurrence"> | string
+  intensity?: Prisma.StringFilter<"ClassOccurrence"> | string
+  isSpecial?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
+  isCancelled?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
   instructor?: Prisma.XOR<Prisma.InstructorScalarRelationFilter, Prisma.InstructorWhereInput>
   attendances?: Prisma.AttendanceListRelationFilter
 }
 
 export type ClassOccurrenceOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  templateId?: Prisma.SortOrder
   instructorId?: Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   durationMin?: Prisma.SortOrder
   capacity?: Prisma.SortOrder
   bookedCount?: Prisma.SortOrder
-  template?: Prisma.ClassTemplateOrderByWithRelationInput
+  name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  tagline?: Prisma.SortOrder
+  intensity?: Prisma.SortOrder
+  isSpecial?: Prisma.SortOrder
+  isCancelled?: Prisma.SortOrder
   instructor?: Prisma.InstructorOrderByWithRelationInput
   attendances?: Prisma.AttendanceOrderByRelationAggregateInput
 }
@@ -263,25 +306,34 @@ export type ClassOccurrenceWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.ClassOccurrenceWhereInput | Prisma.ClassOccurrenceWhereInput[]
   OR?: Prisma.ClassOccurrenceWhereInput[]
   NOT?: Prisma.ClassOccurrenceWhereInput | Prisma.ClassOccurrenceWhereInput[]
-  templateId?: Prisma.StringFilter<"ClassOccurrence"> | string
   instructorId?: Prisma.StringFilter<"ClassOccurrence"> | string
   startsAt?: Prisma.DateTimeFilter<"ClassOccurrence"> | Date | string
   durationMin?: Prisma.IntFilter<"ClassOccurrence"> | number
   capacity?: Prisma.IntFilter<"ClassOccurrence"> | number
   bookedCount?: Prisma.IntFilter<"ClassOccurrence"> | number
-  template?: Prisma.XOR<Prisma.ClassTemplateScalarRelationFilter, Prisma.ClassTemplateWhereInput>
+  name?: Prisma.StringFilter<"ClassOccurrence"> | string
+  description?: Prisma.StringFilter<"ClassOccurrence"> | string
+  tagline?: Prisma.StringFilter<"ClassOccurrence"> | string
+  intensity?: Prisma.StringFilter<"ClassOccurrence"> | string
+  isSpecial?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
+  isCancelled?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
   instructor?: Prisma.XOR<Prisma.InstructorScalarRelationFilter, Prisma.InstructorWhereInput>
   attendances?: Prisma.AttendanceListRelationFilter
 }, "id">
 
 export type ClassOccurrenceOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  templateId?: Prisma.SortOrder
   instructorId?: Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   durationMin?: Prisma.SortOrder
   capacity?: Prisma.SortOrder
   bookedCount?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  tagline?: Prisma.SortOrder
+  intensity?: Prisma.SortOrder
+  isSpecial?: Prisma.SortOrder
+  isCancelled?: Prisma.SortOrder
   _count?: Prisma.ClassOccurrenceCountOrderByAggregateInput
   _avg?: Prisma.ClassOccurrenceAvgOrderByAggregateInput
   _max?: Prisma.ClassOccurrenceMaxOrderByAggregateInput
@@ -294,12 +346,17 @@ export type ClassOccurrenceScalarWhereWithAggregatesInput = {
   OR?: Prisma.ClassOccurrenceScalarWhereWithAggregatesInput[]
   NOT?: Prisma.ClassOccurrenceScalarWhereWithAggregatesInput | Prisma.ClassOccurrenceScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"ClassOccurrence"> | string
-  templateId?: Prisma.StringWithAggregatesFilter<"ClassOccurrence"> | string
   instructorId?: Prisma.StringWithAggregatesFilter<"ClassOccurrence"> | string
   startsAt?: Prisma.DateTimeWithAggregatesFilter<"ClassOccurrence"> | Date | string
   durationMin?: Prisma.IntWithAggregatesFilter<"ClassOccurrence"> | number
   capacity?: Prisma.IntWithAggregatesFilter<"ClassOccurrence"> | number
   bookedCount?: Prisma.IntWithAggregatesFilter<"ClassOccurrence"> | number
+  name?: Prisma.StringWithAggregatesFilter<"ClassOccurrence"> | string
+  description?: Prisma.StringWithAggregatesFilter<"ClassOccurrence"> | string
+  tagline?: Prisma.StringWithAggregatesFilter<"ClassOccurrence"> | string
+  intensity?: Prisma.StringWithAggregatesFilter<"ClassOccurrence"> | string
+  isSpecial?: Prisma.BoolWithAggregatesFilter<"ClassOccurrence"> | boolean
+  isCancelled?: Prisma.BoolWithAggregatesFilter<"ClassOccurrence"> | boolean
 }
 
 export type ClassOccurrenceCreateInput = {
@@ -308,19 +365,29 @@ export type ClassOccurrenceCreateInput = {
   durationMin: number
   capacity: number
   bookedCount?: number
-  template: Prisma.ClassTemplateCreateNestedOneWithoutOccurrencesInput
+  name: string
+  description: string
+  tagline: string
+  intensity: string
+  isSpecial?: boolean
+  isCancelled?: boolean
   instructor: Prisma.InstructorCreateNestedOneWithoutOccurrencesInput
   attendances?: Prisma.AttendanceCreateNestedManyWithoutClassOccurrenceInput
 }
 
 export type ClassOccurrenceUncheckedCreateInput = {
   id?: string
-  templateId: string
   instructorId: string
   startsAt: Date | string
   durationMin: number
   capacity: number
   bookedCount?: number
+  name: string
+  description: string
+  tagline: string
+  intensity: string
+  isSpecial?: boolean
+  isCancelled?: boolean
   attendances?: Prisma.AttendanceUncheckedCreateNestedManyWithoutClassOccurrenceInput
 }
 
@@ -330,30 +397,45 @@ export type ClassOccurrenceUpdateInput = {
   durationMin?: Prisma.IntFieldUpdateOperationsInput | number
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
-  template?: Prisma.ClassTemplateUpdateOneRequiredWithoutOccurrencesNestedInput
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  tagline?: Prisma.StringFieldUpdateOperationsInput | string
+  intensity?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   instructor?: Prisma.InstructorUpdateOneRequiredWithoutOccurrencesNestedInput
   attendances?: Prisma.AttendanceUpdateManyWithoutClassOccurrenceNestedInput
 }
 
 export type ClassOccurrenceUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  templateId?: Prisma.StringFieldUpdateOperationsInput | string
   instructorId?: Prisma.StringFieldUpdateOperationsInput | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   durationMin?: Prisma.IntFieldUpdateOperationsInput | number
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  tagline?: Prisma.StringFieldUpdateOperationsInput | string
+  intensity?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendances?: Prisma.AttendanceUncheckedUpdateManyWithoutClassOccurrenceNestedInput
 }
 
 export type ClassOccurrenceCreateManyInput = {
   id?: string
-  templateId: string
   instructorId: string
   startsAt: Date | string
   durationMin: number
   capacity: number
   bookedCount?: number
+  name: string
+  description: string
+  tagline: string
+  intensity: string
+  isSpecial?: boolean
+  isCancelled?: boolean
 }
 
 export type ClassOccurrenceUpdateManyMutationInput = {
@@ -362,16 +444,27 @@ export type ClassOccurrenceUpdateManyMutationInput = {
   durationMin?: Prisma.IntFieldUpdateOperationsInput | number
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  tagline?: Prisma.StringFieldUpdateOperationsInput | string
+  intensity?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ClassOccurrenceUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  templateId?: Prisma.StringFieldUpdateOperationsInput | string
   instructorId?: Prisma.StringFieldUpdateOperationsInput | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   durationMin?: Prisma.IntFieldUpdateOperationsInput | number
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  tagline?: Prisma.StringFieldUpdateOperationsInput | string
+  intensity?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ClassOccurrenceListRelationFilter = {
@@ -386,12 +479,17 @@ export type ClassOccurrenceOrderByRelationAggregateInput = {
 
 export type ClassOccurrenceCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  templateId?: Prisma.SortOrder
   instructorId?: Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   durationMin?: Prisma.SortOrder
   capacity?: Prisma.SortOrder
   bookedCount?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  tagline?: Prisma.SortOrder
+  intensity?: Prisma.SortOrder
+  isSpecial?: Prisma.SortOrder
+  isCancelled?: Prisma.SortOrder
 }
 
 export type ClassOccurrenceAvgOrderByAggregateInput = {
@@ -402,22 +500,32 @@ export type ClassOccurrenceAvgOrderByAggregateInput = {
 
 export type ClassOccurrenceMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  templateId?: Prisma.SortOrder
   instructorId?: Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   durationMin?: Prisma.SortOrder
   capacity?: Prisma.SortOrder
   bookedCount?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  tagline?: Prisma.SortOrder
+  intensity?: Prisma.SortOrder
+  isSpecial?: Prisma.SortOrder
+  isCancelled?: Prisma.SortOrder
 }
 
 export type ClassOccurrenceMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  templateId?: Prisma.SortOrder
   instructorId?: Prisma.SortOrder
   startsAt?: Prisma.SortOrder
   durationMin?: Prisma.SortOrder
   capacity?: Prisma.SortOrder
   bookedCount?: Prisma.SortOrder
+  name?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  tagline?: Prisma.SortOrder
+  intensity?: Prisma.SortOrder
+  isSpecial?: Prisma.SortOrder
+  isCancelled?: Prisma.SortOrder
 }
 
 export type ClassOccurrenceSumOrderByAggregateInput = {
@@ -473,48 +581,6 @@ export type ClassOccurrenceUncheckedUpdateManyWithoutInstructorNestedInput = {
   deleteMany?: Prisma.ClassOccurrenceScalarWhereInput | Prisma.ClassOccurrenceScalarWhereInput[]
 }
 
-export type ClassOccurrenceCreateNestedManyWithoutTemplateInput = {
-  create?: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutTemplateInput, Prisma.ClassOccurrenceUncheckedCreateWithoutTemplateInput> | Prisma.ClassOccurrenceCreateWithoutTemplateInput[] | Prisma.ClassOccurrenceUncheckedCreateWithoutTemplateInput[]
-  connectOrCreate?: Prisma.ClassOccurrenceCreateOrConnectWithoutTemplateInput | Prisma.ClassOccurrenceCreateOrConnectWithoutTemplateInput[]
-  createMany?: Prisma.ClassOccurrenceCreateManyTemplateInputEnvelope
-  connect?: Prisma.ClassOccurrenceWhereUniqueInput | Prisma.ClassOccurrenceWhereUniqueInput[]
-}
-
-export type ClassOccurrenceUncheckedCreateNestedManyWithoutTemplateInput = {
-  create?: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutTemplateInput, Prisma.ClassOccurrenceUncheckedCreateWithoutTemplateInput> | Prisma.ClassOccurrenceCreateWithoutTemplateInput[] | Prisma.ClassOccurrenceUncheckedCreateWithoutTemplateInput[]
-  connectOrCreate?: Prisma.ClassOccurrenceCreateOrConnectWithoutTemplateInput | Prisma.ClassOccurrenceCreateOrConnectWithoutTemplateInput[]
-  createMany?: Prisma.ClassOccurrenceCreateManyTemplateInputEnvelope
-  connect?: Prisma.ClassOccurrenceWhereUniqueInput | Prisma.ClassOccurrenceWhereUniqueInput[]
-}
-
-export type ClassOccurrenceUpdateManyWithoutTemplateNestedInput = {
-  create?: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutTemplateInput, Prisma.ClassOccurrenceUncheckedCreateWithoutTemplateInput> | Prisma.ClassOccurrenceCreateWithoutTemplateInput[] | Prisma.ClassOccurrenceUncheckedCreateWithoutTemplateInput[]
-  connectOrCreate?: Prisma.ClassOccurrenceCreateOrConnectWithoutTemplateInput | Prisma.ClassOccurrenceCreateOrConnectWithoutTemplateInput[]
-  upsert?: Prisma.ClassOccurrenceUpsertWithWhereUniqueWithoutTemplateInput | Prisma.ClassOccurrenceUpsertWithWhereUniqueWithoutTemplateInput[]
-  createMany?: Prisma.ClassOccurrenceCreateManyTemplateInputEnvelope
-  set?: Prisma.ClassOccurrenceWhereUniqueInput | Prisma.ClassOccurrenceWhereUniqueInput[]
-  disconnect?: Prisma.ClassOccurrenceWhereUniqueInput | Prisma.ClassOccurrenceWhereUniqueInput[]
-  delete?: Prisma.ClassOccurrenceWhereUniqueInput | Prisma.ClassOccurrenceWhereUniqueInput[]
-  connect?: Prisma.ClassOccurrenceWhereUniqueInput | Prisma.ClassOccurrenceWhereUniqueInput[]
-  update?: Prisma.ClassOccurrenceUpdateWithWhereUniqueWithoutTemplateInput | Prisma.ClassOccurrenceUpdateWithWhereUniqueWithoutTemplateInput[]
-  updateMany?: Prisma.ClassOccurrenceUpdateManyWithWhereWithoutTemplateInput | Prisma.ClassOccurrenceUpdateManyWithWhereWithoutTemplateInput[]
-  deleteMany?: Prisma.ClassOccurrenceScalarWhereInput | Prisma.ClassOccurrenceScalarWhereInput[]
-}
-
-export type ClassOccurrenceUncheckedUpdateManyWithoutTemplateNestedInput = {
-  create?: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutTemplateInput, Prisma.ClassOccurrenceUncheckedCreateWithoutTemplateInput> | Prisma.ClassOccurrenceCreateWithoutTemplateInput[] | Prisma.ClassOccurrenceUncheckedCreateWithoutTemplateInput[]
-  connectOrCreate?: Prisma.ClassOccurrenceCreateOrConnectWithoutTemplateInput | Prisma.ClassOccurrenceCreateOrConnectWithoutTemplateInput[]
-  upsert?: Prisma.ClassOccurrenceUpsertWithWhereUniqueWithoutTemplateInput | Prisma.ClassOccurrenceUpsertWithWhereUniqueWithoutTemplateInput[]
-  createMany?: Prisma.ClassOccurrenceCreateManyTemplateInputEnvelope
-  set?: Prisma.ClassOccurrenceWhereUniqueInput | Prisma.ClassOccurrenceWhereUniqueInput[]
-  disconnect?: Prisma.ClassOccurrenceWhereUniqueInput | Prisma.ClassOccurrenceWhereUniqueInput[]
-  delete?: Prisma.ClassOccurrenceWhereUniqueInput | Prisma.ClassOccurrenceWhereUniqueInput[]
-  connect?: Prisma.ClassOccurrenceWhereUniqueInput | Prisma.ClassOccurrenceWhereUniqueInput[]
-  update?: Prisma.ClassOccurrenceUpdateWithWhereUniqueWithoutTemplateInput | Prisma.ClassOccurrenceUpdateWithWhereUniqueWithoutTemplateInput[]
-  updateMany?: Prisma.ClassOccurrenceUpdateManyWithWhereWithoutTemplateInput | Prisma.ClassOccurrenceUpdateManyWithWhereWithoutTemplateInput[]
-  deleteMany?: Prisma.ClassOccurrenceScalarWhereInput | Prisma.ClassOccurrenceScalarWhereInput[]
-}
-
 export type ClassOccurrenceCreateNestedOneWithoutAttendancesInput = {
   create?: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutAttendancesInput, Prisma.ClassOccurrenceUncheckedCreateWithoutAttendancesInput>
   connectOrCreate?: Prisma.ClassOccurrenceCreateOrConnectWithoutAttendancesInput
@@ -535,17 +601,27 @@ export type ClassOccurrenceCreateWithoutInstructorInput = {
   durationMin: number
   capacity: number
   bookedCount?: number
-  template: Prisma.ClassTemplateCreateNestedOneWithoutOccurrencesInput
+  name: string
+  description: string
+  tagline: string
+  intensity: string
+  isSpecial?: boolean
+  isCancelled?: boolean
   attendances?: Prisma.AttendanceCreateNestedManyWithoutClassOccurrenceInput
 }
 
 export type ClassOccurrenceUncheckedCreateWithoutInstructorInput = {
   id?: string
-  templateId: string
   startsAt: Date | string
   durationMin: number
   capacity: number
   bookedCount?: number
+  name: string
+  description: string
+  tagline: string
+  intensity: string
+  isSpecial?: boolean
+  isCancelled?: boolean
   attendances?: Prisma.AttendanceUncheckedCreateNestedManyWithoutClassOccurrenceInput
 }
 
@@ -580,58 +656,17 @@ export type ClassOccurrenceScalarWhereInput = {
   OR?: Prisma.ClassOccurrenceScalarWhereInput[]
   NOT?: Prisma.ClassOccurrenceScalarWhereInput | Prisma.ClassOccurrenceScalarWhereInput[]
   id?: Prisma.StringFilter<"ClassOccurrence"> | string
-  templateId?: Prisma.StringFilter<"ClassOccurrence"> | string
   instructorId?: Prisma.StringFilter<"ClassOccurrence"> | string
   startsAt?: Prisma.DateTimeFilter<"ClassOccurrence"> | Date | string
   durationMin?: Prisma.IntFilter<"ClassOccurrence"> | number
   capacity?: Prisma.IntFilter<"ClassOccurrence"> | number
   bookedCount?: Prisma.IntFilter<"ClassOccurrence"> | number
-}
-
-export type ClassOccurrenceCreateWithoutTemplateInput = {
-  id?: string
-  startsAt: Date | string
-  durationMin: number
-  capacity: number
-  bookedCount?: number
-  instructor: Prisma.InstructorCreateNestedOneWithoutOccurrencesInput
-  attendances?: Prisma.AttendanceCreateNestedManyWithoutClassOccurrenceInput
-}
-
-export type ClassOccurrenceUncheckedCreateWithoutTemplateInput = {
-  id?: string
-  instructorId: string
-  startsAt: Date | string
-  durationMin: number
-  capacity: number
-  bookedCount?: number
-  attendances?: Prisma.AttendanceUncheckedCreateNestedManyWithoutClassOccurrenceInput
-}
-
-export type ClassOccurrenceCreateOrConnectWithoutTemplateInput = {
-  where: Prisma.ClassOccurrenceWhereUniqueInput
-  create: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutTemplateInput, Prisma.ClassOccurrenceUncheckedCreateWithoutTemplateInput>
-}
-
-export type ClassOccurrenceCreateManyTemplateInputEnvelope = {
-  data: Prisma.ClassOccurrenceCreateManyTemplateInput | Prisma.ClassOccurrenceCreateManyTemplateInput[]
-  skipDuplicates?: boolean
-}
-
-export type ClassOccurrenceUpsertWithWhereUniqueWithoutTemplateInput = {
-  where: Prisma.ClassOccurrenceWhereUniqueInput
-  update: Prisma.XOR<Prisma.ClassOccurrenceUpdateWithoutTemplateInput, Prisma.ClassOccurrenceUncheckedUpdateWithoutTemplateInput>
-  create: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutTemplateInput, Prisma.ClassOccurrenceUncheckedCreateWithoutTemplateInput>
-}
-
-export type ClassOccurrenceUpdateWithWhereUniqueWithoutTemplateInput = {
-  where: Prisma.ClassOccurrenceWhereUniqueInput
-  data: Prisma.XOR<Prisma.ClassOccurrenceUpdateWithoutTemplateInput, Prisma.ClassOccurrenceUncheckedUpdateWithoutTemplateInput>
-}
-
-export type ClassOccurrenceUpdateManyWithWhereWithoutTemplateInput = {
-  where: Prisma.ClassOccurrenceScalarWhereInput
-  data: Prisma.XOR<Prisma.ClassOccurrenceUpdateManyMutationInput, Prisma.ClassOccurrenceUncheckedUpdateManyWithoutTemplateInput>
+  name?: Prisma.StringFilter<"ClassOccurrence"> | string
+  description?: Prisma.StringFilter<"ClassOccurrence"> | string
+  tagline?: Prisma.StringFilter<"ClassOccurrence"> | string
+  intensity?: Prisma.StringFilter<"ClassOccurrence"> | string
+  isSpecial?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
+  isCancelled?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
 }
 
 export type ClassOccurrenceCreateWithoutAttendancesInput = {
@@ -640,18 +675,28 @@ export type ClassOccurrenceCreateWithoutAttendancesInput = {
   durationMin: number
   capacity: number
   bookedCount?: number
-  template: Prisma.ClassTemplateCreateNestedOneWithoutOccurrencesInput
+  name: string
+  description: string
+  tagline: string
+  intensity: string
+  isSpecial?: boolean
+  isCancelled?: boolean
   instructor: Prisma.InstructorCreateNestedOneWithoutOccurrencesInput
 }
 
 export type ClassOccurrenceUncheckedCreateWithoutAttendancesInput = {
   id?: string
-  templateId: string
   instructorId: string
   startsAt: Date | string
   durationMin: number
   capacity: number
   bookedCount?: number
+  name: string
+  description: string
+  tagline: string
+  intensity: string
+  isSpecial?: boolean
+  isCancelled?: boolean
 }
 
 export type ClassOccurrenceCreateOrConnectWithoutAttendancesInput = {
@@ -676,27 +721,42 @@ export type ClassOccurrenceUpdateWithoutAttendancesInput = {
   durationMin?: Prisma.IntFieldUpdateOperationsInput | number
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
-  template?: Prisma.ClassTemplateUpdateOneRequiredWithoutOccurrencesNestedInput
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  tagline?: Prisma.StringFieldUpdateOperationsInput | string
+  intensity?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   instructor?: Prisma.InstructorUpdateOneRequiredWithoutOccurrencesNestedInput
 }
 
 export type ClassOccurrenceUncheckedUpdateWithoutAttendancesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  templateId?: Prisma.StringFieldUpdateOperationsInput | string
   instructorId?: Prisma.StringFieldUpdateOperationsInput | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   durationMin?: Prisma.IntFieldUpdateOperationsInput | number
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  tagline?: Prisma.StringFieldUpdateOperationsInput | string
+  intensity?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ClassOccurrenceCreateManyInstructorInput = {
   id?: string
-  templateId: string
   startsAt: Date | string
   durationMin: number
   capacity: number
   bookedCount?: number
+  name: string
+  description: string
+  tagline: string
+  intensity: string
+  isSpecial?: boolean
+  isCancelled?: boolean
 }
 
 export type ClassOccurrenceUpdateWithoutInstructorInput = {
@@ -705,65 +765,42 @@ export type ClassOccurrenceUpdateWithoutInstructorInput = {
   durationMin?: Prisma.IntFieldUpdateOperationsInput | number
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
-  template?: Prisma.ClassTemplateUpdateOneRequiredWithoutOccurrencesNestedInput
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  tagline?: Prisma.StringFieldUpdateOperationsInput | string
+  intensity?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendances?: Prisma.AttendanceUpdateManyWithoutClassOccurrenceNestedInput
 }
 
 export type ClassOccurrenceUncheckedUpdateWithoutInstructorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  templateId?: Prisma.StringFieldUpdateOperationsInput | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   durationMin?: Prisma.IntFieldUpdateOperationsInput | number
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  tagline?: Prisma.StringFieldUpdateOperationsInput | string
+  intensity?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   attendances?: Prisma.AttendanceUncheckedUpdateManyWithoutClassOccurrenceNestedInput
 }
 
 export type ClassOccurrenceUncheckedUpdateManyWithoutInstructorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  templateId?: Prisma.StringFieldUpdateOperationsInput | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   durationMin?: Prisma.IntFieldUpdateOperationsInput | number
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
-}
-
-export type ClassOccurrenceCreateManyTemplateInput = {
-  id?: string
-  instructorId: string
-  startsAt: Date | string
-  durationMin: number
-  capacity: number
-  bookedCount?: number
-}
-
-export type ClassOccurrenceUpdateWithoutTemplateInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  durationMin?: Prisma.IntFieldUpdateOperationsInput | number
-  capacity?: Prisma.IntFieldUpdateOperationsInput | number
-  bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
-  instructor?: Prisma.InstructorUpdateOneRequiredWithoutOccurrencesNestedInput
-  attendances?: Prisma.AttendanceUpdateManyWithoutClassOccurrenceNestedInput
-}
-
-export type ClassOccurrenceUncheckedUpdateWithoutTemplateInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  instructorId?: Prisma.StringFieldUpdateOperationsInput | string
-  startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  durationMin?: Prisma.IntFieldUpdateOperationsInput | number
-  capacity?: Prisma.IntFieldUpdateOperationsInput | number
-  bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
-  attendances?: Prisma.AttendanceUncheckedUpdateManyWithoutClassOccurrenceNestedInput
-}
-
-export type ClassOccurrenceUncheckedUpdateManyWithoutTemplateInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  instructorId?: Prisma.StringFieldUpdateOperationsInput | string
-  startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  durationMin?: Prisma.IntFieldUpdateOperationsInput | number
-  capacity?: Prisma.IntFieldUpdateOperationsInput | number
-  bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  tagline?: Prisma.StringFieldUpdateOperationsInput | string
+  intensity?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -799,13 +836,17 @@ export type ClassOccurrenceCountOutputTypeCountAttendancesArgs<ExtArgs extends r
 
 export type ClassOccurrenceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  templateId?: boolean
   instructorId?: boolean
   startsAt?: boolean
   durationMin?: boolean
   capacity?: boolean
   bookedCount?: boolean
-  template?: boolean | Prisma.ClassTemplateDefaultArgs<ExtArgs>
+  name?: boolean
+  description?: boolean
+  tagline?: boolean
+  intensity?: boolean
+  isSpecial?: boolean
+  isCancelled?: boolean
   instructor?: boolean | Prisma.InstructorDefaultArgs<ExtArgs>
   attendances?: boolean | Prisma.ClassOccurrence$attendancesArgs<ExtArgs>
   _count?: boolean | Prisma.ClassOccurrenceCountOutputTypeDefaultArgs<ExtArgs>
@@ -813,69 +854,83 @@ export type ClassOccurrenceSelect<ExtArgs extends runtime.Types.Extensions.Inter
 
 export type ClassOccurrenceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  templateId?: boolean
   instructorId?: boolean
   startsAt?: boolean
   durationMin?: boolean
   capacity?: boolean
   bookedCount?: boolean
-  template?: boolean | Prisma.ClassTemplateDefaultArgs<ExtArgs>
+  name?: boolean
+  description?: boolean
+  tagline?: boolean
+  intensity?: boolean
+  isSpecial?: boolean
+  isCancelled?: boolean
   instructor?: boolean | Prisma.InstructorDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["classOccurrence"]>
 
 export type ClassOccurrenceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  templateId?: boolean
   instructorId?: boolean
   startsAt?: boolean
   durationMin?: boolean
   capacity?: boolean
   bookedCount?: boolean
-  template?: boolean | Prisma.ClassTemplateDefaultArgs<ExtArgs>
+  name?: boolean
+  description?: boolean
+  tagline?: boolean
+  intensity?: boolean
+  isSpecial?: boolean
+  isCancelled?: boolean
   instructor?: boolean | Prisma.InstructorDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["classOccurrence"]>
 
 export type ClassOccurrenceSelectScalar = {
   id?: boolean
-  templateId?: boolean
   instructorId?: boolean
   startsAt?: boolean
   durationMin?: boolean
   capacity?: boolean
   bookedCount?: boolean
+  name?: boolean
+  description?: boolean
+  tagline?: boolean
+  intensity?: boolean
+  isSpecial?: boolean
+  isCancelled?: boolean
 }
 
-export type ClassOccurrenceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "templateId" | "instructorId" | "startsAt" | "durationMin" | "capacity" | "bookedCount", ExtArgs["result"]["classOccurrence"]>
+export type ClassOccurrenceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "instructorId" | "startsAt" | "durationMin" | "capacity" | "bookedCount" | "name" | "description" | "tagline" | "intensity" | "isSpecial" | "isCancelled", ExtArgs["result"]["classOccurrence"]>
 export type ClassOccurrenceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  template?: boolean | Prisma.ClassTemplateDefaultArgs<ExtArgs>
   instructor?: boolean | Prisma.InstructorDefaultArgs<ExtArgs>
   attendances?: boolean | Prisma.ClassOccurrence$attendancesArgs<ExtArgs>
   _count?: boolean | Prisma.ClassOccurrenceCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ClassOccurrenceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  template?: boolean | Prisma.ClassTemplateDefaultArgs<ExtArgs>
   instructor?: boolean | Prisma.InstructorDefaultArgs<ExtArgs>
 }
 export type ClassOccurrenceIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  template?: boolean | Prisma.ClassTemplateDefaultArgs<ExtArgs>
   instructor?: boolean | Prisma.InstructorDefaultArgs<ExtArgs>
 }
 
 export type $ClassOccurrencePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "ClassOccurrence"
   objects: {
-    template: Prisma.$ClassTemplatePayload<ExtArgs>
     instructor: Prisma.$InstructorPayload<ExtArgs>
     attendances: Prisma.$AttendancePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    templateId: string
     instructorId: string
     startsAt: Date
     durationMin: number
     capacity: number
     bookedCount: number
+    name: string
+    description: string
+    tagline: string
+    intensity: string
+    isSpecial: boolean
+    isCancelled: boolean
   }, ExtArgs["result"]["classOccurrence"]>
   composites: {}
 }
@@ -1270,7 +1325,6 @@ readonly fields: ClassOccurrenceFieldRefs;
  */
 export interface Prisma__ClassOccurrenceClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  template<T extends Prisma.ClassTemplateDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClassTemplateDefaultArgs<ExtArgs>>): Prisma.Prisma__ClassTemplateClient<runtime.Types.Result.GetResult<Prisma.$ClassTemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   instructor<T extends Prisma.InstructorDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.InstructorDefaultArgs<ExtArgs>>): Prisma.Prisma__InstructorClient<runtime.Types.Result.GetResult<Prisma.$InstructorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   attendances<T extends Prisma.ClassOccurrence$attendancesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClassOccurrence$attendancesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttendancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1303,12 +1357,17 @@ export interface Prisma__ClassOccurrenceClient<T, Null = never, ExtArgs extends 
  */
 export interface ClassOccurrenceFieldRefs {
   readonly id: Prisma.FieldRef<"ClassOccurrence", 'String'>
-  readonly templateId: Prisma.FieldRef<"ClassOccurrence", 'String'>
   readonly instructorId: Prisma.FieldRef<"ClassOccurrence", 'String'>
   readonly startsAt: Prisma.FieldRef<"ClassOccurrence", 'DateTime'>
   readonly durationMin: Prisma.FieldRef<"ClassOccurrence", 'Int'>
   readonly capacity: Prisma.FieldRef<"ClassOccurrence", 'Int'>
   readonly bookedCount: Prisma.FieldRef<"ClassOccurrence", 'Int'>
+  readonly name: Prisma.FieldRef<"ClassOccurrence", 'String'>
+  readonly description: Prisma.FieldRef<"ClassOccurrence", 'String'>
+  readonly tagline: Prisma.FieldRef<"ClassOccurrence", 'String'>
+  readonly intensity: Prisma.FieldRef<"ClassOccurrence", 'String'>
+  readonly isSpecial: Prisma.FieldRef<"ClassOccurrence", 'Boolean'>
+  readonly isCancelled: Prisma.FieldRef<"ClassOccurrence", 'Boolean'>
 }
     
 

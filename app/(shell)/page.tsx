@@ -1,12 +1,11 @@
 "use client";
 
 import {
-    ContactShortcut,
-    HeroCard,
     PoseCard,
-    PromoBanner,
     QuoteCard,
-    WelcomeBanner,
+    ThaiCalendarCard,
+    TigerHeader,
+    TigerPromoCard,
     WorkshopPromo,
 } from "@/components/home";
 import { MilestoneCelebrationCard } from "@/components/rewards";
@@ -14,7 +13,6 @@ import { HOME_CONTENT } from "@/lib/mock/home-content";
 import { useMember } from "@/lib/profile/use-member";
 import { getUnseenUnlockedMilestones } from "@/lib/rewards";
 import { motion } from "motion/react";
-import Image from "next/image";
 import { useMemo, useCallback } from "react";
 
 const containerVariants = {
@@ -39,15 +37,7 @@ const itemVariants = {
 };
 
 export default function HomePage() {
-    const {
-        heroEyebrow,
-        heroTitle,
-        heroSubtitle,
-        heroTagline,
-        banner,
-        quoteOfWeek,
-        poseOfWeek,
-    } = HOME_CONTENT;
+    const { quoteOfWeek, poseOfWeek } = HOME_CONTENT;
     const { member, markCelebrated } = useMember();
 
     const celebratedNumbers = useMemo<number[]>(() => {
@@ -100,29 +90,12 @@ export default function HomePage() {
                 initial="hidden"
                 animate="visible"
             >
-                <motion.div variants={itemVariants} className="flex justify-start px-1">
-                    <div className="relative h-12 w-full max-w-[240px]">
-                        <Image
-                            src="/mitr logo.jpg"
-                            alt="MiTR Journey Logo"
-                            fill
-                            className="object-contain object-left"
-                            priority
-                        />
-                    </div>
+                <motion.div variants={itemVariants}>
+                    <TigerHeader />
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                    <HeroCard
-                        eyebrow={heroEyebrow}
-                        title={heroTitle}
-                        subtitle={heroSubtitle}
-                        tagline={heroTagline}
-                    />
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                    <WelcomeBanner displayName={member?.displayName} />
+                    <ThaiCalendarCard displayName={member?.displayName} />
                 </motion.div>
 
                 {nextMilestone && (
@@ -133,6 +106,24 @@ export default function HomePage() {
                         />
                     </motion.div>
                 )}
+
+                <motion.div variants={itemVariants}>
+                    <TigerPromoCard
+                        href="/promotion"
+                        title="Promotion"
+                        eyebrow="Special offers"
+                        image="/tigers/LINE_ALBUM_tiger_260719_10.jpg"
+                    />
+                </motion.div>
+
+                <motion.div variants={itemVariants}>
+                    <TigerPromoCard
+                        href="/contact"
+                        title="Contact Us"
+                        eyebrow="We'd love to hear from you"
+                        image="/tigers/LINE_ALBUM_tiger_260719_16.jpg"
+                    />
+                </motion.div>
 
                 <motion.div variants={itemVariants}>
                     <WorkshopPromo />
@@ -151,20 +142,6 @@ export default function HomePage() {
                         description={poseOfWeek.description}
                         imageUrl={poseOfWeek.imageUrl}
                     />
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                    <PromoBanner
-                        eyebrow={banner.eyebrow}
-                        title={banner.title}
-                        body={banner.body}
-                        href={banner.href}
-                        cta={banner.cta}
-                    />
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                    <ContactShortcut />
                 </motion.div>
             </motion.div>
         </>

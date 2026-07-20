@@ -129,13 +129,13 @@ export function InlineCalendar({
                     }
                     if (classType && classType !== "all") {
                         occurrences = occurrences.filter((o) => {
-                            if (classType === "special") return !!o.template.isSpecial;
-                            if (classType === "regular") return !o.template.isSpecial;
+                            if (classType === "special") return !!o.isSpecial;
+                            if (classType === "regular") return !o.isSpecial;
                             return true;
                         });
                     }
                     if (intensity && intensity !== "all") {
-                        occurrences = occurrences.filter((o) => o.template.intensity === intensity);
+                        occurrences = occurrences.filter((o) => o.intensity === intensity);
                     }
                     if (onlyAvailable) {
                         occurrences = occurrences.filter((o) => o.slotsLeft > 0);
@@ -179,7 +179,7 @@ export function InlineCalendar({
                                                 key={occ.id}
                                                 className={cn(
                                                     "h-1 w-1 rounded-full",
-                                                    occ.template.isSpecial
+                                                    occ.isSpecial
                                                         ? "bg-primary-800"
                                                         : "bg-primary-400"
                                                 )}
@@ -192,7 +192,7 @@ export function InlineCalendar({
                             {/* Desktop: Sleek horizontal mini-pills (like Google Calendar) */}
                             <div className="hidden md:flex flex-col gap-0.5 flex-grow overflow-y-auto max-h-[70px] scrollbar-none mt-0.5">
                                 {occurrences.map((occ) => {
-                                    const isSpecial = occ.template.isSpecial;
+                                    const isSpecial = occ.isSpecial;
                                     return (
                                         <Link
                                             key={occ.id}
@@ -204,10 +204,10 @@ export function InlineCalendar({
                                                     ? "bg-primary-900 text-primary-100 border-primary-800"
                                                     : "bg-primary-100 text-primary-900 border-primary-200"
                                             )}
-                                            title={`${formatTimeShort(occ.startsAt)} - ${occ.template.name} (${occ.instructor.name})`}
+                                            title={`${formatTimeShort(occ.startsAt)} - ${occ.name} (${occ.instructor.name})`}
                                         >
                                             <span className="font-bold shrink-0">{formatTimeShort(occ.startsAt)}</span>
-                                            <span className="truncate flex-grow font-semibold">{occ.template.name}</span>
+                                            <span className="truncate flex-grow font-semibold">{occ.name}</span>
                                         </Link>
                                     );
                                 })}

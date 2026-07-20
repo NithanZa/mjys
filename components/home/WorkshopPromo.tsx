@@ -5,12 +5,25 @@ import { motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { Calendar, Clock, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export interface WorkshopPromoProps {
   className?: string;
 }
 
 export function WorkshopPromo({ className }: WorkshopPromoProps) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const now = new Date();
+    const workshop = new Date("2026-06-28T09:00:00");
+    const diffDays =
+      (workshop.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+    setVisible(diffDays > 0 && diffDays <= 30);
+  }, []);
+
+  if (!visible) return null;
+
   return (
     <Link
       href="/book/occ_2026-06-28_0"

@@ -23,18 +23,14 @@ export async function GET(request: NextRequest) {
             };
         }
 
-        // Fetch occurrences with relationships, plus all static lists for forms
-        const [occurrences, templates, instructors] = await Promise.all([
+        // Fetch occurrences with instructor relation
+        const [occurrences, instructors] = await Promise.all([
             prisma.classOccurrence.findMany({
                 where,
                 include: {
-                    template: true,
                     instructor: true,
                 },
                 orderBy: { startsAt: "asc" },
-            }),
-            prisma.classTemplate.findMany({
-                orderBy: { name: "asc" },
             }),
             prisma.instructor.findMany({
                 orderBy: { order: "asc" },
@@ -43,7 +39,6 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             occurrences,
-            templates,
             instructors,
         });
     } catch (error) {

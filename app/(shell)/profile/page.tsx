@@ -95,7 +95,7 @@ export default function ProfilePage() {
         return {
             ...raw,
             startsAt: raw.occurredAt,
-            durationMin: raw.template.durationMin,
+            durationMin: raw.durationMin,
         };
     }, [classHistory]);
 
@@ -149,7 +149,7 @@ export default function ProfilePage() {
                 {/* 3. Next class strip */}
                 {nextBooking && (
                     <NextClassStrip
-                        className_={nextBooking.template.name}
+                        className_={nextBooking.name}
                         instructorName={nextBooking.instructor.name}
                         startsAt={nextBooking.startsAt}
                         durationMin={nextBooking.durationMin}

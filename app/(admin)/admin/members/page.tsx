@@ -53,9 +53,7 @@ interface Attendance {
     createdAt: string;
     classOccurrence: {
         startsAt: string;
-        template: {
-            name: string;
-        };
+        name: string;
         instructor: {
             name: string;
         };
@@ -508,7 +506,7 @@ export default function AdminMembersPage() {
                                                 <li key={att.id} className="p-3 flex items-center justify-between gap-4 hover:bg-neutral-bg/30">
                                                     <div className="flex flex-col">
                                                         <span className="font-display text-body-sm font-semibold text-neutral-ink leading-tight">
-                                                            {att.classOccurrence.template.name}
+                                                            {att.classOccurrence.name}
                                                         </span>
                                                         <span className="font-sans text-caption text-neutral-text-3 mt-0.5">
                                                             {format(localStarts, "EEEE, d MMM yyyy · HH:mm")} with {att.classOccurrence.instructor.name}

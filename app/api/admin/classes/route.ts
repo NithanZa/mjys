@@ -11,32 +11,29 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { templateId, instructorId, startsAt, durationMin, capacity } = body;
+        const { name, description, tagline, intensity, isSpecial, instructorId, startsAt, durationMin, capacity } = body;
 
         // Validation
-        if (!templateId || !instructorId || !startsAt || !durationMin || !capacity) {
+        if (!name || !instructorId || !startsAt || !durationMin || !capacity) {
             return NextResponse.json(
-                { error: "Missing required fields: templateId, instructorId, startsAt, durationMin, capacity" },
+                { error: "Missing required fields: name, instructorId, startsAt, durationMin, capacity" },
                 { status: 400 },
             );
         }
 
-        // Validate entities exist
-        const [template, instructor] = await Promise.all([
-            prisma.classTemplate.findUnique({ where: { id: templateId } }),
-            prisma.instructor.findUnique({ where: { id: instructorId } }),
-        ]);
-
-        if (!template) {
-            return NextResponse.json({ error: "Class template not found" }, { status: 404 });
-        }
+        // Validate instructor exists
+        const instructor = await prisma.instructor.findUnique({ where: { id: instructorId } });
         if (!instructor) {
             return NextResponse.json({ error: "Instructor not found" }, { status: 404 });
         }
 
         const occurrence = await prisma.classOccurrence.create({
             data: {
-                templateId,
+                name,
+                description: description ?? "",
+                tagline: tagline ?? "",
+                intensity: intensity ?? "Balanced",
+                isSpecial: Boolean(isSpecial),
                 instructorId,
                 startsAt: parseISO(startsAt),
                 durationMin: parseInt(durationMin, 10),
@@ -44,7 +41,6 @@ export async function POST(request: NextRequest) {
                 bookedCount: 0,
             },
             include: {
-                template: true,
                 instructor: true,
             },
         });

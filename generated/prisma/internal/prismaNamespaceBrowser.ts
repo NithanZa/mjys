@@ -53,7 +53,6 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Member: 'Member',
   Instructor: 'Instructor',
-  ClassTemplate: 'ClassTemplate',
   ClassOccurrence: 'ClassOccurrence',
   Attendance: 'Attendance',
   HomeContent: 'HomeContent',
@@ -115,27 +114,19 @@ export const InstructorScalarFieldEnum = {
 export type InstructorScalarFieldEnum = (typeof InstructorScalarFieldEnum)[keyof typeof InstructorScalarFieldEnum]
 
 
-export const ClassTemplateScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  description: 'description',
-  durationMin: 'durationMin',
-  intensity: 'intensity',
-  tagline: 'tagline',
-  isSpecial: 'isSpecial'
-} as const
-
-export type ClassTemplateScalarFieldEnum = (typeof ClassTemplateScalarFieldEnum)[keyof typeof ClassTemplateScalarFieldEnum]
-
-
 export const ClassOccurrenceScalarFieldEnum = {
   id: 'id',
-  templateId: 'templateId',
   instructorId: 'instructorId',
   startsAt: 'startsAt',
   durationMin: 'durationMin',
   capacity: 'capacity',
-  bookedCount: 'bookedCount'
+  bookedCount: 'bookedCount',
+  name: 'name',
+  description: 'description',
+  tagline: 'tagline',
+  intensity: 'intensity',
+  isSpecial: 'isSpecial',
+  isCancelled: 'isCancelled'
 } as const
 
 export type ClassOccurrenceScalarFieldEnum = (typeof ClassOccurrenceScalarFieldEnum)[keyof typeof ClassOccurrenceScalarFieldEnum]

@@ -21,9 +21,9 @@ export async function GET(request: NextRequest) {
                     gte: new Date(fromStr),
                     lte: new Date(toStr),
                 },
+                isCancelled: false,
             },
             include: {
-                template: true,
                 instructor: true,
             },
             orderBy: {
@@ -57,7 +57,6 @@ export async function POST(request: NextRequest) {
         const occurrence = await prisma.classOccurrence.findUnique({
             where: { id: occurrenceId },
             include: {
-                template: true,
                 instructor: true,
             },
         });

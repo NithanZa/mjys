@@ -1,6 +1,6 @@
 // FRONTEND-ONLY mock schedule data. Deterministic so the UI is testable.
-// Replaced in the backend pass by Prisma queries against `Instructor`,
-// `ClassTemplate`, `ClassOccurrence` (see Phase 3 plan).
+// Replaced in the backend pass by Prisma queries against `Instructor`
+// and `ClassOccurrence` (see Phase 3 plan).
 
 import { addDays, addHours, setHours, setMinutes, setSeconds } from "date-fns";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
@@ -17,28 +17,21 @@ export interface Instructor {
     order: number;
 }
 
-export interface ClassTemplate {
-    id: string;
-    name: string;
-    description: string;
-    durationMin: number;
-    intensity: "Gentle" | "Balanced" | "Strong";
-    tagline: string;
-    isSpecial?: boolean;
-}
-
 export interface ClassOccurrence {
     id: string;
-    templateId: string;
     instructorId: string;
     startsAt: Date;
     durationMin: number;
     capacity: number;
     bookedCount: number;
+    name: string;
+    description: string;
+    tagline: string;
+    intensity: "Gentle" | "Balanced" | "Strong";
+    isSpecial: boolean;
 }
 
 export interface OccurrenceView extends ClassOccurrence {
-    template: ClassTemplate;
     instructor: Instructor;
     slotsLeft: number;
 }
@@ -108,137 +101,24 @@ export const INSTRUCTORS: Instructor[] = [
     },
 ];
 
-export const CLASS_TEMPLATES: ClassTemplate[] = [
-    {
-        id: "tpl_easy_flow",
-        name: "Easy Flow",
-        description: "A gentle and slow-paced flow focused on foundational postures, alignment, and simple transitions. Perfect for beginners and those seeking a mindful, relaxing practice.",
-        durationMin: 60,
-        intensity: "Gentle",
-        tagline: "Find your flow, ease your mind.",
-    },
-    {
-        id: "tpl_morning_stretching",
-        name: "Morning Stretching",
-        description: "Awaken your body with gentle stretches and movements that release tension built up during sleep. Great for flexibility and starting the day with energy.",
-        durationMin: 60,
-        intensity: "Gentle",
-        tagline: "Awaken and energize.",
-    },
-    {
-        id: "tpl_open_shoulder",
-        name: "Open Shoulder",
-        description: "Targeted stretches and strengthening postures to open up the shoulders, neck, and upper back, relieving tension from desk work and poor posture.",
-        durationMin: 60,
-        intensity: "Balanced",
-        tagline: "Release tension, open your heart.",
-    },
-    {
-        id: "tpl_stretching",
-        name: "Stretching",
-        description: "A full-body stretching session designed to improve overall flexibility, enhance range of motion, and promote deep relaxation of tight muscles.",
-        durationMin: 60,
-        intensity: "Gentle",
-        tagline: "Lengthen and loosen.",
-    },
-    {
-        id: "tpl_hatha_flow",
-        name: "Hatha Flow",
-        description: "A classic practice integrating breath with holding postures to build strength, balance, and mental clarity. Conducted at a steady, deliberate pace.",
-        durationMin: 60,
-        intensity: "Balanced",
-        tagline: "Balance strength and stillness.",
-    },
-    {
-        id: "tpl_vinyasa",
-        name: "Vinyasa Flow",
-        description: "A breath-paced flow that builds heat, strength, and a quiet mind. Suitable for steady beginners and confident regulars.",
-        durationMin: 60,
-        intensity: "Balanced",
-        tagline: "Move with the breath.",
-    },
-    {
-        id: "tpl_strong_core",
-        name: "Strong Core",
-        description: "A dynamic yoga session emphasizing core strength, stability, and abdominal power. Prepare to sweat and build deep core heat.",
-        durationMin: 60,
-        intensity: "Strong",
-        tagline: "Build strength from within.",
-    },
-    {
-        id: "tpl_office_syndrome",
-        name: "Office Syndrome",
-        description: "Specially designed for office workers to target common problem areas: neck, shoulders, back, and hips. Alleviate chronic pain and stiffness.",
-        durationMin: 60,
-        intensity: "Balanced",
-        tagline: "Relieve tension from desk work.",
-    },
-    {
-        id: "tpl_side_bend",
-        name: "Side Bend",
-        description: "Focus on lateral stretches and spine elongation to expand lung capacity, open up the ribs, and improve side body flexibility.",
-        durationMin: 60,
-        intensity: "Balanced",
-        tagline: "Stretch and expand your sides.",
-    },
-    {
-        id: "tpl_flexibility",
-        name: "Flexibility",
-        description: "Focuses on deep stretches and passive holds to improve flexibility, release deep tissue tightness, and increase joint mobility.",
-        durationMin: 60,
-        intensity: "Gentle",
-        tagline: "Unlock your body's flexibility.",
-    },
-    {
-        id: "tpl_backbending",
-        name: "Backbending",
-        description: "Learn the anatomy and mechanics of safe backbends. Strengthen the spine, open the chest, and build flexibility in a controlled and safe environment.",
-        durationMin: 60,
-        intensity: "Strong",
-        tagline: "Open your front, strengthen your back.",
-    },
-    {
-        id: "tpl_hip_opening",
-        name: "Hip Opening",
-        description: "A deep, nourishing practice focused entirely on opening the hips, releasing stored physical and emotional tension.",
-        durationMin: 60,
-        intensity: "Balanced",
-        tagline: "Release tension in the hips.",
-    },
-    {
-        id: "tpl_balance_flow",
-        name: "Balance Flow",
-        description: "A flowing sequence emphasizing both physical and mental balance. Connect with your center through steady standing poses and transitions.",
-        durationMin: 60,
-        intensity: "Balanced",
-        tagline: "Find your steady center.",
-    },
-    {
-        id: "tpl_inversion_special",
-        name: "* Special Class * Inversion",
-        description: "A 3-hour comprehensive workshop breaking down headstands, forearm stands, and handstands with step-by-step progressions, safety, and alignment.",
-        durationMin: 180,
-        intensity: "Strong",
-        tagline: "Invert your practice with safety.",
-        isSpecial: true,
-    },
-    {
-        id: "tpl_gentle_flow",
-        name: "Gentle Flow",
-        description: "A soft, nurturing yoga practice featuring gentle movements and breathing exercises to calm the nervous system and build gentle strength.",
-        durationMin: 60,
-        intensity: "Gentle",
-        tagline: "Be kind to your body.",
-    },
-    {
-        id: "tpl_twist",
-        name: "Twist",
-        description: "A detoxifying sequence of seated and standing twists designed to massage internal organs, improve digestion, and restore spinal mobility.",
-        durationMin: 60,
-        intensity: "Balanced",
-        tagline: "Twist, detoxify, and restore.",
-    },
-];
+const CLASS_DATA: Record<string, { name: string; description: string; tagline: string; intensity: "Gentle" | "Balanced" | "Strong"; isSpecial: boolean; durationMin: number }> = {
+    tpl_easy_flow: { name: "Easy Flow", description: "A gentle and slow-paced flow focused on foundational postures, alignment, and simple transitions. Perfect for beginners and those seeking a mindful, relaxing practice.", tagline: "Find your flow, ease your mind.", intensity: "Gentle", isSpecial: false, durationMin: 60 },
+    tpl_morning_stretching: { name: "Morning Stretching", description: "Awaken your body with gentle stretches and movements that release tension built up during sleep. Great for flexibility and starting the day with energy.", tagline: "Awaken and energize.", intensity: "Gentle", isSpecial: false, durationMin: 60 },
+    tpl_open_shoulder: { name: "Open Shoulder", description: "Targeted stretches and strengthening postures to open up the shoulders, neck, and upper back, relieving tension from desk work and poor posture.", tagline: "Release tension, open your heart.", intensity: "Balanced", isSpecial: false, durationMin: 60 },
+    tpl_stretching: { name: "Stretching", description: "A full-body stretching session designed to improve overall flexibility, enhance range of motion, and promote deep relaxation of tight muscles.", tagline: "Lengthen and loosen.", intensity: "Gentle", isSpecial: false, durationMin: 60 },
+    tpl_hatha_flow: { name: "Hatha Flow", description: "A classic practice integrating breath with holding postures to build strength, balance, and mental clarity. Conducted at a steady, deliberate pace.", tagline: "Balance strength and stillness.", intensity: "Balanced", isSpecial: false, durationMin: 60 },
+    tpl_vinyasa: { name: "Vinyasa Flow", description: "A breath-paced flow that builds heat, strength, and a quiet mind. Suitable for steady beginners and confident regulars.", tagline: "Move with the breath.", intensity: "Balanced", isSpecial: false, durationMin: 60 },
+    tpl_strong_core: { name: "Strong Core", description: "A dynamic yoga session emphasizing core strength, stability, and abdominal power. Prepare to sweat and build deep core heat.", tagline: "Build strength from within.", intensity: "Strong", isSpecial: false, durationMin: 60 },
+    tpl_office_syndrome: { name: "Office Syndrome", description: "Specially designed for office workers to target common problem areas: neck, shoulders, back, and hips. Alleviate chronic pain and stiffness.", tagline: "Relieve tension from desk work.", intensity: "Balanced", isSpecial: false, durationMin: 60 },
+    tpl_side_bend: { name: "Side Bend", description: "Focus on lateral stretches and spine elongation to expand lung capacity, open up the ribs, and improve side body flexibility.", tagline: "Stretch and expand your sides.", intensity: "Balanced", isSpecial: false, durationMin: 60 },
+    tpl_flexibility: { name: "Flexibility", description: "Focuses on deep stretches and passive holds to improve flexibility, release deep tissue tightness, and increase joint mobility.", tagline: "Unlock your body's flexibility.", intensity: "Gentle", isSpecial: false, durationMin: 60 },
+    tpl_backbending: { name: "Backbending", description: "Learn the anatomy and mechanics of safe backbends. Strengthen the spine, open the chest, and build flexibility in a controlled and safe environment.", tagline: "Open your front, strengthen your back.", intensity: "Strong", isSpecial: false, durationMin: 60 },
+    tpl_hip_opening: { name: "Hip Opening", description: "A deep, nourishing practice focused entirely on opening the hips, releasing stored physical and emotional tension.", tagline: "Release tension in the hips.", intensity: "Balanced", isSpecial: false, durationMin: 60 },
+    tpl_balance_flow: { name: "Balance Flow", description: "A flowing sequence emphasizing both physical and mental balance. Connect with your center through steady standing poses and transitions.", tagline: "Find your steady center.", intensity: "Balanced", isSpecial: false, durationMin: 60 },
+    tpl_inversion_special: { name: "* Special Class * Inversion", description: "A 3-hour comprehensive workshop breaking down headstands, forearm stands, and handstands with step-by-step progressions, safety, and alignment.", tagline: "Invert your practice with safety.", intensity: "Strong", isSpecial: true, durationMin: 180 },
+    tpl_gentle_flow: { name: "Gentle Flow", description: "A soft, nurturing yoga practice featuring gentle movements and breathing exercises to calm the nervous system and build gentle strength.", tagline: "Be kind to your body.", intensity: "Gentle", isSpecial: false, durationMin: 60 },
+    tpl_twist: { name: "Twist", description: "A detoxifying sequence of seated and standing twists designed to massage internal organs, improve digestion, and restore spinal mobility.", tagline: "Twist, detoxify, and restore.", intensity: "Balanced", isSpecial: false, durationMin: 60 },
+};
 
 // ---- Occurrences (deterministic generator) -----------------------------------
 
@@ -329,16 +209,20 @@ function ensureOccurrences(): ClassOccurrence[] {
         slots.forEach((slot, i) => {
             const localStart = new Date(`${dateStr}T${String(slot.hour).padStart(2, "0")}:${String(slot.minute).padStart(2, "0")}:00`);
             const startsAt = fromZonedTime(localStart, STUDIO_TZ);
-            const template = CLASS_TEMPLATES.find((t) => t.id === slot.templateId)!;
-            const durationMin = slot.durationMin ?? template.durationMin;
+            const classData = CLASS_DATA[slot.templateId];
+            const durationMin = slot.durationMin ?? classData.durationMin;
             out.push({
                 id: `occ_${dateStr}_${i}`,
-                templateId: slot.templateId,
                 instructorId: slot.instructorId,
                 startsAt,
                 durationMin,
                 capacity: slot.capacity,
                 bookedCount: slot.pre,
+                name: classData.name,
+                description: classData.description,
+                tagline: classData.tagline,
+                intensity: classData.intensity,
+                isSpecial: classData.isSpecial,
             });
         });
     }
@@ -353,10 +237,6 @@ export function getInstructor(slugOrId: string): Instructor | null {
         INSTRUCTORS.find((i) => i.slug === slugOrId || i.id === slugOrId) ??
         null
     );
-}
-
-export function getTemplate(id: string): ClassTemplate | null {
-    return CLASS_TEMPLATES.find((t) => t.id === id) ?? null;
 }
 
 export function getOccurrence(id: string): OccurrenceView | null {
@@ -377,11 +257,9 @@ export function getOccurrencesForDay(date: Date): OccurrenceView[] {
 }
 
 function toView(occ: ClassOccurrence): OccurrenceView {
-    const template = getTemplate(occ.templateId)!;
     const instructor = INSTRUCTORS.find((i) => i.id === occ.instructorId)!;
     return {
         ...occ,
-        template,
         instructor,
         slotsLeft: Math.max(0, occ.capacity - occ.bookedCount),
     };

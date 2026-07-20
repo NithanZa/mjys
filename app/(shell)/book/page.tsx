@@ -70,12 +70,12 @@ export default function BookPage() {
 
       // 3. Class Type Filter (Regular vs Special)
       if (classType !== "all") {
-        if (classType === "special" && !occ.template.isSpecial) return false;
-        if (classType === "regular" && occ.template.isSpecial) return false;
+        if (classType === "special" && !occ.isSpecial) return false;
+        if (classType === "regular" && occ.isSpecial) return false;
       }
 
       // 4. Intensity Filter
-      if (intensity !== "all" && occ.template.intensity !== intensity) {
+      if (intensity !== "all" && occ.intensity !== intensity) {
         return false;
       }
 

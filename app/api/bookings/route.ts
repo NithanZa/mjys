@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
             include: {
                 classOccurrence: {
                     include: {
-                        template: true,
                         instructor: true,
                     },
                 },
@@ -108,6 +107,7 @@ export async function POST(request: NextRequest) {
             });
 
             if (!occurrence) throw new Error("CLASS_NOT_FOUND");
+            if (occurrence.isCancelled) throw new Error("CLASS_CANCELLED");
             if (occurrence.bookedCount >= occurrence.capacity) {
                 throw new Error("CLASS_FULL");
             }
@@ -174,6 +174,9 @@ export async function POST(request: NextRequest) {
         }
         if (msg === "CLASS_NOT_FOUND") {
             return NextResponse.json({ error: "Class session not found." }, { status: 404 });
+        }
+        if (msg === "CLASS_CANCELLED") {
+            return NextResponse.json({ error: "This class has been cancelled." }, { status: 409 });
         }
         if (msg === "CLASS_FULL") {
             return NextResponse.json({ error: "Sorry, this class is fully booked." }, { status: 409 });

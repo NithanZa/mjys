@@ -45,7 +45,6 @@ export async function GET(request: NextRequest) {
             include: {
                 classOccurrence: {
                     include: {
-                        template: true,
                         instructor: true,
                     },
                 },
@@ -67,7 +66,11 @@ export async function GET(request: NextRequest) {
 
             return {
                 id: att.id,
-                template: att.classOccurrence.template,
+                name: att.classOccurrence.name,
+                description: att.classOccurrence.description,
+                tagline: att.classOccurrence.tagline,
+                intensity: att.classOccurrence.intensity,
+                isSpecial: att.classOccurrence.isSpecial,
                 instructor: att.classOccurrence.instructor,
                 occurredAt: att.classOccurrence.startsAt,
                 status,

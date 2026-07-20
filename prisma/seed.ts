@@ -75,197 +75,136 @@ const INSTRUCTORS = [
     },
 ];
 
-const CLASS_TEMPLATES = [
-    {
-        id: "tpl_easy_flow",
+const CLASS_DATA: Record<string, { name: string; description: string; tagline: string; intensity: string; isSpecial: boolean; durationMin: number }> = {
+    tpl_easy_flow: {
         name: "Easy Flow",
         description: "A gentle and slow-paced flow focused on foundational postures, alignment, and simple transitions. Perfect for beginners and those seeking a mindful, relaxing practice.",
-        durationMin: 60,
-        intensity: "Gentle",
         tagline: "Find your flow, ease your mind.",
+        intensity: "Gentle",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_morning_stretching",
+    tpl_morning_stretching: {
         name: "Morning Stretching",
         description: "Awaken your body with gentle stretches and movements that release tension built up during sleep. Great for flexibility and starting the day with energy.",
-        durationMin: 60,
-        intensity: "Gentle",
         tagline: "Awaken and energize.",
+        intensity: "Gentle",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_open_shoulder",
+    tpl_open_shoulder: {
         name: "Open Shoulder",
         description: "Targeted stretches and strengthening postures to open up the shoulders, neck, and upper back, relieving tension from desk work and poor posture.",
-        durationMin: 60,
-        intensity: "Balanced",
         tagline: "Release tension, open your heart.",
+        intensity: "Balanced",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_stretching",
+    tpl_stretching: {
         name: "Stretching",
         description: "A full-body stretching session designed to improve overall flexibility, enhance range of motion, and promote deep relaxation of tight muscles.",
-        durationMin: 60,
-        intensity: "Gentle",
         tagline: "Lengthen and loosen.",
+        intensity: "Gentle",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_hatha_flow",
+    tpl_hatha_flow: {
         name: "Hatha Flow",
         description: "A classic practice integrating breath with holding postures to build strength, balance, and mental clarity. Conducted at a steady, deliberate pace.",
-        durationMin: 60,
-        intensity: "Balanced",
         tagline: "Balance strength and stillness.",
+        intensity: "Balanced",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_vinyasa",
+    tpl_vinyasa: {
         name: "Vinyasa Flow",
         description: "A breath-paced flow that builds heat, strength, and a quiet mind. Suitable for steady beginners and confident regulars.",
-        durationMin: 60,
-        intensity: "Balanced",
         tagline: "Move with the breath.",
+        intensity: "Balanced",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_strong_core",
+    tpl_strong_core: {
         name: "Strong Core",
         description: "A dynamic yoga session emphasizing core strength, stability, and abdominal power. Prepare to sweat and build deep core heat.",
-        durationMin: 60,
-        intensity: "Strong",
         tagline: "Build strength from within.",
+        intensity: "Strong",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_office_syndrome",
+    tpl_office_syndrome: {
         name: "Office Syndrome",
         description: "Specially designed for office workers to target common problem areas: neck, shoulders, back, and hips. Alleviate chronic pain and stiffness.",
-        durationMin: 60,
-        intensity: "Balanced",
         tagline: "Relieve tension from desk work.",
+        intensity: "Balanced",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_side_bend",
+    tpl_side_bend: {
         name: "Side Bend",
         description: "Focus on lateral stretches and spine elongation to expand lung capacity, open up the ribs, and improve side body flexibility.",
-        durationMin: 60,
-        intensity: "Balanced",
         tagline: "Stretch and expand your sides.",
+        intensity: "Balanced",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_flexibility",
+    tpl_flexibility: {
         name: "Flexibility",
         description: "Focuses on deep stretches and passive holds to improve flexibility, release deep tissue tightness, and increase joint mobility.",
-        durationMin: 60,
-        intensity: "Gentle",
         tagline: "Unlock your body's flexibility.",
+        intensity: "Gentle",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_backbending",
+    tpl_backbending: {
         name: "Backbending",
         description: "Learn the anatomy and mechanics of safe backbends. Strengthen the spine, open the chest, and build flexibility in a controlled and safe environment.",
-        durationMin: 60,
-        intensity: "Strong",
         tagline: "Open your front, strengthen your back.",
+        intensity: "Strong",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_hip_opening",
+    tpl_hip_opening: {
         name: "Hip Opening",
         description: "A deep, nourishing practice focused entirely on opening the hips, releasing stored physical and emotional tension.",
-        durationMin: 60,
-        intensity: "Balanced",
         tagline: "Release tension in the hips.",
+        intensity: "Balanced",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_balance_flow",
+    tpl_balance_flow: {
         name: "Balance Flow",
         description: "A flowing sequence emphasizing both physical and mental balance. Connect with your center through steady standing poses and transitions.",
-        durationMin: 60,
-        intensity: "Balanced",
         tagline: "Find your steady center.",
+        intensity: "Balanced",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_inversion_special",
+    tpl_inversion_special: {
         name: "* Special Class * Inversion",
         description: "A 3-hour comprehensive workshop breaking down headstands, forearm stands, and handstands with step-by-step progressions, safety, and alignment.",
-        durationMin: 180,
-        intensity: "Strong",
         tagline: "Invert your practice with safety.",
+        intensity: "Strong",
         isSpecial: true,
+        durationMin: 180,
     },
-    {
-        id: "tpl_gentle_flow",
+    tpl_gentle_flow: {
         name: "Gentle Flow",
         description: "A soft, nurturing yoga practice featuring gentle movements and breathing exercises to calm the nervous system and build gentle strength.",
-        durationMin: 60,
-        intensity: "Gentle",
         tagline: "Be kind to your body.",
+        intensity: "Gentle",
         isSpecial: false,
+        durationMin: 60,
     },
-    {
-        id: "tpl_twist",
+    tpl_twist: {
         name: "Twist",
         description: "A detoxifying sequence of seated and standing twists designed to massage internal organs, improve digestion, and restore spinal mobility.",
-        durationMin: 60,
-        intensity: "Balanced",
         tagline: "Twist, detoxify, and restore.",
+        intensity: "Balanced",
         isSpecial: false,
-    },
-    {
-        id: "tpl_breath",
-        name: "Breath & Restore",
-        description: "A slow, restorative practice combining gentle shapes with long pranayama. Perfect after a long day or as a Sunday reset.",
         durationMin: 60,
-        intensity: "Gentle",
-        tagline: "Breathe out the week.",
-        isSpecial: false,
     },
-    {
-        id: "tpl_strong",
-        name: "Strong Practice",
-        description: "Ashtanga-inspired, builds deep core heat, strength, and structural focus. High intensity.",
-        durationMin: 75,
-        intensity: "Strong",
-        tagline: "Earn your stillness.",
-        isSpecial: false,
-    },
-    {
-        id: "tpl_yin",
-        name: "Yin & Sound",
-        description: "Long, supported holds paired with a closing sound bath. A deep release for fascia and nervous system both.",
-        durationMin: 60,
-        intensity: "Gentle",
-        tagline: "Settle, soften, surrender.",
-        isSpecial: false,
-    },
-    {
-        id: "tpl_handstand_mc",
-        name: "Handstand MC",
-        description: "A specialized workshop targeting the core, shoulders, and wrist prep required for solid handstands.",
-        durationMin: 90,
-        intensity: "Strong",
-        tagline: "Turn your world upside down.",
-        isSpecial: true,
-    },
-    {
-        id: "tpl_scorpion_mc",
-        name: "Scorpion MC",
-        description: "Learn to transition seamlessly from forearm stand to scorpion with safety and control.",
-        durationMin: 90,
-        intensity: "Strong",
-        tagline: "Deepen your backbend.",
-        isSpecial: true,
-    },
-];
+};
 
 const PACKAGE_OFFERS = [
     {
@@ -331,17 +270,7 @@ async function main() {
     }
     console.log("✅ Seeded Instructors");
 
-    // 2. Seed Class Templates
-    for (const tpl of CLASS_TEMPLATES) {
-        await prisma.classTemplate.upsert({
-            where: { id: tpl.id },
-            update: tpl,
-            create: tpl,
-        });
-    }
-    console.log("✅ Seeded Class Templates");
-
-    // 3. Seed Package Offers
+    // 2. Seed Package Offers
     for (const pkg of PACKAGE_OFFERS) {
         await prisma.packageOffer.upsert({
             where: { id: pkg.id },
@@ -351,7 +280,7 @@ async function main() {
     }
     console.log("✅ Seeded Package Offers");
 
-    // 4. Seed HomeContent Singleton
+    // 3. Seed HomeContent Singleton
     await prisma.homeContent.upsert({
         where: { id: "singleton" },
         update: {},
@@ -370,7 +299,7 @@ async function main() {
     });
     console.log("✅ Seeded Home Content");
 
-    // 5. Seed ToyParts
+    // 4. Seed ToyParts
     const TOY_PARTS = [
         { id: "toy_head", code: "head", name: "Tiger Toy Head", sortOrder: 1 },
         { id: "toy_torso", code: "torso", name: "Tiger Toy Torso", sortOrder: 2 },
@@ -386,7 +315,7 @@ async function main() {
     }
     console.log("✅ Seeded Toy Parts");
 
-    // 6. Seed Milestones
+    // 5. Seed Milestones
     const MILESTONES = [
         { id: "ms_tiger", code: "tiger", name: "Tiger Rank Milestone", requirement: { classes: 20 } },
         { id: "ms_leopard", code: "leopard", name: "Leopard Rank Milestone", requirement: { classes: 50 } },
@@ -401,7 +330,7 @@ async function main() {
     }
     console.log("✅ Seeded Milestones");
 
-    // 7. Seed Class Occurrences for June 2026
+    // 6. Seed Class Occurrences for June 2026
     console.log("📅 Generating Class Occurrences for June 2026...");
 
     // Delete existing occurrences first to prevent primary key duplicates or bloat on multiple seeds
@@ -479,18 +408,22 @@ async function main() {
         for (let i = 0; i < slots.length; i++) {
             const slot = slots[i];
             const startsAt = new Date(`${dateStr}T${String(slot.hour).padStart(2, "0")}:${String(slot.minute).padStart(2, "0")}:00+07:00`);
-            const template = CLASS_TEMPLATES.find((t) => t.id === slot.templateId)!;
-            const durationMin = slot.durationMin ?? template.durationMin;
+            const classData = CLASS_DATA[slot.templateId];
+            const durationMin = slot.durationMin ?? classData.durationMin;
 
             await prisma.classOccurrence.create({
                 data: {
                     id: `occ_${dateStr}_${i}`,
-                    templateId: slot.templateId,
                     instructorId: slot.instructorId,
                     startsAt,
                     durationMin,
                     capacity: slot.capacity,
                     bookedCount: slot.pre,
+                    name: classData.name,
+                    description: classData.description,
+                    tagline: classData.tagline,
+                    intensity: classData.intensity,
+                    isSpecial: classData.isSpecial,
                 },
             });
         }

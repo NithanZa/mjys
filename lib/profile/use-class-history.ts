@@ -9,15 +9,12 @@ export type ActivityStatus = "ATTENDED" | "BOOKED" | "CANCELLED" | "NO_SHOW";
 
 export interface ActivityItem {
     id: string;
-    template: {
-        id: string;
-        name: string;
-        description: string;
-        durationMin: number;
-        intensity: string;
-        tagline: string;
-        isSpecial: boolean;
-    };
+    name: string;
+    description: string;
+    tagline: string;
+    intensity: string;
+    isSpecial: boolean;
+    durationMin: number;
     instructor: {
         id: string;
         slug: string;

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useTransition } from "react";
-import { format, startOfWeek, addDays, isSameDay, parseISO } from "date-fns";
+import { useEffect, useState, useCallback, useTransition, useRef } from "react";
+import { format, startOfWeek, startOfMonth, endOfMonth, addDays, isSameDay, parseISO } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { STUDIO_TZ } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -28,6 +28,9 @@ import {
     X,
     Loader,
     Sparkles,
+    Upload,
+    Download,
+    FileSpreadsheet,
 } from "lucide-react";
 
 interface Occurrence {
@@ -36,27 +39,17 @@ interface Occurrence {
     durationMin: number;
     capacity: number;
     bookedCount: number;
-    template: {
-        id: string;
-        name: string;
-        description: string;
-        tagline: string;
-        intensity: string;
-        isSpecial: boolean;
-    };
+    name: string;
+    description: string;
+    tagline: string;
+    intensity: string;
+    isSpecial: boolean;
+    isCancelled: boolean;
     instructor: {
         id: string;
         name: string;
         initials: string;
     };
-}
-
-interface Template {
-    id: string;
-    name: string;
-    durationMin: number;
-    intensity: string;
-    isSpecial: boolean;
 }
 
 interface Instructor {
@@ -78,7 +71,6 @@ interface RosterItem {
 export default function AdminCalendarPage() {
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
-    const [templates, setTemplates] = useState<Template[]>([]);
     const [instructors, setInstructors] = useState<Instructor[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -89,7 +81,11 @@ export default function AdminCalendarPage() {
     const [loadingRoster, setLoadingRoster] = useState(false);
 
     // Form states for creating a new occurrence
-    const [formTemplateId, setFormTemplateId] = useState("");
+    const [formName, setFormName] = useState("");
+    const [formDescription, setFormDescription] = useState("");
+    const [formTagline, setFormTagline] = useState("");
+    const [formIntensity, setFormIntensity] = useState("Balanced");
+    const [formIsSpecial, setFormIsSpecial] = useState(false);
     const [formInstructorId, setFormInstructorId] = useState("");
     const [formDate, setFormDate] = useState("");
     const [formTime, setFormTime] = useState("09:00");
@@ -97,11 +93,21 @@ export default function AdminCalendarPage() {
     const [formCapacity, setFormCapacity] = useState(25);
     const [formError, setFormError] = useState("");
     const [submittingAdd, setSubmittingAdd] = useState(false);
+    const [showNameSuggestions, setShowNameSuggestions] = useState(false);
 
     // Edit states inside details sheet
     const [editCapacity, setEditCapacity] = useState(25);
     const [editInstructorId, setEditInstructorId] = useState("");
+    const [editName, setEditName] = useState("");
+    const [editDescription, setEditDescription] = useState("");
+    const [editTagline, setEditTagline] = useState("");
+    const [editIntensity, setEditIntensity] = useState("Balanced");
+    const [editIsSpecial, setEditIsSpecial] = useState(false);
     const [submittingEdit, setSubmittingEdit] = useState(false);
+
+    // Import / export
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [importing, setImporting] = useState(false);
 
     // Compute the week start (Monday) based on currentDate
     const weekStart = startOfWeek(toZonedTime(currentDate, STUDIO_TZ), { weekStartsOn: 1 });
@@ -117,7 +123,6 @@ export default function AdminCalendarPage() {
             if (res.ok) {
                 const data = await res.json();
                 setOccurrences(data.occurrences);
-                setTemplates(data.templates);
                 setInstructors(data.instructors);
             }
         } catch (error) {
@@ -131,13 +136,22 @@ export default function AdminCalendarPage() {
         loadCalendarData();
     }, [loadCalendarData]);
 
-    // Handle template changes in form to autopopulate default duration
-    const handleTemplateChange = (id: string) => {
-        setFormTemplateId(id);
-        const selected = templates.find((t) => t.id === id);
-        if (selected) {
-            setFormDuration(selected.durationMin);
+    // Derive unique class names for autocomplete from existing occurrences
+    const classNameSuggestions = Array.from(
+        new Map(occurrences.map((o) => [o.name, o])).values(),
+    );
+
+    const applyClassSuggestion = (name: string) => {
+        const match = classNameSuggestions.find((o) => o.name === name);
+        setFormName(name);
+        if (match) {
+            setFormDescription(match.description);
+            setFormTagline(match.tagline);
+            setFormIntensity(match.intensity);
+            setFormIsSpecial(match.isSpecial);
+            setFormDuration(match.durationMin);
         }
+        setShowNameSuggestions(false);
     };
 
     // Load roster when an occurrence is clicked
@@ -145,6 +159,11 @@ export default function AdminCalendarPage() {
         setSelectedOcc(occ);
         setEditCapacity(occ.capacity);
         setEditInstructorId(occ.instructor.id);
+        setEditName(occ.name);
+        setEditDescription(occ.description);
+        setEditTagline(occ.tagline);
+        setEditIntensity(occ.intensity);
+        setEditIsSpecial(occ.isSpecial);
         setLoadingRoster(true);
         setRoster([]);
 
@@ -165,8 +184,8 @@ export default function AdminCalendarPage() {
     const handleAddSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormError("");
-        if (!formTemplateId || !formInstructorId || !formDate || !formTime) {
-            setFormError("All fields are required.");
+        if (!formName.trim() || !formInstructorId || !formDate || !formTime) {
+            setFormError("Class name, instructor, date, and time are required.");
             return;
         }
 
@@ -177,7 +196,11 @@ export default function AdminCalendarPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    templateId: formTemplateId,
+                    name: formName.trim(),
+                    description: formDescription.trim(),
+                    tagline: formTagline.trim(),
+                    intensity: formIntensity,
+                    isSpecial: formIsSpecial,
                     instructorId: formInstructorId,
                     startsAt,
                     durationMin: formDuration,
@@ -188,7 +211,11 @@ export default function AdminCalendarPage() {
             if (res.ok) {
                 setAddSheetOpen(false);
                 // Clear form
-                setFormTemplateId("");
+                setFormName("");
+                setFormDescription("");
+                setFormTagline("");
+                setFormIntensity("Balanced");
+                setFormIsSpecial(false);
                 setFormInstructorId("");
                 setFormDate("");
                 setFormTime("09:00");
@@ -207,7 +234,7 @@ export default function AdminCalendarPage() {
         }
     };
 
-    // Save edited class occurrence (capacity, instructor)
+    // Save edited class occurrence (capacity, instructor, and inline metadata)
     const handleSaveEdit = async () => {
         if (!selectedOcc) return;
         setSubmittingEdit(true);
@@ -216,6 +243,11 @@ export default function AdminCalendarPage() {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
+                    name: editName.trim(),
+                    description: editDescription.trim(),
+                    tagline: editTagline.trim(),
+                    intensity: editIntensity,
+                    isSpecial: editIsSpecial,
                     capacity: editCapacity,
                     instructorId: editInstructorId,
                 }),
@@ -273,6 +305,54 @@ export default function AdminCalendarPage() {
         }
     };
 
+    // Export helpers (export the full selected month)
+    const buildExportRange = () => {
+        const localMonthStart = startOfMonth(toZonedTime(currentDate, STUDIO_TZ));
+        const localMonthEnd = endOfMonth(toZonedTime(currentDate, STUDIO_TZ));
+        const startStr = localMonthStart.toISOString();
+        const endStr = localMonthEnd.toISOString();
+        return { startStr, endStr };
+    };
+
+    const handleExportCsv = () => {
+        const { startStr, endStr } = buildExportRange();
+        window.open(`/api/admin/classes/export/csv?start=${encodeURIComponent(startStr)}&end=${encodeURIComponent(endStr)}`, "_blank");
+    };
+
+    const handleExportXlsx = () => {
+        const { startStr, endStr } = buildExportRange();
+        window.open(`/api/admin/classes/export/xlsx?start=${encodeURIComponent(startStr)}&end=${encodeURIComponent(endStr)}`, "_blank");
+    };
+
+    const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setImporting(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            const res = await fetch("/api/admin/classes/import/csv", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                alert(`Imported ${data.importedCount} class sessions.`);
+                loadCalendarData();
+            } else {
+                alert(data.error || "Import failed.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Import failed.");
+        } finally {
+            setImporting(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
     // Delete occurrence (allowed only if bookedCount === 0)
     const handleDeleteClass = async () => {
         if (!selectedOcc) return;
@@ -312,13 +392,48 @@ export default function AdminCalendarPage() {
                         Schedule new occurrences, change instructor capacity, or review booking rosters.
                     </p>
                 </div>
-                <Button
-                    variant="primary"
-                    leftIcon={<Plus className="h-5 w-5" />}
-                    onClick={() => setAddSheetOpen(true)}
-                >
-                    Schedule Class
-                </Button>
+                <div className="flex items-center gap-2">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv"
+                        onChange={handleImportCsv}
+                        className="hidden"
+                    />
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<Upload className="h-4 w-4" />}
+                        onClick={() => fileInputRef.current?.click()}
+                        loading={importing}
+                        disabled={importing}
+                    >
+                        Import CSV
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<Download className="h-4 w-4" />}
+                        onClick={handleExportCsv}
+                    >
+                        Export CSV
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<FileSpreadsheet className="h-4 w-4" />}
+                        onClick={handleExportXlsx}
+                    >
+                        Export XLSX
+                    </Button>
+                    <Button
+                        variant="primary"
+                        leftIcon={<Plus className="h-5 w-5" />}
+                        onClick={() => setAddSheetOpen(true)}
+                    >
+                        Schedule Class
+                    </Button>
+                </div>
             </div>
 
             {/* Weekly Selector bar */}
@@ -402,7 +517,7 @@ export default function AdminCalendarPage() {
                                     dayClasses.map((occ) => {
                                         const dateStarts = parseISO(occ.startsAt);
                                         const localStarts = toZonedTime(dateStarts, STUDIO_TZ);
-                                        const isSpecial = occ.template.isSpecial;
+                                        const isSpecial = occ.isSpecial;
 
                                         return (
                                             <Card
@@ -413,14 +528,26 @@ export default function AdminCalendarPage() {
                                                 className={cn(
                                                     "p-3 flex flex-col gap-2 border border-neutral-line hover:border-primary-400 hover:bg-primary-50/50 rounded-sm transition-all duration-150 text-left cursor-pointer",
                                                     isSpecial && "border-l-4 border-l-primary-500 bg-primary-50/20",
+                                                    occ.isCancelled && "opacity-50 hover:opacity-70 border-error-fg/40 bg-error-bg/20",
                                                 )}
                                             >
                                                 <div className="flex justify-between items-start gap-1">
-                                                    <span className="font-display text-body-sm font-semibold tracking-wide text-neutral-ink leading-tight">
-                                                        {occ.template.name}
+                                                    <span
+                                                        className={cn(
+                                                            "font-display text-body-sm font-semibold tracking-wide text-neutral-ink leading-tight",
+                                                            occ.isCancelled && "line-through",
+                                                        )}
+                                                    >
+                                                        {occ.name}
                                                     </span>
-                                                    {isSpecial && (
-                                                        <Sparkles className="h-3.5 w-3.5 text-primary-600 shrink-0 mt-0.5" />
+                                                    {occ.isCancelled ? (
+                                                        <Badge tone="error" className="shrink-0 text-[10px]">
+                                                            Cancelled
+                                                        </Badge>
+                                                    ) : (
+                                                        isSpecial && (
+                                                            <Sparkles className="h-3.5 w-3.5 text-primary-600 shrink-0 mt-0.5" />
+                                                        )
                                                     )}
                                                 </div>
 
@@ -458,7 +585,7 @@ export default function AdminCalendarPage() {
             >
                 <form onSubmit={handleAddSubmit} className="flex flex-col gap-5 mt-6 font-sans">
                     <p className="text-caption text-neutral-text-3 -mt-2">
-                        Choose a template and schedule a class occurrence on the calendar.
+                        Enter class details and schedule a session on the calendar. Existing class names autocomplete to speed things up.
                     </p>
                     {formError && (
                         <div className="flex gap-2.5 items-center p-3 rounded-sm bg-error-bg text-error-fg text-body-sm">
@@ -467,21 +594,95 @@ export default function AdminCalendarPage() {
                         </div>
                     )}
 
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-caption font-medium text-neutral-text-2">Class Template</label>
-                        <select
+                    <div className="flex flex-col gap-1.5 relative">
+                        <label className="text-caption font-medium text-neutral-text-2">Class Name</label>
+                        <Input
                             required
-                            value={formTemplateId}
-                            onChange={(e) => handleTemplateChange(e.target.value)}
-                            className="w-full h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500"
-                        >
-                            <option value="">-- Choose Template --</option>
-                            {templates.map((t) => (
-                                <option key={t.id} value={t.id}>
-                                    {t.name} ({t.intensity} · {t.durationMin}m){t.isSpecial ? " ★ Special" : ""}
-                                </option>
-                            ))}
-                        </select>
+                            type="text"
+                            value={formName}
+                            onChange={(e) => {
+                                setFormName(e.target.value);
+                                setShowNameSuggestions(true);
+                            }}
+                            onBlur={() => setTimeout(() => setShowNameSuggestions(false), 150)}
+                            onFocus={() => formName.trim().length >= 1 && setShowNameSuggestions(true)}
+                            placeholder="e.g. Morning Vinyasa Flow"
+                            autoComplete="off"
+                        />
+                        {showNameSuggestions && formName.trim().length >= 1 && (
+                            <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-20 bg-neutral-card border border-neutral-line rounded-md shadow-md max-h-40 overflow-y-auto">
+                                {classNameSuggestions
+                                    .filter((o) => o.name.toLowerCase().includes(formName.toLowerCase()))
+                                    .map((o) => (
+                                        <button
+                                            key={o.id}
+                                            type="button"
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                applyClassSuggestion(o.name);
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-body-sm hover:bg-primary-50 focus:bg-primary-50"
+                                        >
+                                            {o.name}
+                                        </button>
+                                    ))}
+                                {classNameSuggestions.filter((o) =>
+                                    o.name.toLowerCase().includes(formName.toLowerCase()),
+                                ).length === 0 && (
+                                    <div className="px-3 py-2 text-caption text-neutral-text-3 italic">
+                                        No existing class matches — create a new one.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-caption font-medium text-neutral-text-2">Intensity</label>
+                            <select
+                                value={formIntensity}
+                                onChange={(e) => setFormIntensity(e.target.value)}
+                                className="w-full h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500"
+                            >
+                                <option value="Gentle">Gentle</option>
+                                <option value="Balanced">Balanced</option>
+                                <option value="Strong">Strong</option>
+                            </select>
+                        </div>
+                        <label className="flex flex-col gap-1.5 cursor-pointer select-none">
+                            <span className="text-caption font-medium text-neutral-text-2">Special Workshop</span>
+                            <span className="flex items-center gap-2 h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line">
+                                <input
+                                    type="checkbox"
+                                    checked={formIsSpecial}
+                                    onChange={(e) => setFormIsSpecial(e.target.checked)}
+                                    className="h-4 w-4 rounded border-neutral-line text-primary-500 focus:ring-primary-500"
+                                />
+                                <span className="text-body-sm text-neutral-text-2">Mark as special masterclass</span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-caption font-medium text-neutral-text-2">Tagline</label>
+                        <Input
+                            type="text"
+                            value={formTagline}
+                            onChange={(e) => setFormTagline(e.target.value)}
+                            placeholder="Short one-line hook"
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-caption font-medium text-neutral-text-2">Description</label>
+                        <textarea
+                            value={formDescription}
+                            onChange={(e) => setFormDescription(e.target.value)}
+                            rows={3}
+                            placeholder="Brief class description"
+                            className="w-full px-3 py-2 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500 font-sans text-body-sm resize-none"
+                        />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -572,30 +773,35 @@ export default function AdminCalendarPage() {
             <Sheet
                 open={selectedOcc !== null}
                 onClose={() => setSelectedOcc(null)}
-                title={selectedOcc?.template.name ?? "Class Details"}
+                title={selectedOcc?.name ?? "Class Details"}
             >
                 {selectedOcc && (
                     <div className="flex flex-col gap-6 mt-6 font-sans pb-4">
                         <p className="text-caption font-semibold text-primary-700 -mt-4 bg-primary-50/50 px-3 py-1.5 rounded-sm border border-primary-200">
                             🕒 {format(toZonedTime(parseISO(selectedOcc.startsAt), STUDIO_TZ), "EEEE, d MMMM yyyy · HH:mm")} ({selectedOcc.durationMin} min)
                         </p>
-                        {/* Class Template details summary */}
+                        {/* Class details summary */}
                         <div className="bg-neutral-bg rounded-md p-4 border border-neutral-line flex flex-col gap-2">
                             <div className="flex gap-2">
+                                {selectedOcc.isCancelled && (
+                                    <Badge tone="error" className="text-caption font-medium">
+                                        Cancelled
+                                    </Badge>
+                                )}
                                 <Badge tone="neutral" className="text-caption font-medium">
-                                    {selectedOcc.template.intensity} Intensity
+                                    {selectedOcc.intensity} Intensity
                                 </Badge>
-                                {selectedOcc.template.isSpecial && (
+                                {selectedOcc.isSpecial && (
                                     <Badge tone="primary" className="text-caption font-medium">
                                         Special Workshop
                                     </Badge>
                                 )}
                             </div>
                             <p className="font-sans text-body-sm italic text-primary-700 font-medium">
-                                &ldquo;{selectedOcc.template.tagline}&rdquo;
+                                &ldquo;{selectedOcc.tagline}&rdquo;
                             </p>
                             <p className="font-sans text-caption text-neutral-text-2 leading-relaxed">
-                                {selectedOcc.template.description}
+                                {selectedOcc.description}
                             </p>
                         </div>
 
@@ -604,6 +810,14 @@ export default function AdminCalendarPage() {
                             <h3 className="font-display text-body font-semibold text-neutral-ink">
                                 Edit Session Details
                             </h3>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-caption font-medium text-neutral-text-2">Class Name</label>
+                                <Input
+                                    type="text"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                />
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-caption font-medium text-neutral-text-2">Instructor</label>
@@ -629,18 +843,67 @@ export default function AdminCalendarPage() {
                                     />
                                 </div>
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-caption font-medium text-neutral-text-2">Intensity</label>
+                                    <select
+                                        value={editIntensity}
+                                        onChange={(e) => setEditIntensity(e.target.value)}
+                                        className="w-full h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500"
+                                    >
+                                        <option value="Gentle">Gentle</option>
+                                        <option value="Balanced">Balanced</option>
+                                        <option value="Strong">Strong</option>
+                                    </select>
+                                </div>
+                                <label className="flex flex-col gap-1.5 cursor-pointer select-none">
+                                    <span className="text-caption font-medium text-neutral-text-2">Special Workshop</span>
+                                    <span className="flex items-center gap-2 h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line">
+                                        <input
+                                            type="checkbox"
+                                            checked={editIsSpecial}
+                                            onChange={(e) => setEditIsSpecial(e.target.checked)}
+                                            className="h-4 w-4 rounded border-neutral-line text-primary-500 focus:ring-primary-500"
+                                        />
+                                        <span className="text-body-sm text-neutral-text-2">Mark as special masterclass</span>
+                                    </span>
+                                </label>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-caption font-medium text-neutral-text-2">Tagline</label>
+                                <Input
+                                    type="text"
+                                    value={editTagline}
+                                    onChange={(e) => setEditTagline(e.target.value)}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-caption font-medium text-neutral-text-2">Description</label>
+                                <textarea
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    rows={3}
+                                    className="w-full px-3 py-2 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500 font-sans text-body-sm resize-none"
+                                />
+                            </div>
                             <div className="flex justify-between items-center gap-3">
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="sm"
-                                    leftIcon={<AlertTriangle className="h-4 w-4" />}
-                                    onClick={handleCancelClass}
-                                    loading={submittingEdit}
-                                    disabled={submittingEdit}
-                                >
-                                    Cancel Class
-                                </Button>
+                                {selectedOcc.isCancelled ? (
+                                    <span className="font-sans text-caption text-error-fg font-medium">
+                                        This class session has been cancelled.
+                                    </span>
+                                ) : (
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        leftIcon={<AlertTriangle className="h-4 w-4" />}
+                                        onClick={handleCancelClass}
+                                        loading={submittingEdit}
+                                        disabled={submittingEdit}
+                                    >
+                                        Cancel Class
+                                    </Button>
+                                )}
 
                                 <div className="flex gap-2">
                                     {selectedOcc.bookedCount === 0 && (
@@ -654,16 +917,18 @@ export default function AdminCalendarPage() {
                                             <Trash2 className="h-4 w-4 text-neutral-text-3 hover:text-error-fg" />
                                         </Button>
                                     )}
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        size="sm"
-                                        onClick={handleSaveEdit}
-                                        loading={submittingEdit}
-                                        disabled={submittingEdit}
-                                    >
-                                        Save Changes
-                                    </Button>
+                                    {!selectedOcc.isCancelled && (
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={handleSaveEdit}
+                                            loading={submittingEdit}
+                                            disabled={submittingEdit}
+                                        >
+                                            Save Changes
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         </div>
