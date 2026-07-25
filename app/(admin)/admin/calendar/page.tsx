@@ -342,6 +342,8 @@ export default function AdminCalendarPage() {
             if (res.ok) {
                 alert(`Imported ${data.importedCount} class sessions.`);
                 loadCalendarData();
+            } else if (Array.isArray(data.details) && data.details.length > 0) {
+                alert(`${data.error || "Validation failed"}:\n\n${data.details.join("\n")}`);
             } else {
                 alert(data.error || "Import failed.");
             }
