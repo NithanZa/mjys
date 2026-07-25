@@ -340,7 +340,11 @@ export default function AdminCalendarPage() {
 
             const data = await res.json();
             if (res.ok) {
-                alert(`Imported ${data.importedCount} class sessions.`);
+                const newInstructorsNote =
+                    Array.isArray(data.newInstructors) && data.newInstructors.length > 0
+                        ? `\n\nNew instructors added: ${data.newInstructors.join(", ")}`
+                        : "";
+                alert(`Imported ${data.importedCount} class sessions.${newInstructorsNote}`);
                 loadCalendarData();
             } else if (Array.isArray(data.details) && data.details.length > 0) {
                 alert(`${data.error || "Validation failed"}:\n\n${data.details.join("\n")}`);

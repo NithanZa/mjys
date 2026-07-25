@@ -56,8 +56,34 @@ export async function POST(request: NextRequest) {
 
         const instructors = await prisma.instructor.findMany();
         const instructorMap = new Map(instructors.map((i) => [i.name, i.id]));
+        let nextOrder = instructors.reduce((max, i) => Math.max(max, i.order), 0) + 1;
 
-        const occurrences = [];
+        const slugify = (value: string) =>
+            value
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-+|-+$/g, "") || "instructor";
+
+        const initialsOf = (value: string) =>
+            value
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part[0]!.toUpperCase())
+                .join("") || "?";
+
+        const pending: {
+            name: string;
+            description: string;
+            tagline: string;
+            intensity: string;
+            isSpecial: boolean;
+            instructorName: string;
+            startsAt: Date;
+            durationMin: number;
+            capacity: number;
+        }[] = [];
         const rowErrors: string[] = [];
 
         for (let i = 0; i < data.length; i++) {
@@ -103,23 +129,21 @@ export async function POST(request: NextRequest) {
                 continue;
             }
 
-            const instructorId = instructorMap.get(instructorName);
-            if (!instructorId) {
-                rowErrors.push(`Row ${rowNum}: instructor '${instructorName}' not found`);
+            if (!instructorName) {
+                rowErrors.push(`Row ${rowNum}: instructorName is required`);
                 continue;
             }
 
-            occurrences.push({
+            pending.push({
                 name,
                 description: row.description?.trim() || "",
                 tagline: row.tagline?.trim() || "",
                 intensity,
                 isSpecial,
-                instructorId,
+                instructorName,
                 startsAt,
                 durationMin,
                 capacity,
-                bookedCount: 0,
             });
         }
 
@@ -130,14 +154,61 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const created = await prisma.classOccurrence.createMany({
-            data: occurrences,
-            skipDuplicates: false,
+        // Only now that every row is valid do we create any missing instructors
+        // (referenced by name but not found) and the class occurrences.
+        const newInstructorNames = [...new Set(pending.map((p) => p.instructorName))].filter(
+            (n) => !instructorMap.has(n),
+        );
+
+        const existingSlugs = new Set(instructors.map((i) => i.slug));
+        const uniqueSlug = (base: string) => {
+            let slug = base;
+            let suffix = 2;
+            while (existingSlugs.has(slug)) {
+                slug = `${base}-${suffix++}`;
+            }
+            existingSlugs.add(slug);
+            return slug;
+        };
+
+        const result = await prisma.$transaction(async (tx) => {
+            for (const instructorName of newInstructorNames) {
+                const createdInstructor = await tx.instructor.create({
+                    data: {
+                        slug: uniqueSlug(slugify(instructorName)),
+                        name: instructorName,
+                        title: "Instructor",
+                        bio: "",
+                        initials: initialsOf(instructorName),
+                        order: nextOrder++,
+                    },
+                });
+                instructorMap.set(instructorName, createdInstructor.id);
+            }
+
+            const occurrences = pending.map((p) => ({
+                name: p.name,
+                description: p.description,
+                tagline: p.tagline,
+                intensity: p.intensity,
+                isSpecial: p.isSpecial,
+                instructorId: instructorMap.get(p.instructorName)!,
+                startsAt: p.startsAt,
+                durationMin: p.durationMin,
+                capacity: p.capacity,
+                bookedCount: 0,
+            }));
+
+            return tx.classOccurrence.createMany({
+                data: occurrences,
+                skipDuplicates: false,
+            });
         });
 
         return NextResponse.json({
             success: true,
-            importedCount: created.count,
+            importedCount: result.count,
+            newInstructors: newInstructorNames,
         });
     } catch (error) {
         console.error("[api-admin-classes-import-csv] Error:", error);
