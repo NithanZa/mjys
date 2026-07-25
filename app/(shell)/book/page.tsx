@@ -14,6 +14,7 @@ import {
   getScheduleRange,
   INSTRUCTORS,
 } from "@/lib/mock/schedule";
+import { INTENSITIES, INTENSITY_LABELS } from "@/lib/intensity";
 import { useBookings } from "@/lib/mock/bookings-store";
 import {
   CalendarX,
@@ -229,9 +230,11 @@ export default function BookPage() {
                 className="w-full h-8 px-2 rounded-md bg-neutral-bg border border-neutral-line/30 text-body-sm font-sans text-neutral-text-2 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-shadow outline-none"
               >
                 <option value="all">All Intensities</option>
-                <option value="Gentle">Gentle</option>
-                <option value="Balanced">Balanced</option>
-                <option value="Strong">Strong</option>
+                {INTENSITIES.map((code) => (
+                  <option key={code} value={code}>
+                    {INTENSITY_LABELS[code]}
+                  </option>
+                ))}
               </select>
 
               <label className="flex items-center gap-1.5 cursor-pointer select-none px-2 rounded-md border border-neutral-line/30 bg-neutral-bg hover:bg-primary-50/40 transition-colors h-8">

@@ -5,6 +5,7 @@ import { BookButton, SlotsRemaining } from "@/components/booking";
 import { Avatar, Badge, Card, EmptyState } from "@/components/ui";
 import { formatDateLong, formatTime } from "@/lib/dates";
 import { getOccurrence } from "@/lib/mock/schedule";
+import { INTENSITY_LABELS } from "@/lib/intensity";
 import { useBookings } from "@/lib/mock/bookings-store";
 import { CalendarX, Clock } from "lucide-react";
 import Link from "next/link";
@@ -50,7 +51,7 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
             <h1 className="font-display text-display font-semibold text-neutral-ink">
               {name}
             </h1>
-            <Badge tone="primary">{intensity}</Badge>
+            <Badge tone="primary">{INTENSITY_LABELS[intensity]}</Badge>
           </div>
           <p className="font-sans text-body text-neutral-text-2">
             {tagline}

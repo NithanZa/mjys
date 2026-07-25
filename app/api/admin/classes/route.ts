@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
                 name,
                 description: description ?? "",
                 tagline: tagline ?? "",
-                intensity: intensity ?? "Balanced",
+                intensity: intensity ?? "A",
                 isSpecial: Boolean(isSpecial),
                 instructorId,
                 startsAt: parseISO(startsAt),

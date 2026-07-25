@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 import { formatTime } from "@/lib/dates";
 import type { OccurrenceView } from "@/lib/mock/schedule";
+import { INTENSITY_LABELS } from "@/lib/intensity";
 import Link from "next/link";
 
 export interface ClassCardProps {
@@ -22,9 +23,9 @@ const intensityTone: Record<
   OccurrenceView["intensity"],
   "neutral" | "accent" | "primary"
 > = {
-  Gentle: "accent",
-  Balanced: "primary",
-  Strong: "neutral",
+  B: "accent",
+  A: "primary",
+  I: "neutral",
 };
 
 export function ClassCard({
@@ -53,7 +54,7 @@ export function ClassCard({
               {name}
             </h3>
           </div>
-          <Badge tone={intensityTone[intensity]}>{intensity}</Badge>
+          <Badge tone={intensityTone[intensity]}>{INTENSITY_LABELS[intensity]}</Badge>
         </div>
 
         <div className="flex items-center gap-2">

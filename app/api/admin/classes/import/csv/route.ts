@@ -18,7 +18,7 @@ const REQUIRED_HEADERS = [
     "capacity",
 ];
 
-const INTENSITIES = ["Gentle", "Balanced", "Strong"];
+const INTENSITIES = ["A", "B", "I"];
 
 export async function POST(request: NextRequest) {
     const authError = await verifyAdmin(request);
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
             const durationMin = parseInt(row.durationMin, 10);
             const capacity = parseInt(row.capacity, 10);
             const isSpecial = ["true", "1", "yes"].includes(row.isSpecial?.trim().toLowerCase());
-            const intensity = row.intensity?.trim() || "Balanced";
+            const intensity = row.intensity?.trim() || "A";
             const instructorName = (row.instructorName ?? "").trim();
 
             if (!name) {
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
                 continue;
             }
             if (!INTENSITIES.includes(intensity)) {
-                rowErrors.push(`Row ${rowNum}: intensity must be Gentle, Balanced, or Strong`);
+                rowErrors.push(`Row ${rowNum}: intensity must be A (All Level), B (Basic), or I (Intermediate)`);
                 continue;
             }
 

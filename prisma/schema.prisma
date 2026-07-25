@@ -74,7 +74,7 @@ model ClassOccurrence {
   name         String
   description  String
   tagline      String
-  intensity    String   // "Gentle" | "Balanced" | "Strong"
+  intensity    String   // "A" (All Level) | "B" (Basic) | "I" (Intermediate)
   isSpecial    Boolean  @default(false)
   isCancelled  Boolean  @default(false)
 

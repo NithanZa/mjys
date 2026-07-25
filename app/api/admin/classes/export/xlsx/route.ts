@@ -51,9 +51,9 @@ const HEADERS = [
 
 function intensityColors(intensity: string) {
     switch (intensity) {
-        case "Gentle":
+        case "B":
             return { fg: BRAND.successFg, bg: BRAND.successBg };
-        case "Strong":
+        case "I":
             return { fg: BRAND.errorFg, bg: BRAND.errorBg };
         default:
             return { fg: BRAND.infoFg, bg: BRAND.infoBg };

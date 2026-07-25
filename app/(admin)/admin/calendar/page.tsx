@@ -32,6 +32,7 @@ import {
     Download,
     FileSpreadsheet,
 } from "lucide-react";
+import { INTENSITIES, INTENSITY_LABELS } from "@/lib/intensity";
 
 interface Occurrence {
     id: string;
@@ -84,7 +85,7 @@ export default function AdminCalendarPage() {
     const [formName, setFormName] = useState("");
     const [formDescription, setFormDescription] = useState("");
     const [formTagline, setFormTagline] = useState("");
-    const [formIntensity, setFormIntensity] = useState("Balanced");
+    const [formIntensity, setFormIntensity] = useState("A");
     const [formIsSpecial, setFormIsSpecial] = useState(false);
     const [formInstructorId, setFormInstructorId] = useState("");
     const [formDate, setFormDate] = useState("");
@@ -101,7 +102,7 @@ export default function AdminCalendarPage() {
     const [editName, setEditName] = useState("");
     const [editDescription, setEditDescription] = useState("");
     const [editTagline, setEditTagline] = useState("");
-    const [editIntensity, setEditIntensity] = useState("Balanced");
+    const [editIntensity, setEditIntensity] = useState("A");
     const [editIsSpecial, setEditIsSpecial] = useState(false);
     const [submittingEdit, setSubmittingEdit] = useState(false);
 
@@ -214,7 +215,7 @@ export default function AdminCalendarPage() {
                 setFormName("");
                 setFormDescription("");
                 setFormTagline("");
-                setFormIntensity("Balanced");
+                setFormIntensity("A");
                 setFormIsSpecial(false);
                 setFormInstructorId("");
                 setFormDate("");
@@ -645,9 +646,11 @@ export default function AdminCalendarPage() {
                                 onChange={(e) => setFormIntensity(e.target.value)}
                                 className="w-full h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500"
                             >
-                                <option value="Gentle">Gentle</option>
-                                <option value="Balanced">Balanced</option>
-                                <option value="Strong">Strong</option>
+                                {INTENSITIES.map((code) => (
+                                    <option key={code} value={code}>
+                                        {INTENSITY_LABELS[code]} ({code})
+                                    </option>
+                                ))}
                             </select>
                         </div>
                         <label className="flex flex-col gap-1.5 cursor-pointer select-none">
@@ -789,7 +792,7 @@ export default function AdminCalendarPage() {
                                     </Badge>
                                 )}
                                 <Badge tone="neutral" className="text-caption font-medium">
-                                    {selectedOcc.intensity} Intensity
+                                    {INTENSITY_LABELS[selectedOcc.intensity as keyof typeof INTENSITY_LABELS] ?? selectedOcc.intensity} Intensity
                                 </Badge>
                                 {selectedOcc.isSpecial && (
                                     <Badge tone="primary" className="text-caption font-medium">
@@ -851,9 +854,11 @@ export default function AdminCalendarPage() {
                                         onChange={(e) => setEditIntensity(e.target.value)}
                                         className="w-full h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500"
                                     >
-                                        <option value="Gentle">Gentle</option>
-                                        <option value="Balanced">Balanced</option>
-                                        <option value="Strong">Strong</option>
+                                        {INTENSITIES.map((code) => (
+                                            <option key={code} value={code}>
+                                                {INTENSITY_LABELS[code]} ({code})
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 <label className="flex flex-col gap-1.5 cursor-pointer select-none">
