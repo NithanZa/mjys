@@ -10,11 +10,18 @@ import {
     StaffList,
 } from "@/components/about";
 import { STAFF } from "@/lib/mock/about";
-import { INSTRUCTORS } from "@/lib/mock/schedule";
-import { useState } from "react";
+import { fetchInstructors, Instructor } from "@/lib/api/instructors";
+import { useEffect, useState } from "react";
 
 export default function AboutPage() {
     const [activeTab, setActiveTab] = useState<AboutTab>("instructors");
+    const [instructors, setInstructors] = useState<Instructor[]>([]);
+
+    useEffect(() => {
+        fetchInstructors()
+            .then(setInstructors)
+            .catch((err) => console.error("Failed to load instructors:", err));
+    }, []);
 
     return (
         <>
@@ -23,7 +30,7 @@ export default function AboutPage() {
                 <AboutTabs active={activeTab} onChange={setActiveTab} />
 
                 {activeTab === "instructors" && (
-                    <InstructorGrid instructors={INSTRUCTORS} />
+                    <InstructorGrid instructors={instructors} />
                 )}
 
                 {activeTab === "staff" && (

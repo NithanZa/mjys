@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 import { formatTime } from "@/lib/dates";
-import type { OccurrenceView } from "@/lib/mock/schedule";
+import type { OccurrenceView } from "@/lib/api/classes";
 import { INTENSITY_LABELS } from "@/lib/intensity";
 import Link from "next/link";
 

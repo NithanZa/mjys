@@ -8,12 +8,11 @@ import {
     isSameMonth,
     startOfMonth,
     startOfWeek,
-    startOfDay,
 } from "date-fns";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { getOccurrencesForDay, OccurrenceView } from "@/lib/mock/schedule";
+import { OccurrenceView } from "@/lib/api/classes";
 import Link from "next/link";
 
 export interface InlineCalendarProps {
@@ -21,6 +20,7 @@ export interface InlineCalendarProps {
     onSelect: (date: Date) => void;
     min: Date;
     max: Date;
+    occurrences: OccurrenceView[];
     instructorId?: string;
     classType?: string;
     intensity?: string;
@@ -34,6 +34,7 @@ export function InlineCalendar({
     onSelect,
     min,
     max,
+    occurrences: allOccurrences,
     instructorId = "all",
     classType = "all",
     intensity = "all",
@@ -122,7 +123,14 @@ export function InlineCalendar({
                     const disabled = tooEarly || tooLate;
 
                     // Get occurrences for this local day
-                    let occurrences = getOccurrencesForDay(cellUtcMidnight);
+                    const dayStart = cellUtcMidnight.getTime();
+                    const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+                    let occurrences = allOccurrences
+                        .filter((o) => {
+                            const t = o.startsAt.getTime();
+                            return t >= dayStart && t < dayEnd;
+                        })
+                        .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 
                     if (instructorId && instructorId !== "all") {
                         occurrences = occurrences.filter((o) => o.instructorId === instructorId);

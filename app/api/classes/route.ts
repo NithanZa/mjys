@@ -14,12 +14,21 @@ export async function GET(request: NextRequest) {
         );
     }
 
+    const from = new Date(fromStr);
+    const to = new Date(toStr);
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+        return NextResponse.json(
+            { error: "from and to must be valid ISO date strings" },
+            { status: 400 },
+        );
+    }
+
     try {
         const occurrences = await prisma.classOccurrence.findMany({
             where: {
                 startsAt: {
-                    gte: new Date(fromStr),
-                    lte: new Date(toStr),
+                    gte: from,
+                    lte: to,
                 },
                 isCancelled: false,
             },

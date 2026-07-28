@@ -9,26 +9,29 @@ import {
   STUDIO_TZ,
   isSameStudioDay,
 } from "@/lib/dates";
-import {
-  getAllOccurrences,
-  getScheduleRange,
-  INSTRUCTORS,
-} from "@/lib/mock/schedule";
+import { fetchClasses, OccurrenceView } from "@/lib/api/classes";
+import { fetchInstructors, Instructor } from "@/lib/api/instructors";
 import { INTENSITIES, INTENSITY_LABELS } from "@/lib/intensity";
-import { useBookings } from "@/lib/mock/bookings-store";
+import { useBookings } from "@/lib/api/bookings";
 import {
   CalendarX,
   Filter,
   RotateCcw,
   X,
 } from "lucide-react";
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { format } from "date-fns";
+import { format, addYears, subDays } from "date-fns";
 
 export default function BookPage() {
   const today = useMemo(() => studioToday(), []);
-  const range = useMemo(() => getScheduleRange(), []);
+  // Wide static range: from a day before today through 2 years out. There is
+  // no admin-side limit on how far in advance a class can be scheduled, so we
+  // don't hardcode a month like the old mock data did.
+  const range = useMemo(
+    () => ({ from: subDays(today, 1), to: addYears(today, 2) }),
+    [today],
+  );
 
   // Filter States - default selected is null (unfiltered/all upcoming)
   const [selected, setSelected] = useState<Date | null>(null);
@@ -37,8 +40,32 @@ export default function BookPage() {
   const [intensity, setIntensity] = useState<string>("all");
   const [onlyAvailable, setOnlyAvailable] = useState<boolean>(false);
 
-  // Fetch all occurrences
-  const allOccurrences = useMemo(() => getAllOccurrences(), []);
+  // Fetch all occurrences + instructors from the real DB-backed API
+  const [allOccurrences, setAllOccurrences] = useState<OccurrenceView[]>([]);
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetchClasses(range.from, range.to),
+      fetchInstructors(),
+    ])
+      .then(([occurrences, ins]) => {
+        if (cancelled) return;
+        setAllOccurrences(occurrences);
+        setInstructors(ins);
+      })
+      .catch((err) => {
+        console.error("Failed to load schedule:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [range.from, range.to]);
 
   // Filter Occurrences for the Upcoming List
   const filteredOccurrences = useMemo(() => {
@@ -173,6 +200,7 @@ export default function BookPage() {
             onSelect={handleSelectDate}
             min={range.from}
             max={range.to}
+            occurrences={allOccurrences}
             instructorId={instructorId}
             classType={classType}
             intensity={intensity}
@@ -217,7 +245,7 @@ export default function BookPage() {
                 className="w-full h-8 px-2 rounded-md bg-neutral-bg border border-neutral-line/30 text-body-sm font-sans text-neutral-text-2 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-shadow outline-none"
               >
                 <option value="all">All Instructors</option>
-                {INSTRUCTORS.map((ins) => (
+                {instructors.map((ins) => (
                   <option key={ins.id} value={ins.id}>
                     {ins.name}
                   </option>
@@ -276,7 +304,11 @@ export default function BookPage() {
               </span>
             </div>
 
-            {groupedOccurrences.length === 0 ? (
+            {loading ? (
+              <div className="py-12 text-center font-sans text-body-sm text-neutral-text-3">
+                Loading schedule…
+              </div>
+            ) : groupedOccurrences.length === 0 ? (
               <EmptyState
                 icon={<CalendarX strokeWidth={1.75} className="h-6 w-6" />}
                 title={selected ? "No classes on this day" : "No upcoming classes match"}

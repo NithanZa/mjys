@@ -1,22 +1,20 @@
 import { TopBar } from "@/components/layout";
 import { Avatar, Card, EmptyState } from "@/components/ui";
-import { getInstructor, INSTRUCTORS } from "@/lib/mock/schedule";
+import { prisma } from "@/lib/db";
 import { Users } from "lucide-react";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 interface InstructorDetailPageProps {
   params: Promise<{ slug: string }>;
-}
-
-export function generateStaticParams() {
-  return INSTRUCTORS.map((i) => ({ slug: i.slug }));
 }
 
 export default async function InstructorDetailPage({
   params,
 }: InstructorDetailPageProps) {
   const { slug } = await params;
-  const instructor = getInstructor(slug);
+  const instructor = await prisma.instructor.findUnique({ where: { slug } });
 
   if (!instructor) {
     notFound();

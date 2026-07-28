@@ -4,12 +4,12 @@ import { TopBar } from "@/components/layout";
 import { BookButton, SlotsRemaining } from "@/components/booking";
 import { Avatar, Badge, Card, EmptyState } from "@/components/ui";
 import { formatDateLong, formatTime } from "@/lib/dates";
-import { getOccurrence } from "@/lib/mock/schedule";
+import { fetchOccurrence, OccurrenceView } from "@/lib/api/classes";
 import { INTENSITY_LABELS } from "@/lib/intensity";
-import { useBookings } from "@/lib/mock/bookings-store";
+import { useBookings } from "@/lib/api/bookings";
 import { CalendarX, Clock } from "lucide-react";
 import Link from "next/link";
-import { use, useMemo } from "react";
+import { use, useEffect, useState } from "react";
 
 interface ClassDetailPageProps {
   params: Promise<{ occurrenceId: string }>;
@@ -17,8 +17,37 @@ interface ClassDetailPageProps {
 
 export default function ClassDetailPage({ params }: ClassDetailPageProps) {
   const { occurrenceId } = use(params);
-  const occurrence = useMemo(() => getOccurrence(occurrenceId), [occurrenceId]);
+  const [occurrence, setOccurrence] = useState<OccurrenceView | null>(null);
+  const [loading, setLoading] = useState(true);
   const { isBooked, book, cancel } = useBookings();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchOccurrence(occurrenceId)
+      .then((occ) => {
+        if (!cancelled) setOccurrence(occ);
+      })
+      .catch((err) => {
+        console.error("Failed to load class occurrence:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [occurrenceId]);
+
+  if (loading) {
+    return (
+      <>
+        <TopBar title="Class detail" back="/book" />
+        <div className="py-12 text-center font-sans text-body-sm text-neutral-text-3">
+          Loading class…
+        </div>
+      </>
+    );
+  }
 
   if (!occurrence) {
     return (

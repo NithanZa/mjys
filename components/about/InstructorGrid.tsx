@@ -1,6 +1,6 @@
 import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/lib/cn";
-import type { Instructor } from "@/lib/mock/schedule";
+import type { Instructor } from "@/lib/api/instructors";
 import Link from "next/link";
 
 export interface InstructorGridProps {
