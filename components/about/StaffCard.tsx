@@ -12,7 +12,7 @@ export function StaffCard({ staff, className }: StaffCardProps) {
     return (
         <div
             className={cn(
-                "flex items-center gap-3 rounded-xl border border-neutral-line bg-neutral-card px-4 py-3",
+                "flex items-center gap-3 rounded-xl border border-neutral-line bg-neutral-card px-4 py-3 shadow-sm transition-shadow hover:shadow-md",
                 className,
             )}
         >

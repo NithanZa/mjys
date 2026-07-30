@@ -28,9 +28,50 @@ export async function GET(request: NextRequest) {
         const members = await prisma.member.findMany({
             where,
             orderBy: { createdAt: "desc" },
+            include: {
+                attendances: {
+                    where: { status: "CHECKED_IN" },
+                    orderBy: { checkedInAt: "desc" },
+                    take: 1,
+                    select: { checkedInAt: true },
+                },
+                packages: {
+                    where: { status: "ACTIVE" },
+                    select: { expiresAt: true },
+                },
+            },
         });
 
-        return NextResponse.json({ members });
+        // Enrich members with risk status
+        const now = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const sevenDaysFromNow = new Date();
+        sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+
+        const enrichedMembers = members.map((member) => {
+            const lastCheckedIn = member.attendances[0]?.checkedInAt || null;
+            const hasExpiringPackage = member.packages.some(
+                (pkg) => new Date(pkg.expiresAt) <= sevenDaysFromNow && new Date(pkg.expiresAt) > now
+            );
+
+            let riskStatus: "active" | "inactive" | "expiring" = "active";
+            if (lastCheckedIn && new Date(lastCheckedIn) < thirtyDaysAgo) {
+                riskStatus = "inactive";
+            } else if (hasExpiringPackage) {
+                riskStatus = "expiring";
+            }
+
+            return {
+                ...member,
+                lastCheckedInAt: lastCheckedIn,
+                riskStatus,
+                attendances: undefined,
+                packages: undefined,
+            };
+        });
+
+        return NextResponse.json({ members: enrichedMembers });
     } catch (error) {
         console.error("[api-admin-members-get] Error loading members:", error);
         return NextResponse.json({ error: "Failed to load members directory" }, { status: 500 });

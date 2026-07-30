@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { addDays } from "date-fns";
+import { addDays, subMonths } from "date-fns";
 import { verifyAdmin } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/admin/members/[id]
- * Fetch a single member's details, active packages, and full class attendance logs.
+ * Fetch a single member's details, active packages, full class attendance logs, and 6-month sparkline.
  */
 export async function GET(
     request: NextRequest,
@@ -49,11 +49,73 @@ export async function GET(
             return NextResponse.json({ error: "Member profile not found" }, { status: 404 });
         }
 
+        // Calculate 6-month attendance sparkline (checked-in only)
+        const sixMonthAttendanceTrend: number[] = [];
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const monthStart = subMonths(new Date(now.getFullYear(), now.getMonth(), 1), i);
+            const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0, 23, 59, 59);
+
+            const count = await prisma.attendance.count({
+                where: {
+                    memberId: id,
+                    status: "CHECKED_IN",
+                    checkedInAt: {
+                        gte: monthStart,
+                        lte: monthEnd,
+                    },
+                },
+            });
+            sixMonthAttendanceTrend.push(count);
+        }
+
+        // Calculate favorite instructor (from checked-in attendances)
+        const checkedInAttendances = await prisma.attendance.findMany({
+            where: {
+                memberId: id,
+                status: "CHECKED_IN",
+            },
+            include: {
+                classOccurrence: {
+                    select: {
+                        instructor: {
+                            select: { id: true, name: true },
+                        },
+                    },
+                },
+            },
+        });
+
+        const instructorCounts = new Map<string, { id: string; name: string; count: number }>();
+        checkedInAttendances.forEach((att) => {
+            const instructor = att.classOccurrence.instructor;
+            const key = instructor.id;
+            if (!instructorCounts.has(key)) {
+                instructorCounts.set(key, { id: instructor.id, name: instructor.name, count: 0 });
+            }
+            const entry = instructorCounts.get(key)!;
+            entry.count += 1;
+        });
+
+        let favoriteInstructor: { id: string; name: string; attendanceCount: number } | null = null;
+        if (instructorCounts.size > 0) {
+            const sorted = Array.from(instructorCounts.values()).sort(
+                (a, b) => b.count - a.count
+            );
+            favoriteInstructor = {
+                id: sorted[0].id,
+                name: sorted[0].name,
+                attendanceCount: sorted[0].count,
+            };
+        }
+
         return NextResponse.json({
             member,
             packages,
             attendances,
             milestones,
+            sixMonthAttendanceTrend,
+            favoriteInstructor,
         });
     } catch (error) {
         console.error("[api-admin-members-detail] Error loading member deep-dive:", error);

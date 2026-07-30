@@ -1,18 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback, useTransition, useRef } from "react";
-import { format, startOfWeek, startOfMonth, endOfMonth, addDays, isSameDay, parseISO } from "date-fns";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { format, startOfWeek, startOfMonth, endOfMonth, addDays, isSameDay, parseISO, addMonths, isSameMonth } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { STUDIO_TZ } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import {
     Button,
     Card,
-    CardBody,
     Input,
     Sheet,
     Badge,
-    Chip,
 } from "@/components/ui";
 import {
     Plus,
@@ -24,13 +22,12 @@ import {
     Users,
     Trash2,
     AlertTriangle,
-    Check,
-    X,
     Loader,
     Sparkles,
     Upload,
     Download,
     FileSpreadsheet,
+    Grid3x3,
 } from "lucide-react";
 import { INTENSITIES, INTENSITY_LABELS } from "@/lib/intensity";
 
@@ -74,6 +71,8 @@ export default function AdminCalendarPage() {
     const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
     const [instructors, setInstructors] = useState<Instructor[]>([]);
     const [loading, setLoading] = useState(true);
+    const [viewMode, setViewMode] = useState<"week" | "month">("week");
+    const [selectedOccurrences, setSelectedOccurrences] = useState<Set<string>>(new Set());
 
     // Sheet states
     const [addSheetOpen, setAddSheetOpen] = useState(false);
@@ -117,9 +116,20 @@ export default function AdminCalendarPage() {
     const loadCalendarData = useCallback(async () => {
         setLoading(true);
         try {
-            const localWeekStart = startOfWeek(toZonedTime(currentDate, STUDIO_TZ), { weekStartsOn: 1 });
-            const startStr = localWeekStart.toISOString();
-            const endStr = addDays(localWeekStart, 7).toISOString();
+            let startStr: string;
+            let endStr: string;
+
+            if (viewMode === "week") {
+                const localWeekStart = startOfWeek(toZonedTime(currentDate, STUDIO_TZ), { weekStartsOn: 1 });
+                startStr = localWeekStart.toISOString();
+                endStr = addDays(localWeekStart, 7).toISOString();
+            } else {
+                const localMonthStart = startOfMonth(toZonedTime(currentDate, STUDIO_TZ));
+                const localMonthEnd = endOfMonth(toZonedTime(currentDate, STUDIO_TZ));
+                startStr = localMonthStart.toISOString();
+                endStr = localMonthEnd.toISOString();
+            }
+
             const res = await fetch(`/api/admin/calendar?start=${startStr}&end=${endStr}`);
             if (res.ok) {
                 const data = await res.json();
@@ -131,8 +141,9 @@ export default function AdminCalendarPage() {
         } finally {
             setLoading(false);
         }
-    }, [currentDate]);
+    }, [currentDate, viewMode]);
 
+    // eslint-disable-next-line
     useEffect(() => {
         loadCalendarData();
     }, [loadCalendarData]);
@@ -387,6 +398,78 @@ export default function AdminCalendarPage() {
         }
     };
 
+    // Bulk delete selected occurrences
+    const handleBulkDelete = async () => {
+        if (selectedOccurrences.size === 0) return;
+
+        const selectedClasses = occurrences.filter((occ) => selectedOccurrences.has(occ.id));
+        const hasBookings = selectedClasses.some((occ) => occ.bookedCount > 0);
+
+        if (hasBookings) {
+            alert("Cannot delete classes with bookings. Only empty classes can be deleted.");
+            return;
+        }
+
+        if (
+            !confirm(
+                `Are you sure you want to delete ${selectedOccurrences.size} empty class session(s)? This cannot be undone.`,
+            )
+        ) {
+            return;
+        }
+
+        setSubmittingEdit(true);
+        try {
+            let successCount = 0;
+            let failureCount = 0;
+
+            for (const occId of selectedOccurrences) {
+                try {
+                    const res = await fetch(`/api/admin/classes/${occId}`, {
+                        method: "DELETE",
+                    });
+                    if (res.ok) {
+                        successCount++;
+                    } else {
+                        failureCount++;
+                    }
+                } catch {
+                    failureCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                alert(`Deleted ${successCount} class session(s).${failureCount > 0 ? ` Failed to delete ${failureCount}.` : ""}`);
+                setSelectedOccurrences(new Set());
+                loadCalendarData();
+            } else {
+                alert("Failed to delete classes.");
+            }
+        } finally {
+            setSubmittingEdit(false);
+        }
+    };
+
+    // Toggle selection of an occurrence
+    const toggleOccurrenceSelection = (occId: string) => {
+        const newSelected = new Set(selectedOccurrences);
+        if (newSelected.has(occId)) {
+            newSelected.delete(occId);
+        } else {
+            newSelected.add(occId);
+        }
+        setSelectedOccurrences(newSelected);
+    };
+
+    // Select all occurrences in current view
+    const selectAllInView = () => {
+        if (selectedOccurrences.size === occurrences.length) {
+            setSelectedOccurrences(new Set());
+        } else {
+            setSelectedOccurrences(new Set(occurrences.map((occ) => occ.id)));
+        }
+    };
+
     return (
         <div className="p-6 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto h-full font-sans">
             {/* Header section */}
@@ -443,41 +526,99 @@ export default function AdminCalendarPage() {
                 </div>
             </div>
 
-            {/* Weekly Selector bar */}
-            <div className="flex justify-between items-center bg-neutral-card border border-neutral-line rounded-md p-3.5 shadow-sm">
-                <div className="flex gap-2">
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setCurrentDate(addDays(currentDate, -7))}
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setCurrentDate(new Date())}
-                    >
-                        Today
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setCurrentDate(addDays(currentDate, 7))}
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
+            {/* View Mode Toggle and Selector bar */}
+            <div className="flex flex-col gap-3">
+                <div className="flex justify-between items-center bg-neutral-card border border-neutral-line rounded-md p-3.5 shadow-sm">
+                    <div className="flex gap-2">
+                        <Button
+                            variant={viewMode === "week" ? "primary" : "secondary"}
+                            size="sm"
+                            onClick={() => setViewMode("week")}
+                        >
+                            Week
+                        </Button>
+                        <Button
+                            variant={viewMode === "month" ? "primary" : "secondary"}
+                            size="sm"
+                            leftIcon={<Grid3x3 className="h-4 w-4" />}
+                            onClick={() => setViewMode("month")}
+                        >
+                            Month
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setCurrentDate(viewMode === "week" ? addDays(currentDate, -7) : addMonths(currentDate, -1))}
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setCurrentDate(new Date())}
+                        >
+                            Today
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setCurrentDate(viewMode === "week" ? addDays(currentDate, 7) : addMonths(currentDate, 1))}
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-2 font-display text-body-lg font-bold text-neutral-ink">
+                        <Calendar className="h-5 w-5 text-primary-600" />
+                        {viewMode === "week"
+                            ? `${format(weekStart, "d MMMM yyyy")} – ${format(addDays(weekStart, 6), "d MMMM yyyy")}`
+                            : format(toZonedTime(currentDate, STUDIO_TZ), "MMMM yyyy")}
+                    </div>
                 </div>
-                <div className="flex items-center gap-2 font-display text-body-lg font-bold text-neutral-ink">
-                    <Calendar className="h-5 w-5 text-primary-600" />
-                    {format(weekStart, "d MMMM yyyy")} – {format(addDays(weekStart, 6), "d MMMM yyyy")}
-                </div>
+
+                {/* Bulk Selection Controls */}
+                {selectedOccurrences.size > 0 && (
+                    <div className="flex justify-between items-center bg-primary-50 border border-primary-200 rounded-md p-3.5 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <span className="font-display text-body font-semibold text-neutral-ink">
+                                {selectedOccurrences.size} class{selectedOccurrences.size !== 1 ? "es" : ""} selected
+                            </span>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={selectAllInView}
+                            >
+                                {selectedOccurrences.size === occurrences.length ? "Deselect All" : "Select All"}
+                            </Button>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setSelectedOccurrences(new Set())}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                leftIcon={<Trash2 className="h-4 w-4" />}
+                                onClick={handleBulkDelete}
+                                loading={submittingEdit}
+                                disabled={submittingEdit}
+                            >
+                                Delete Selected
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Calendar Week Visual Grid */}
+            {/* Calendar Visual Grid - Week or Month View */}
+            {viewMode === "week" ? (
             <div className="grid grid-cols-1 md:grid-cols-7 gap-4 flex-1">
                 {weekDays.map((day, idx) => {
-                    const formattedDate = format(day, "yyyy-MM-dd");
                     const dayClasses = occurrences.filter((occ) => {
                         const localStartsAt = toZonedTime(parseISO(occ.startsAt), STUDIO_TZ);
                         return isSameDay(day, localStartsAt);
@@ -583,6 +724,147 @@ export default function AdminCalendarPage() {
                     );
                 })}
             </div>
+            ) : (
+            <div className="flex flex-col gap-4 flex-1 min-h-0">
+                {/* Month View */}
+                <div className="grid grid-cols-7 gap-3">
+                    {/* Weekday headers */}
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+                        <div key={day} className="text-center font-display text-overline uppercase tracking-[0.08em] text-neutral-text-2 py-3 border-b border-neutral-line">
+                            {day}
+                        </div>
+                    ))}
+
+                    {/* Month days grid */}
+                    {(() => {
+                        const monthStart = startOfMonth(toZonedTime(currentDate, STUDIO_TZ));
+                        const monthEnd = endOfMonth(toZonedTime(currentDate, STUDIO_TZ));
+                        const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+                        const endDate = addDays(startOfWeek(addDays(monthEnd, 1), { weekStartsOn: 1 }), -1);
+
+                        const days: Date[] = [];
+                        let current = startDate;
+                        while (current <= endDate) {
+                            days.push(current);
+                            current = addDays(current, 1);
+                        }
+
+                        return days.map((day, idx) => {
+                            const dayClasses = occurrences.filter((occ) => {
+                                const localStartsAt = toZonedTime(parseISO(occ.startsAt), STUDIO_TZ);
+                                return isSameDay(day, localStartsAt);
+                            });
+
+                            const isToday = isSameDay(day, toZonedTime(new Date(), STUDIO_TZ));
+                            const isCurrentMonth = isSameMonth(day, monthStart);
+
+                            return (
+                                <div
+                                    key={idx}
+                                    className={cn(
+                                        "flex flex-col min-h-[200px] border border-neutral-line rounded-md shadow-sm overflow-hidden",
+                                        isCurrentMonth ? "bg-neutral-card" : "bg-neutral-bg/60",
+                                        isToday && "border-2 border-primary-500 ring-2 ring-primary-100",
+                                    )}
+                                >
+                                    {/* Day Header */}
+                                    <div
+                                        className={cn(
+                                            "flex items-center justify-center p-2.5 border-b border-neutral-line text-center shrink-0",
+                                            isToday ? "bg-primary-500 text-neutral-ink font-semibold" : "bg-neutral-bg",
+                                        )}
+                                    >
+                                        <span className="font-display text-body font-semibold">
+                                            {format(day, "d")}
+                                        </span>
+                                    </div>
+
+                                    {/* Classes in this day */}
+                                    <div className="flex-1 p-2 flex flex-col gap-1.5 overflow-y-auto bg-neutral-card/60">
+                                        {loading ? (
+                                            <div className="flex items-center justify-center h-full">
+                                                <Loader className="h-4 w-4 animate-spin text-neutral-text-3" />
+                                            </div>
+                                        ) : dayClasses.length === 0 ? (
+                                            <div className="flex items-center justify-center h-full text-center">
+                                                <p className="font-sans text-caption text-neutral-text-3 italic">
+                                                    {isCurrentMonth ? "No classes" : ""}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            dayClasses.map((occ) => {
+                                                const isSelected = selectedOccurrences.has(occ.id);
+                                                const dateStarts = parseISO(occ.startsAt);
+                                                const localStarts = toZonedTime(dateStarts, STUDIO_TZ);
+                                                const isSpecial = occ.isSpecial;
+
+                                                return (
+                                                    <div
+                                                        key={occ.id}
+                                                        onClick={(e) => {
+                                                            if (e.ctrlKey || e.metaKey) {
+                                                                e.stopPropagation();
+                                                                toggleOccurrenceSelection(occ.id);
+                                                            } else {
+                                                                handleOccurrenceClick(occ);
+                                                            }
+                                                        }}
+                                                        className={cn(
+                                                            "p-2 flex flex-col gap-1 border rounded-sm transition-all duration-150 text-left cursor-pointer",
+                                                            isSelected
+                                                                ? "bg-primary-500 border-primary-600 text-white"
+                                                                : "border-neutral-line hover:border-primary-400 hover:bg-primary-50/50 bg-neutral-card",
+                                                            isSpecial && !isSelected && "border-l-4 border-l-primary-500 bg-primary-50/20",
+                                                            occ.isCancelled && "opacity-50 hover:opacity-70 border-error-fg/40 bg-error-bg/20",
+                                                        )}
+                                                        title={`${occ.name} at ${format(localStarts, "HH:mm")}`}
+                                                    >
+                                                        <div className="flex justify-between items-start gap-1">
+                                                            <span
+                                                                className={cn(
+                                                                    "font-display text-caption font-semibold tracking-wide leading-tight line-clamp-2",
+                                                                    occ.isCancelled && "line-through",
+                                                                )}
+                                                            >
+                                                                {occ.name}
+                                                            </span>
+                                                            {!isSelected && occ.isCancelled ? (
+                                                                <Badge tone="error" className="shrink-0 text-[9px]">
+                                                                    Cancelled
+                                                                </Badge>
+                                                            ) : (
+                                                                !isSelected && isSpecial && (
+                                                                    <Sparkles className="h-3 w-3 text-primary-600 shrink-0" />
+                                                                )
+                                                            )}
+                                                        </div>
+
+                                                        <div className={cn(
+                                                            "flex items-center justify-between gap-1 font-sans text-caption",
+                                                            isSelected ? "text-white/90" : "text-neutral-text-3"
+                                                        )}>
+                                                            <span className="text-[11px]">
+                                                                {format(localStarts, "HH:mm")}
+                                                            </span>
+                                                            <span className={cn(
+                                                                "text-[10px] font-semibold shrink-0",
+                                                                isSelected ? "text-white" : "text-neutral-ink bg-neutral-line/30 px-1 py-0.5 rounded-sm"
+                                                            )}>
+                                                                {occ.bookedCount}/{occ.capacity}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        });
+                    })()}
+                </div>
+            </div>
+            )}
 
             {/* SHEET 1: Add/Schedule Class Form */}
             <Sheet

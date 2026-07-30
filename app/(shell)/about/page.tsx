@@ -16,11 +16,13 @@ import { useEffect, useState } from "react";
 export default function AboutPage() {
     const [activeTab, setActiveTab] = useState<AboutTab>("instructors");
     const [instructors, setInstructors] = useState<Instructor[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         fetchInstructors()
             .then(setInstructors)
-            .catch((err) => console.error("Failed to load instructors:", err));
+            .catch((err) => console.error("Failed to load instructors:", err))
+            .finally(() => setIsLoading(false));
     }, []);
 
     return (
@@ -30,7 +32,7 @@ export default function AboutPage() {
                 <AboutTabs active={activeTab} onChange={setActiveTab} />
 
                 {activeTab === "instructors" && (
-                    <InstructorGrid instructors={instructors} />
+                    <InstructorGrid instructors={instructors} isLoading={isLoading} />
                 )}
 
                 {activeTab === "staff" && (

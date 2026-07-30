@@ -1,6 +1,13 @@
 import { MapInfoTile } from "@/components/about/MapInfoTile";
 import { cn } from "@/lib/cn";
-import { MapPinnedIcon } from "lucide-react";
+import {
+    BusFrontIcon,
+    ClockIcon,
+    MapPinIcon,
+    MapPinnedIcon,
+    PhoneIcon,
+    TrainFrontIcon,
+} from "lucide-react";
 
 const MAPS_URL =
     "https://www.google.com/maps/dir/?api=1&destination=32%2F82+Soi+Sua+Yai+Utit%2C+Chatuchak%2C+Bangkok+10900";
@@ -13,6 +20,8 @@ export interface MapEmbedProps {
 }
 
 export function MapEmbed({ className }: MapEmbedProps) {
+    const iconClass = "h-5 w-5 text-primary-700";
+
     return (
         <div className={cn("flex flex-col gap-4", className)}>
             <h2 className="font-display text-h3 font-semibold text-neutral-ink">
@@ -35,18 +44,30 @@ export function MapEmbed({ className }: MapEmbedProps) {
 
             {/* Info tiles */}
             <div className="grid grid-cols-2 gap-3">
-                <MapInfoTile icon="📍" label="Address (TH)">
+                <MapInfoTile
+                    icon={<MapPinIcon strokeWidth={1.75} className={iconClass} />}
+                    label="Address (TH)"
+                >
                     <p className="text-primary-700">
                         32/109 ซอยเสือใหญ่อุทิศ แขวงจันทรเกษม เขตจตุจักร กรุงเทพ 10900
                     </p>
                 </MapInfoTile>
-                <MapInfoTile icon="📍" label="Address (EN)">
-                    32/109 Soi Sua Yai Utit, Chankasem, Chatuchak, Bangkok 10900
+                <MapInfoTile
+                    icon={<MapPinIcon strokeWidth={1.75} className={iconClass} />}
+                    label="Address (EN)"
+                >
+                    322/109 Soi Sua Yai Utit, Chankasem, Chatuchak, Bangkok 10900
                 </MapInfoTile>
-                <MapInfoTile icon="🕐" label="Opening hours">
+                <MapInfoTile
+                    icon={<ClockIcon strokeWidth={1.75} className={iconClass} />}
+                    label="Opening hours"
+                >
                     6:00 AM – 9:00 PM daily
                 </MapInfoTile>
-                <MapInfoTile icon="📞" label="Phone">
+                <MapInfoTile
+                    icon={<PhoneIcon strokeWidth={1.75} className={iconClass} />}
+                    label="Phone"
+                >
                     <p>
                         <a
                             href="tel:0896402121"
@@ -66,7 +87,15 @@ export function MapEmbed({ className }: MapEmbedProps) {
                         (Bo)
                     </p>
                 </MapInfoTile>
-                <MapInfoTile icon="🚇" label="MRT (nearest station)">
+                <MapInfoTile
+                    icon={
+                        <TrainFrontIcon
+                            strokeWidth={1.75}
+                            className={iconClass}
+                        />
+                    }
+                    label="MRT (nearest station)"
+                >
                     <p>
                         <span className="inline-block rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-bold text-white">
                             Blue Line
@@ -83,7 +112,10 @@ export function MapEmbed({ className }: MapEmbedProps) {
                         ~10 min walk / grab from station
                     </p>
                 </MapInfoTile>
-                <MapInfoTile icon="🚌" label="Bus stop">
+                <MapInfoTile
+                    icon={<BusFrontIcon strokeWidth={1.75} className={iconClass} />}
+                    label="Bus stop"
+                >
                     <p className="font-semibold">
                         คปภ. (Office of Insurance Commission)
                     </p>

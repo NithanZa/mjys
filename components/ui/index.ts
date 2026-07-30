@@ -21,3 +21,5 @@ export { EmptyState } from "./EmptyState";
 export type { EmptyStateProps } from "./EmptyState";
 export { QRCode } from "./QRCode";
 export type { QRCodeProps } from "./QRCode";
+export { Sparkline } from "./Sparkline";
+export type { SparklineProps } from "./Sparkline";
