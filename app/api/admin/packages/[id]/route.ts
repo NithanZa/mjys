@@ -18,7 +18,7 @@ export async function PATCH(
     const { id } = await props.params;
     try {
         const body = await request.json();
-        const { name, type, priceTHB, classCount, validityDays, tagline, perks, active, highlight, sortOrder } = body;
+        const { name, type, priceTHB, discountPriceTHB, classCount, validityDays, tagline, perks, active, highlight, sortOrder } = body;
 
         const updateData: any = {};
         if (name !== undefined) updateData.name = name;
@@ -33,6 +33,9 @@ export async function PATCH(
             updateData.type = type;
         }
         if (priceTHB !== undefined) updateData.priceTHB = parseInt(priceTHB, 10);
+        if (discountPriceTHB !== undefined) {
+            updateData.discountPriceTHB = discountPriceTHB !== null && discountPriceTHB !== "" ? parseInt(discountPriceTHB, 10) : null;
+        }
         if (classCount !== undefined) updateData.classCount = classCount !== null ? parseInt(classCount, 10) : null;
         if (validityDays !== undefined) updateData.validityDays = parseInt(validityDays, 10);
         if (tagline !== undefined) updateData.tagline = tagline;

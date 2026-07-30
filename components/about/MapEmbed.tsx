@@ -37,12 +37,11 @@ export function MapEmbed({ className }: MapEmbedProps) {
             <div className="grid grid-cols-2 gap-3">
                 <MapInfoTile icon="📍" label="Address (TH)">
                     <p className="text-primary-700">
-                        32/82 ซอยเสือใหญ่อุทิศ แขวงจตุจักร เขตจตุจักร กรุงเทพฯ
-                        10900
+                        32/109 ซอยเสือใหญ่อุทิศ แขวงจันทรเกษม เขตจตุจักร กรุงเทพ 10900
                     </p>
                 </MapInfoTile>
                 <MapInfoTile icon="📍" label="Address (EN)">
-                    32/82 Soi Sua Yai Utit, Chatuchak, Chatuchak, Bangkok 10900
+                    32/109 Soi Sua Yai Utit, Chankasem, Chatuchak, Bangkok 10900
                 </MapInfoTile>
                 <MapInfoTile icon="🕐" label="Opening hours">
                     6:00 AM – 9:00 PM daily

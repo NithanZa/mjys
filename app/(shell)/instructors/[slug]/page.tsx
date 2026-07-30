@@ -26,7 +26,7 @@ export default async function InstructorDetailPage({
 
       <div className="flex flex-col gap-4">
         <Card elevation="sm" className="flex flex-col items-center gap-3 py-6 text-center">
-          <Avatar size="xl" alt={instructor.name} fallback={instructor.name} />
+          <Avatar size="xl" src={instructor.photoUrl} alt={instructor.name} fallback={instructor.initials} />
           <div className="flex flex-col items-center gap-1">
             <h1 className="font-display text-h1 font-semibold text-neutral-ink">
               {instructor.name}

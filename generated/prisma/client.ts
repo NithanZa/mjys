@@ -67,6 +67,11 @@ export type Attendance = Prisma.AttendanceModel
  */
 export type HomeContent = Prisma.HomeContentModel
 /**
+ * Model HomeBanner
+ * 
+ */
+export type HomeBanner = Prisma.HomeBannerModel
+/**
  * Model PackageOffer
  * 
  */

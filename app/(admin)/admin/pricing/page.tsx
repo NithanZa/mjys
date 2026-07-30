@@ -20,6 +20,7 @@ interface Offer {
     name: string;
     type: string;
     priceTHB: number;
+    discountPriceTHB: number | null;
     classCount: number | null;
     validityDays: number;
     tagline: string;
@@ -46,6 +47,7 @@ export default function AdminPricingPage() {
     const [formName, setFormName] = useState("");
     const [formType, setFormType] = useState("CLASSES_5");
     const [formPrice, setFormPrice] = useState(0);
+    const [formDiscountPrice, setFormDiscountPrice] = useState<number | "">("");
     const [formClassCount, setFormClassCount] = useState<number | "">(5);
     const [formTagline, setFormTagline] = useState("");
     const [formPerksStr, setFormPerksStr] = useState("");
@@ -77,6 +79,7 @@ export default function AdminPricingPage() {
         setFormName("");
         setFormType("CLASSES_5");
         setFormPrice(0);
+        setFormDiscountPrice("");
         setFormClassCount(5);
         setFormTagline("");
         setFormPerksStr("");
@@ -92,6 +95,7 @@ export default function AdminPricingPage() {
         setFormName(offer.name);
         setFormType(offer.type);
         setFormPrice(offer.priceTHB);
+        setFormDiscountPrice(offer.discountPriceTHB ?? "");
         setFormClassCount(offer.classCount ?? "");
         setFormTagline(offer.tagline);
         setFormPerksStr(offer.perks.join("\n"));
@@ -150,6 +154,7 @@ export default function AdminPricingPage() {
                     name: formName,
                     type: formType,
                     priceTHB: formPrice,
+                    discountPriceTHB: formDiscountPrice === "" ? null : parseInt(String(formDiscountPrice), 10),
                     classCount: formType === "UNLIMITED" ? null : (formClassCount === "" ? null : parseInt(String(formClassCount), 10)),
                     validityDays: formValidity,
                     tagline: formTagline,
@@ -194,6 +199,7 @@ export default function AdminPricingPage() {
                     name: formName,
                     type: formType,
                     priceTHB: formPrice,
+                    discountPriceTHB: formDiscountPrice === "" ? null : parseInt(String(formDiscountPrice), 10),
                     classCount: formType === "UNLIMITED" ? null : (formClassCount === "" ? null : parseInt(String(formClassCount), 10)),
                     validityDays: formValidity,
                     tagline: formTagline,
@@ -331,10 +337,24 @@ export default function AdminPricingPage() {
                                     </p>
                                 </div>
 
-                                <div className="flex items-baseline gap-1 pt-1.5 border-t border-neutral-line/60">
-                                    <span className="font-display text-display-sm font-extrabold text-neutral-ink">
-                                        ฿{offer.priceTHB.toLocaleString()}
-                                    </span>
+                                <div className="flex items-baseline gap-2 pt-1.5 border-t border-neutral-line/60 flex-wrap">
+                                    {offer.discountPriceTHB != null && offer.discountPriceTHB < offer.priceTHB ? (
+                                        <>
+                                            <span className="font-display text-display-sm font-extrabold text-primary-600">
+                                                ฿{offer.discountPriceTHB.toLocaleString()}
+                                            </span>
+                                            <span className="font-sans text-body-sm text-neutral-text-3 line-through">
+                                                ฿{offer.priceTHB.toLocaleString()}
+                                            </span>
+                                            <Badge tone="primary" className="text-[10px] font-semibold uppercase">
+                                                Sale
+                                            </Badge>
+                                        </>
+                                    ) : (
+                                        <span className="font-display text-display-sm font-extrabold text-neutral-ink">
+                                            ฿{offer.priceTHB.toLocaleString()}
+                                        </span>
+                                    )}
                                     <span className="font-sans text-caption text-neutral-text-3">
                                         / {offer.classCount ?? "Unlimited"} class{offer.classCount !== 1 ? "es" : ""} · {offer.validityDays}d
                                     </span>
@@ -411,6 +431,14 @@ export default function AdminPricingPage() {
                             onChange={(e) => setFormPrice(parseInt(e.target.value, 10))}
                             placeholder="Price in Baht"
                             required
+                        />
+                        <TextField
+                            label="Discount Price (THB)"
+                            type="number"
+                            value={formDiscountPrice}
+                            onChange={(e) => setFormDiscountPrice(e.target.value === "" ? "" : parseInt(e.target.value, 10))}
+                            placeholder="Optional"
+                            hint="Leave empty for no discount"
                         />
                     </div>
 
@@ -566,6 +594,14 @@ export default function AdminPricingPage() {
                                 value={formPrice}
                                 onChange={(e) => setFormPrice(parseInt(e.target.value, 10))}
                                 required
+                            />
+                            <TextField
+                                label="Discount Price (THB)"
+                                type="number"
+                                value={formDiscountPrice}
+                                onChange={(e) => setFormDiscountPrice(e.target.value === "" ? "" : parseInt(e.target.value, 10))}
+                                placeholder="Optional"
+                                hint="Leave empty for no discount"
                             />
                         </div>
 

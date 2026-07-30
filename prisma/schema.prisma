@@ -126,6 +126,20 @@ model HomeContent {
   updatedAt       DateTime @updatedAt
 }
 
+model HomeBanner {
+  id        String   @id @default(cuid())
+  title     String
+  eyebrow   String?
+  imageUrl  String
+  href      String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
 enum PackageType {
   CLASSES_5
   CLASSES_10
@@ -135,17 +149,18 @@ enum PackageType {
 }
 
 model PackageOffer {
-  id           String      @id @default(cuid())
-  name         String
-  type         PackageType
-  priceTHB     Int
-  classCount   Int?        // Null for UNLIMITED
-  validityDays Int
-  tagline      String
-  perks        String[]
-  highlight    Boolean     @default(false)
-  sortOrder    Int
-  active       Boolean     @default(true)
+  id              String      @id @default(cuid())
+  name            String
+  type            PackageType
+  priceTHB        Int
+  discountPriceTHB Int?       // Optional discounted price; null means no discount
+  classCount      Int?        // Null for UNLIMITED
+  validityDays    Int
+  tagline         String
+  perks           String[]
+  highlight       Boolean     @default(false)
+  sortOrder       Int
+  active          Boolean     @default(true)
 
   pendingPurchases PendingPurchase[]
   packages         Package[]

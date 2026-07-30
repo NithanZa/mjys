@@ -192,7 +192,7 @@ export default function AdminCalendarPage() {
 
         setSubmittingAdd(true);
         try {
-            const startsAt = new Date(`${formDate}T${formTime}:00`).toISOString();
+            const startsAt = new Date(`${formDate}T${formTime}:00+07:00`).toISOString();
             const res = await fetch("/api/admin/classes", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

@@ -13,7 +13,8 @@ import { HOME_CONTENT } from "@/lib/mock/home-content";
 import { useMember } from "@/lib/profile/use-member";
 import { getUnseenUnlockedMilestones } from "@/lib/rewards";
 import { motion } from "motion/react";
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect, useState } from "react";
+import { getHomeBanners, type HomeBannerDTO } from "@/lib/api/home-banners";
 
 const containerVariants = {
     hidden: {},
@@ -39,6 +40,11 @@ const itemVariants = {
 export default function HomePage() {
     const { quoteOfWeek, poseOfWeek } = HOME_CONTENT;
     const { member, markCelebrated } = useMember();
+    const [banners, setBanners] = useState<HomeBannerDTO[]>([]);
+
+    useEffect(() => {
+        getHomeBanners().then(setBanners);
+    }, []);
 
     const celebratedNumbers = useMemo<number[]>(() => {
         if (!member) return [];
@@ -107,23 +113,16 @@ export default function HomePage() {
                     </motion.div>
                 )}
 
-                <motion.div variants={itemVariants}>
-                    <TigerPromoCard
-                        href="/promotion"
-                        title="Promotion"
-                        eyebrow="Special offers"
-                        image="/tigers/LINE_ALBUM_tiger_260719_10.jpg"
-                    />
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                    <TigerPromoCard
-                        href="/contact"
-                        title="Contact Us"
-                        eyebrow="We'd love to hear from you"
-                        image="/tigers/LINE_ALBUM_tiger_260719_16.jpg"
-                    />
-                </motion.div>
+                {banners.map((banner) => (
+                    <motion.div key={banner.id} variants={itemVariants}>
+                        <TigerPromoCard
+                            href={banner.href}
+                            title={banner.title}
+                            eyebrow={banner.eyebrow || undefined}
+                            image={banner.imageUrl}
+                        />
+                    </motion.div>
+                ))}
 
                 <motion.div variants={itemVariants}>
                     <WorkshopPromo />

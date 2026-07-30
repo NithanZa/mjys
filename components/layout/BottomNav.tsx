@@ -38,7 +38,7 @@ const items: NavItem[] = [
     },
     {
         href: "/about",
-        label: "Activities",
+        label: "About Mitr",
         image: "/tigers/LINE_ALBUM_tiger_260719_13.jpg",
         match: (p) => p.startsWith("/about") || p.startsWith("/instructors"),
     },

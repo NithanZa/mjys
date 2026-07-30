@@ -299,6 +299,36 @@ async function main() {
     });
     console.log("✅ Seeded Home Content");
 
+    // 3b. Seed Home Banners
+    const HOME_BANNERS = [
+        {
+            id: "banner_promotion",
+            title: "Promotion",
+            eyebrow: "Special offers",
+            imageUrl: "/tigers/LINE_ALBUM_tiger_260719_10.jpg",
+            href: "/promotion",
+            sortOrder: 1,
+            isActive: true,
+        },
+        {
+            id: "banner_contact",
+            title: "Contact Us",
+            eyebrow: "We'd love to hear from you",
+            imageUrl: "/tigers/LINE_ALBUM_tiger_260719_16.jpg",
+            href: "/contact",
+            sortOrder: 2,
+            isActive: true,
+        },
+    ];
+    for (const banner of HOME_BANNERS) {
+        await prisma.homeBanner.upsert({
+            where: { id: banner.id },
+            update: banner,
+            create: banner,
+        });
+    }
+    console.log("✅ Seeded Home Banners");
+
     // 4. Seed ToyParts
     const TOY_PARTS = [
         { id: "toy_head", code: "head", name: "Tiger Toy Head", sortOrder: 1 },

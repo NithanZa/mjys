@@ -1,19 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Mitr, Noto_Sans_Thai } from "next/font/google";
+import { IBM_Plex_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { LiffProvider } from "@/lib/liff";
 
-const mitr = Mitr({
+const ibmPlexSansThai = IBM_Plex_Sans_Thai({
     subsets: ["thai", "latin"],
     weight: ["300", "400", "500", "600", "700"],
-    variable: "--font-mitr",
-    display: "swap",
-});
-
-const notoSansThai = Noto_Sans_Thai({
-    subsets: ["thai", "latin"],
-    weight: ["400", "500", "600", "700"],
-    variable: "--font-noto-sans-thai",
+    variable: "--font-ibm-plex-sans-thai",
     display: "swap",
 });
 
@@ -42,7 +35,7 @@ export default function RootLayout({
     return (
         <html
             lang="th"
-            className={`${mitr.variable} ${notoSansThai.variable}`}
+            className={`${ibmPlexSansThai.variable}`}
             data-semantic-theme="warm"
         >
             <body>

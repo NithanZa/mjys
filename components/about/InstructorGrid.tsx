@@ -24,6 +24,7 @@ export function InstructorGrid({ instructors, className }: InstructorGridProps) 
                         <div className="overflow-hidden rounded-xl border border-neutral-line bg-neutral-card">
                             <div className="flex h-36 items-center justify-center bg-neutral-200">
                                 <Avatar
+                                    src={ins.photoUrl}
                                     fallback={ins.initials}
                                     alt={ins.name}
                                     size="lg"

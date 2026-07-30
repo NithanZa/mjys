@@ -16,6 +16,8 @@ import {
     User,
     CheckCircle2,
     Shield,
+    UserCog,
+    Image as ImageIcon,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -55,11 +57,13 @@ export default function AdminLayout({
     }
 
     const navigation = [
-        { name: "QR Scanner", href: "/admin/scanner", icon: Scan },
+        { name: "Home Banners", href: "/admin/banners", icon: ImageIcon },
         { name: "Schedule Calendar", href: "/admin/calendar", icon: Calendar },
-        { name: "Slip Approvals", href: "/admin/slips", icon: FileCheck },
         { name: "Pricing & Packs", href: "/admin/pricing", icon: Tag },
+        { name: "Slip Approvals", href: "/admin/slips", icon: FileCheck },
+        { name: "Staff Directory", href: "/admin/staff", icon: UserCog },
         { name: "Members Directory", href: "/admin/members", icon: Users },
+        { name: "QR Scanner", href: "/admin/scanner", icon: Scan },
     ];
 
     return (

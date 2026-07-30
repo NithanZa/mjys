@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
                 rowErrors.push(`Row ${rowNum}: time must be HH:MM`);
                 continue;
             }
-            const startsAt = new Date(`${date}T${time}:00`);
+            const startsAt = new Date(`${date}T${time}:00+07:00`);
             if (Number.isNaN(startsAt.getTime())) {
                 rowErrors.push(`Row ${rowNum}: date + time is invalid`);
                 continue;

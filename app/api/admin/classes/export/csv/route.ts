@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { toZonedTime } from "date-fns-tz";
+import { format } from "date-fns";
+import { STUDIO_TZ } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +62,7 @@ export async function GET(request: NextRequest) {
             occ.isSpecial ? "true" : "false",
             occ.instructorId,
             occ.instructor.name,
-            occ.startsAt.toISOString(),
+            `${format(toZonedTime(occ.startsAt, STUDIO_TZ), "yyyy-MM-dd'T'HH:mm:ss")}+07:00`,
             occ.durationMin,
             occ.capacity,
             occ.bookedCount,

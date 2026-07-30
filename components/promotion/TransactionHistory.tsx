@@ -105,7 +105,7 @@ export function TransactionHistory({
                                     {offer?.name ?? "Package"}
                                 </div>
                                 <p className="font-sans text-caption text-neutral-text-3">
-                                    {offer ? formatTHB(offer.priceTHB) : ""}
+                                    {offer ? formatTHB(offer.discountPriceTHB != null && offer.discountPriceTHB < offer.priceTHB ? offer.discountPriceTHB : offer.priceTHB) : ""}
                                     {offer ? " · " : ""}
                                     {formatDate(purchase.createdAt)}
                                 </p>

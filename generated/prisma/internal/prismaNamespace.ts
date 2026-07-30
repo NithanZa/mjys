@@ -389,6 +389,7 @@ export const ModelName = {
   ClassOccurrence: 'ClassOccurrence',
   Attendance: 'Attendance',
   HomeContent: 'HomeContent',
+  HomeBanner: 'HomeBanner',
   PackageOffer: 'PackageOffer',
   PendingPurchase: 'PendingPurchase',
   Package: 'Package',
@@ -411,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "member" | "instructor" | "classOccurrence" | "attendance" | "homeContent" | "packageOffer" | "pendingPurchase" | "package" | "toyPart" | "memberToyPart" | "milestone" | "memberMilestone"
+    modelProps: "member" | "instructor" | "classOccurrence" | "attendance" | "homeContent" | "homeBanner" | "packageOffer" | "pendingPurchase" | "package" | "toyPart" | "memberToyPart" | "milestone" | "memberMilestone"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -782,6 +783,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.HomeContentCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.HomeContentCountAggregateOutputType> | number
+        }
+      }
+    }
+    HomeBanner: {
+      payload: Prisma.$HomeBannerPayload<ExtArgs>
+      fields: Prisma.HomeBannerFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.HomeBannerFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HomeBannerPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.HomeBannerFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HomeBannerPayload>
+        }
+        findFirst: {
+          args: Prisma.HomeBannerFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HomeBannerPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.HomeBannerFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HomeBannerPayload>
+        }
+        findMany: {
+          args: Prisma.HomeBannerFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HomeBannerPayload>[]
+        }
+        create: {
+          args: Prisma.HomeBannerCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HomeBannerPayload>
+        }
+        createMany: {
+          args: Prisma.HomeBannerCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.HomeBannerCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HomeBannerPayload>[]
+        }
+        delete: {
+          args: Prisma.HomeBannerDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HomeBannerPayload>
+        }
+        update: {
+          args: Prisma.HomeBannerUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HomeBannerPayload>
+        }
+        deleteMany: {
+          args: Prisma.HomeBannerDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.HomeBannerUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.HomeBannerUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HomeBannerPayload>[]
+        }
+        upsert: {
+          args: Prisma.HomeBannerUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HomeBannerPayload>
+        }
+        aggregate: {
+          args: Prisma.HomeBannerAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateHomeBanner>
+        }
+        groupBy: {
+          args: Prisma.HomeBannerGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.HomeBannerGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.HomeBannerCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.HomeBannerCountAggregateOutputType> | number
         }
       }
     }
@@ -1423,11 +1498,27 @@ export const HomeContentScalarFieldEnum = {
 export type HomeContentScalarFieldEnum = (typeof HomeContentScalarFieldEnum)[keyof typeof HomeContentScalarFieldEnum]
 
 
+export const HomeBannerScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  eyebrow: 'eyebrow',
+  imageUrl: 'imageUrl',
+  href: 'href',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type HomeBannerScalarFieldEnum = (typeof HomeBannerScalarFieldEnum)[keyof typeof HomeBannerScalarFieldEnum]
+
+
 export const PackageOfferScalarFieldEnum = {
   id: 'id',
   name: 'name',
   type: 'type',
   priceTHB: 'priceTHB',
+  discountPriceTHB: 'discountPriceTHB',
   classCount: 'classCount',
   validityDays: 'validityDays',
   tagline: 'tagline',
@@ -1818,6 +1909,7 @@ export type GlobalOmitConfig = {
   classOccurrence?: Prisma.ClassOccurrenceOmit
   attendance?: Prisma.AttendanceOmit
   homeContent?: Prisma.HomeContentOmit
+  homeBanner?: Prisma.HomeBannerOmit
   packageOffer?: Prisma.PackageOfferOmit
   pendingPurchase?: Prisma.PendingPurchaseOmit
   package?: Prisma.PackageOmit

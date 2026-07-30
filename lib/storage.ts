@@ -8,6 +8,22 @@ import { supabase } from "@/lib/supabase";
 export const SLIP_BUCKET = "slips";
 
 /**
+ * Storage bucket for staff/instructor avatar images.
+ * The bucket is public — object paths are resolved to public URLs via
+ * `getAvatarPublicUrl` and stored directly in `Instructor.photoUrl`.
+ */
+export const AVATAR_BUCKET = "avatars";
+
+/**
+ * Resolves a bare object path within the `avatars` bucket to its public URL.
+ * The bucket must be configured as public in Supabase Storage.
+ */
+export function getAvatarPublicUrl(path: string): string {
+    const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+}
+
+/**
  * Normalizes a stored `proofImageUrl` value into a bare object path within the
  * `slips` bucket. Handles both the new format (bare path, e.g. "slip_123.jpg")
  * and the legacy format (a full public URL containing "/slips/<path>") so that
@@ -18,6 +34,35 @@ export function extractSlipPath(proofImageUrl: string): string {
     const idx = proofImageUrl.indexOf(marker);
     if (idx === -1) return proofImageUrl;
     return proofImageUrl.slice(idx + marker.length);
+}
+
+/**
+ * Storage bucket for home page banner card images.
+ * The bucket is public — object paths are resolved to public URLs via
+ * `getBannerPublicUrl` and stored directly in `HomeBanner.imageUrl`.
+ */
+export const BANNER_BUCKET = "banners";
+
+/**
+ * Resolves a bare object path within the `banners` bucket to its public URL.
+ * The bucket must be configured as public in Supabase Storage.
+ */
+export function getBannerPublicUrl(path: string): string {
+    const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+}
+
+/**
+ * Normalizes a stored `imageUrl` value into a bare object path within the
+ * `banners` bucket. Handles both the new format (bare path, e.g. "banner_123.jpg")
+ * and the legacy format (a full public URL containing "/banners/<path>") so that
+ * the old file can be targeted for deletion on replace.
+ */
+export function extractBannerPath(imageUrl: string): string {
+    const marker = "/banners/";
+    const idx = imageUrl.indexOf(marker);
+    if (idx === -1) return imageUrl;
+    return imageUrl.slice(idx + marker.length);
 }
 
 /**

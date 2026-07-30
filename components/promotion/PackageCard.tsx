@@ -35,15 +35,32 @@ export function PackageCard({ offer, className }: PackageCardProps) {
         {offer.highlight && <Badge tone="primary">Popular</Badge>}
       </div>
 
-      <div className="flex items-baseline gap-1">
-        <span className="font-display text-display font-semibold text-neutral-ink">
-          {formatTHB(offer.priceTHB)}
-        </span>
-        {offer.classCount && offer.type !== "WALK_IN" && (
-          <span className="font-sans text-body-sm text-neutral-text-2">
-            · {formatTHB(Math.round(offer.priceTHB / offer.classCount))}/class
+      <div className="flex items-baseline gap-1.5 flex-wrap">
+        {offer.discountPriceTHB != null && offer.discountPriceTHB < offer.priceTHB ? (
+          <>
+            <span className="font-display text-display font-semibold text-primary-600">
+              {formatTHB(offer.discountPriceTHB)}
+            </span>
+            <span className="font-sans text-body-sm text-neutral-text-3 line-through">
+              {formatTHB(offer.priceTHB)}
+            </span>
+            <Badge tone="primary">Sale</Badge>
+          </>
+        ) : (
+          <span className="font-display text-display font-semibold text-neutral-ink">
+            {formatTHB(offer.priceTHB)}
           </span>
         )}
+        {offer.classCount && offer.type !== "WALK_IN" && (() => {
+          const effectivePrice = offer.discountPriceTHB != null && offer.discountPriceTHB < offer.priceTHB
+            ? offer.discountPriceTHB
+            : offer.priceTHB;
+          return (
+            <span className="font-sans text-body-sm text-neutral-text-2">
+              · {formatTHB(Math.round(effectivePrice / offer.classCount))}/class
+            </span>
+          );
+        })()}
       </div>
 
       <ul className="flex flex-col gap-1.5">

@@ -16,7 +16,7 @@ export function WorkshopPromo({ className }: WorkshopPromoProps) {
 
   useEffect(() => {
     const now = new Date();
-    const workshop = new Date("2026-06-28T09:00:00");
+    const workshop = new Date("2026-06-28T09:00:00+07:00");
     const diffDays =
       (workshop.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
     setVisible(diffDays > 0 && diffDays <= 30);

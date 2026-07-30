@@ -56,6 +56,7 @@ export const ModelName = {
   ClassOccurrence: 'ClassOccurrence',
   Attendance: 'Attendance',
   HomeContent: 'HomeContent',
+  HomeBanner: 'HomeBanner',
   PackageOffer: 'PackageOffer',
   PendingPurchase: 'PendingPurchase',
   Package: 'Package',
@@ -162,11 +163,27 @@ export const HomeContentScalarFieldEnum = {
 export type HomeContentScalarFieldEnum = (typeof HomeContentScalarFieldEnum)[keyof typeof HomeContentScalarFieldEnum]
 
 
+export const HomeBannerScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  eyebrow: 'eyebrow',
+  imageUrl: 'imageUrl',
+  href: 'href',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type HomeBannerScalarFieldEnum = (typeof HomeBannerScalarFieldEnum)[keyof typeof HomeBannerScalarFieldEnum]
+
+
 export const PackageOfferScalarFieldEnum = {
   id: 'id',
   name: 'name',
   type: 'type',
   priceTHB: 'priceTHB',
+  discountPriceTHB: 'discountPriceTHB',
   classCount: 'classCount',
   validityDays: 'validityDays',
   tagline: 'tagline',

@@ -12,6 +12,8 @@ export interface PackageOffer {
     name: string;
     type: PackageType;
     priceTHB: number;
+    /** Optional discounted price; null/undefined means no discount. */
+    discountPriceTHB?: number | null;
     /** Number of classes; null for UNLIMITED + WALK_IN handled separately. */
     classCount: number | null;
     validityDays: number;

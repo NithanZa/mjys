@@ -68,10 +68,14 @@ export default function PayPage({ params }: PayPageProps) {
         }
     }
 
+    const effectivePrice = offer.discountPriceTHB != null && offer.discountPriceTHB < offer.priceTHB
+        ? offer.discountPriceTHB
+        : offer.priceTHB;
+
     async function copyAmount() {
         if (!offer) return;
         try {
-            await navigator.clipboard.writeText(String(offer.priceTHB));
+            await navigator.clipboard.writeText(String(effectivePrice));
             setCopied(true);
             setTimeout(() => setCopied(false), 1500);
         } catch {
@@ -79,7 +83,7 @@ export default function PayPage({ params }: PayPageProps) {
         }
     }
 
-    const qrValue = buildStubQrPayload(offer.id, offer.priceTHB, PROMPTPAY_ID);
+    const qrValue = buildStubQrPayload(offer.id, effectivePrice, PROMPTPAY_ID);
 
     return (
         <>
@@ -109,7 +113,7 @@ export default function PayPage({ params }: PayPageProps) {
                             <QRCode value={qrValue} size={208} ariaLabel="Payment QR code" />
                             <div className="flex flex-col items-center gap-1 text-center">
                                 <p className="font-display text-h3 font-medium text-neutral-ink">
-                                    Scan to pay {formatTHB(offer.priceTHB)}
+                                    Scan to pay {formatTHB(effectivePrice)}
                                 </p>
                                 <p className="font-sans text-caption text-neutral-text-2">
                                     PromptPay · {PROMPTPAY_ID}
@@ -128,7 +132,7 @@ export default function PayPage({ params }: PayPageProps) {
                                     className="inline-flex items-center gap-1.5 font-display text-h3 font-medium text-neutral-ink hover:text-primary-700"
                                     aria-label="Copy amount"
                                 >
-                                    {formatTHB(offer.priceTHB)}
+                                    {formatTHB(effectivePrice)}
                                     {copied ? (
                                         <CheckCircle2
                                             strokeWidth={1.75}

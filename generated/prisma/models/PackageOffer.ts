@@ -28,6 +28,7 @@ export type AggregatePackageOffer = {
 
 export type PackageOfferAvgAggregateOutputType = {
   priceTHB: number | null
+  discountPriceTHB: number | null
   classCount: number | null
   validityDays: number | null
   sortOrder: number | null
@@ -35,6 +36,7 @@ export type PackageOfferAvgAggregateOutputType = {
 
 export type PackageOfferSumAggregateOutputType = {
   priceTHB: number | null
+  discountPriceTHB: number | null
   classCount: number | null
   validityDays: number | null
   sortOrder: number | null
@@ -45,6 +47,7 @@ export type PackageOfferMinAggregateOutputType = {
   name: string | null
   type: $Enums.PackageType | null
   priceTHB: number | null
+  discountPriceTHB: number | null
   classCount: number | null
   validityDays: number | null
   tagline: string | null
@@ -58,6 +61,7 @@ export type PackageOfferMaxAggregateOutputType = {
   name: string | null
   type: $Enums.PackageType | null
   priceTHB: number | null
+  discountPriceTHB: number | null
   classCount: number | null
   validityDays: number | null
   tagline: string | null
@@ -71,6 +75,7 @@ export type PackageOfferCountAggregateOutputType = {
   name: number
   type: number
   priceTHB: number
+  discountPriceTHB: number
   classCount: number
   validityDays: number
   tagline: number
@@ -84,6 +89,7 @@ export type PackageOfferCountAggregateOutputType = {
 
 export type PackageOfferAvgAggregateInputType = {
   priceTHB?: true
+  discountPriceTHB?: true
   classCount?: true
   validityDays?: true
   sortOrder?: true
@@ -91,6 +97,7 @@ export type PackageOfferAvgAggregateInputType = {
 
 export type PackageOfferSumAggregateInputType = {
   priceTHB?: true
+  discountPriceTHB?: true
   classCount?: true
   validityDays?: true
   sortOrder?: true
@@ -101,6 +108,7 @@ export type PackageOfferMinAggregateInputType = {
   name?: true
   type?: true
   priceTHB?: true
+  discountPriceTHB?: true
   classCount?: true
   validityDays?: true
   tagline?: true
@@ -114,6 +122,7 @@ export type PackageOfferMaxAggregateInputType = {
   name?: true
   type?: true
   priceTHB?: true
+  discountPriceTHB?: true
   classCount?: true
   validityDays?: true
   tagline?: true
@@ -127,6 +136,7 @@ export type PackageOfferCountAggregateInputType = {
   name?: true
   type?: true
   priceTHB?: true
+  discountPriceTHB?: true
   classCount?: true
   validityDays?: true
   tagline?: true
@@ -228,6 +238,7 @@ export type PackageOfferGroupByOutputType = {
   name: string
   type: $Enums.PackageType
   priceTHB: number
+  discountPriceTHB: number | null
   classCount: number | null
   validityDays: number
   tagline: string
@@ -265,6 +276,7 @@ export type PackageOfferWhereInput = {
   name?: Prisma.StringFilter<"PackageOffer"> | string
   type?: Prisma.EnumPackageTypeFilter<"PackageOffer"> | $Enums.PackageType
   priceTHB?: Prisma.IntFilter<"PackageOffer"> | number
+  discountPriceTHB?: Prisma.IntNullableFilter<"PackageOffer"> | number | null
   classCount?: Prisma.IntNullableFilter<"PackageOffer"> | number | null
   validityDays?: Prisma.IntFilter<"PackageOffer"> | number
   tagline?: Prisma.StringFilter<"PackageOffer"> | string
@@ -281,6 +293,7 @@ export type PackageOfferOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   priceTHB?: Prisma.SortOrder
+  discountPriceTHB?: Prisma.SortOrderInput | Prisma.SortOrder
   classCount?: Prisma.SortOrderInput | Prisma.SortOrder
   validityDays?: Prisma.SortOrder
   tagline?: Prisma.SortOrder
@@ -300,6 +313,7 @@ export type PackageOfferWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"PackageOffer"> | string
   type?: Prisma.EnumPackageTypeFilter<"PackageOffer"> | $Enums.PackageType
   priceTHB?: Prisma.IntFilter<"PackageOffer"> | number
+  discountPriceTHB?: Prisma.IntNullableFilter<"PackageOffer"> | number | null
   classCount?: Prisma.IntNullableFilter<"PackageOffer"> | number | null
   validityDays?: Prisma.IntFilter<"PackageOffer"> | number
   tagline?: Prisma.StringFilter<"PackageOffer"> | string
@@ -316,6 +330,7 @@ export type PackageOfferOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   priceTHB?: Prisma.SortOrder
+  discountPriceTHB?: Prisma.SortOrderInput | Prisma.SortOrder
   classCount?: Prisma.SortOrderInput | Prisma.SortOrder
   validityDays?: Prisma.SortOrder
   tagline?: Prisma.SortOrder
@@ -338,6 +353,7 @@ export type PackageOfferScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"PackageOffer"> | string
   type?: Prisma.EnumPackageTypeWithAggregatesFilter<"PackageOffer"> | $Enums.PackageType
   priceTHB?: Prisma.IntWithAggregatesFilter<"PackageOffer"> | number
+  discountPriceTHB?: Prisma.IntNullableWithAggregatesFilter<"PackageOffer"> | number | null
   classCount?: Prisma.IntNullableWithAggregatesFilter<"PackageOffer"> | number | null
   validityDays?: Prisma.IntWithAggregatesFilter<"PackageOffer"> | number
   tagline?: Prisma.StringWithAggregatesFilter<"PackageOffer"> | string
@@ -352,6 +368,7 @@ export type PackageOfferCreateInput = {
   name: string
   type: $Enums.PackageType
   priceTHB: number
+  discountPriceTHB?: number | null
   classCount?: number | null
   validityDays: number
   tagline: string
@@ -368,6 +385,7 @@ export type PackageOfferUncheckedCreateInput = {
   name: string
   type: $Enums.PackageType
   priceTHB: number
+  discountPriceTHB?: number | null
   classCount?: number | null
   validityDays: number
   tagline: string
@@ -384,6 +402,7 @@ export type PackageOfferUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPackageTypeFieldUpdateOperationsInput | $Enums.PackageType
   priceTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  discountPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   classCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   validityDays?: Prisma.IntFieldUpdateOperationsInput | number
   tagline?: Prisma.StringFieldUpdateOperationsInput | string
@@ -400,6 +419,7 @@ export type PackageOfferUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPackageTypeFieldUpdateOperationsInput | $Enums.PackageType
   priceTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  discountPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   classCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   validityDays?: Prisma.IntFieldUpdateOperationsInput | number
   tagline?: Prisma.StringFieldUpdateOperationsInput | string
@@ -416,6 +436,7 @@ export type PackageOfferCreateManyInput = {
   name: string
   type: $Enums.PackageType
   priceTHB: number
+  discountPriceTHB?: number | null
   classCount?: number | null
   validityDays: number
   tagline: string
@@ -430,6 +451,7 @@ export type PackageOfferUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPackageTypeFieldUpdateOperationsInput | $Enums.PackageType
   priceTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  discountPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   classCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   validityDays?: Prisma.IntFieldUpdateOperationsInput | number
   tagline?: Prisma.StringFieldUpdateOperationsInput | string
@@ -444,6 +466,7 @@ export type PackageOfferUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPackageTypeFieldUpdateOperationsInput | $Enums.PackageType
   priceTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  discountPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   classCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   validityDays?: Prisma.IntFieldUpdateOperationsInput | number
   tagline?: Prisma.StringFieldUpdateOperationsInput | string
@@ -466,6 +489,7 @@ export type PackageOfferCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   priceTHB?: Prisma.SortOrder
+  discountPriceTHB?: Prisma.SortOrder
   classCount?: Prisma.SortOrder
   validityDays?: Prisma.SortOrder
   tagline?: Prisma.SortOrder
@@ -477,6 +501,7 @@ export type PackageOfferCountOrderByAggregateInput = {
 
 export type PackageOfferAvgOrderByAggregateInput = {
   priceTHB?: Prisma.SortOrder
+  discountPriceTHB?: Prisma.SortOrder
   classCount?: Prisma.SortOrder
   validityDays?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
@@ -487,6 +512,7 @@ export type PackageOfferMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   priceTHB?: Prisma.SortOrder
+  discountPriceTHB?: Prisma.SortOrder
   classCount?: Prisma.SortOrder
   validityDays?: Prisma.SortOrder
   tagline?: Prisma.SortOrder
@@ -500,6 +526,7 @@ export type PackageOfferMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   type?: Prisma.SortOrder
   priceTHB?: Prisma.SortOrder
+  discountPriceTHB?: Prisma.SortOrder
   classCount?: Prisma.SortOrder
   validityDays?: Prisma.SortOrder
   tagline?: Prisma.SortOrder
@@ -510,6 +537,7 @@ export type PackageOfferMinOrderByAggregateInput = {
 
 export type PackageOfferSumOrderByAggregateInput = {
   priceTHB?: Prisma.SortOrder
+  discountPriceTHB?: Prisma.SortOrder
   classCount?: Prisma.SortOrder
   validityDays?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
@@ -574,6 +602,7 @@ export type PackageOfferCreateWithoutPendingPurchasesInput = {
   name: string
   type: $Enums.PackageType
   priceTHB: number
+  discountPriceTHB?: number | null
   classCount?: number | null
   validityDays: number
   tagline: string
@@ -589,6 +618,7 @@ export type PackageOfferUncheckedCreateWithoutPendingPurchasesInput = {
   name: string
   type: $Enums.PackageType
   priceTHB: number
+  discountPriceTHB?: number | null
   classCount?: number | null
   validityDays: number
   tagline: string
@@ -620,6 +650,7 @@ export type PackageOfferUpdateWithoutPendingPurchasesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPackageTypeFieldUpdateOperationsInput | $Enums.PackageType
   priceTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  discountPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   classCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   validityDays?: Prisma.IntFieldUpdateOperationsInput | number
   tagline?: Prisma.StringFieldUpdateOperationsInput | string
@@ -635,6 +666,7 @@ export type PackageOfferUncheckedUpdateWithoutPendingPurchasesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPackageTypeFieldUpdateOperationsInput | $Enums.PackageType
   priceTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  discountPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   classCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   validityDays?: Prisma.IntFieldUpdateOperationsInput | number
   tagline?: Prisma.StringFieldUpdateOperationsInput | string
@@ -650,6 +682,7 @@ export type PackageOfferCreateWithoutPackagesInput = {
   name: string
   type: $Enums.PackageType
   priceTHB: number
+  discountPriceTHB?: number | null
   classCount?: number | null
   validityDays: number
   tagline: string
@@ -665,6 +698,7 @@ export type PackageOfferUncheckedCreateWithoutPackagesInput = {
   name: string
   type: $Enums.PackageType
   priceTHB: number
+  discountPriceTHB?: number | null
   classCount?: number | null
   validityDays: number
   tagline: string
@@ -696,6 +730,7 @@ export type PackageOfferUpdateWithoutPackagesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPackageTypeFieldUpdateOperationsInput | $Enums.PackageType
   priceTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  discountPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   classCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   validityDays?: Prisma.IntFieldUpdateOperationsInput | number
   tagline?: Prisma.StringFieldUpdateOperationsInput | string
@@ -711,6 +746,7 @@ export type PackageOfferUncheckedUpdateWithoutPackagesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumPackageTypeFieldUpdateOperationsInput | $Enums.PackageType
   priceTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  discountPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   classCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   validityDays?: Prisma.IntFieldUpdateOperationsInput | number
   tagline?: Prisma.StringFieldUpdateOperationsInput | string
@@ -766,6 +802,7 @@ export type PackageOfferSelect<ExtArgs extends runtime.Types.Extensions.Internal
   name?: boolean
   type?: boolean
   priceTHB?: boolean
+  discountPriceTHB?: boolean
   classCount?: boolean
   validityDays?: boolean
   tagline?: boolean
@@ -783,6 +820,7 @@ export type PackageOfferSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   name?: boolean
   type?: boolean
   priceTHB?: boolean
+  discountPriceTHB?: boolean
   classCount?: boolean
   validityDays?: boolean
   tagline?: boolean
@@ -797,6 +835,7 @@ export type PackageOfferSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   name?: boolean
   type?: boolean
   priceTHB?: boolean
+  discountPriceTHB?: boolean
   classCount?: boolean
   validityDays?: boolean
   tagline?: boolean
@@ -811,6 +850,7 @@ export type PackageOfferSelectScalar = {
   name?: boolean
   type?: boolean
   priceTHB?: boolean
+  discountPriceTHB?: boolean
   classCount?: boolean
   validityDays?: boolean
   tagline?: boolean
@@ -820,7 +860,7 @@ export type PackageOfferSelectScalar = {
   active?: boolean
 }
 
-export type PackageOfferOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "type" | "priceTHB" | "classCount" | "validityDays" | "tagline" | "perks" | "highlight" | "sortOrder" | "active", ExtArgs["result"]["packageOffer"]>
+export type PackageOfferOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "type" | "priceTHB" | "discountPriceTHB" | "classCount" | "validityDays" | "tagline" | "perks" | "highlight" | "sortOrder" | "active", ExtArgs["result"]["packageOffer"]>
 export type PackageOfferInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   pendingPurchases?: boolean | Prisma.PackageOffer$pendingPurchasesArgs<ExtArgs>
   packages?: boolean | Prisma.PackageOffer$packagesArgs<ExtArgs>
@@ -840,6 +880,7 @@ export type $PackageOfferPayload<ExtArgs extends runtime.Types.Extensions.Intern
     name: string
     type: $Enums.PackageType
     priceTHB: number
+    discountPriceTHB: number | null
     classCount: number | null
     validityDays: number
     tagline: string
@@ -1276,6 +1317,7 @@ export interface PackageOfferFieldRefs {
   readonly name: Prisma.FieldRef<"PackageOffer", 'String'>
   readonly type: Prisma.FieldRef<"PackageOffer", 'PackageType'>
   readonly priceTHB: Prisma.FieldRef<"PackageOffer", 'Int'>
+  readonly discountPriceTHB: Prisma.FieldRef<"PackageOffer", 'Int'>
   readonly classCount: Prisma.FieldRef<"PackageOffer", 'Int'>
   readonly validityDays: Prisma.FieldRef<"PackageOffer", 'Int'>
   readonly tagline: Prisma.FieldRef<"PackageOffer", 'String'>
