@@ -1,0 +1,3 @@
+- Gmail
+- Class attendance history in user profile shows many "Cancelled" after spam booking/unbooking
+- Confirmation link invalid at the first time i press
