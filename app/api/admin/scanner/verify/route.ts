@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { decodeMemberPassSecure, decodeMemberPass, isMemberPassExpired } from "@/lib/qr";
+import { decodeMemberPassSecure } from "@/lib/qr";
 import { newlyCrossedThresholds } from "@/lib/levels";
 import { studioToday } from "@/lib/dates";
 import { addDays } from "date-fns";
@@ -28,21 +28,6 @@ export async function POST(request: NextRequest) {
         } else if (token) {
             // Secure QR decoding
             memberId = await decodeMemberPassSecure(token);
-
-            // Local development mode: if secure decode fails, try client base64 fallback
-            if (!memberId && process.env.NODE_ENV !== "production") {
-                console.warn("[scanner-verify] Secure decode failed, attempting local mock base64 decode...");
-                const fallbackPayload = decodeMemberPass(token);
-                if (fallbackPayload) {
-                    if (isMemberPassExpired(fallbackPayload)) {
-                        return NextResponse.json(
-                            { error: "Member pass QR code has expired. Please ask them to refresh their screen." },
-                            { status: 400 },
-                        );
-                    }
-                    memberId = fallbackPayload.memberId;
-                }
-            }
         }
 
         if (!memberId) {

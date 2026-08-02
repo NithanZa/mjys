@@ -25,7 +25,8 @@ export function MemberQRCard({ memberId, refreshMs = 60_000 }: MemberQRCardProps
   const [tick, setTick] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const isMock = status !== "ready" || !isLoggedIn || !liff;
+  const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+  const isMock = !isStandalone && (status !== "ready" || !isLoggedIn || !liff);
 
   const rotateToken = useCallback(async () => {
     if (isMock) {
@@ -35,14 +36,16 @@ export function MemberQRCard({ memberId, refreshMs = 60_000 }: MemberQRCardProps
     }
 
     try {
-      const idToken = liff.getIDToken();
-      if (!idToken) throw new Error("No ID Token available");
-
-      const res = await fetch("/api/members/me/qr", {
-        headers: {
+      const fetchOptions: RequestInit = { credentials: "same-origin" };
+      if (!isStandalone) {
+        const idToken = liff?.getIDToken();
+        if (!idToken) throw new Error("No ID Token available");
+        fetchOptions.headers = {
           Authorization: `Bearer ${idToken}`,
-        },
-      });
+        };
+      }
+
+      const res = await fetch("/api/members/me/qr", fetchOptions);
 
       if (!res.ok) throw new Error("Failed to fetch secure QR pass");
 
@@ -57,7 +60,7 @@ export function MemberQRCard({ memberId, refreshMs = 60_000 }: MemberQRCardProps
     } finally {
       setLoading(false);
     }
-  }, [isMock, liff, memberId, refreshMs]);
+  }, [isMock, isStandalone, liff, memberId, refreshMs]);
 
   useEffect(() => {
     rotateToken();

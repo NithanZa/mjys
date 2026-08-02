@@ -21,23 +21,7 @@ export async function verifyLineIdToken(
         throw new Error("LINE_LOGIN_CHANNEL_ID is not configured");
     }
 
-    // Dev/Mock bypass for local testing with mockup LIFF plugins or placeholder credentials
-    const isMockToken =
-        idToken === "mock_id_token" ||
-        idToken.startsWith("mock_") ||
-        !idToken.includes(".") ||
-        (process.env.NODE_ENV !== "production" && idToken.length < 50);
 
-    if (isMockToken) {
-        console.warn(
-            `[line-verify] Dev Mode: Bypassing LINE API verification for mock token: "${idToken.substring(0, 20)}..."`,
-        );
-        return {
-            lineUserId: "U_MOCK_DEV_USER_ID",
-            displayName: "Mock Developer",
-            email: "mock.developer@example.com",
-        };
-    }
 
     try {
         const response = await fetch("https://api.line.me/oauth2/v2.1/verify", {
