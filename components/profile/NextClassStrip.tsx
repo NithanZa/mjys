@@ -18,7 +18,8 @@ export function NextClassStrip({
     durationMin,
     className,
 }: NextClassStripProps) {
-    const endsAt = new Date(startsAt.getTime() + durationMin * 60 * 1000);
+    const duration = durationMin ?? 0;
+    const endsAt = new Date(startsAt.getTime() + duration * 60 * 1000);
     const dayLabel = format(startsAt, "EEE MMM d");
     const timeLabel = `${format(startsAt, "h:mm")}–${format(endsAt, "h:mm a")}`;
 

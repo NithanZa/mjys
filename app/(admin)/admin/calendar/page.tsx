@@ -143,7 +143,6 @@ export default function AdminCalendarPage() {
         }
     }, [currentDate, viewMode]);
 
-    // eslint-disable-next-line
     useEffect(() => {
         loadCalendarData();
     }, [loadCalendarData]);
