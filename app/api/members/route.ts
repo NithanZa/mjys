@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
                 email,
                 password,
                 options: {
-                    emailRedirectTo: `${origin}/auth/confirm?next=/`,
+                    emailRedirectTo: origin,
                 },
             });
 

@@ -6,6 +6,32 @@ import type { Member } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
+// Rate limiting: track recent booking/cancellation actions per member
+// Key: memberId:classOccurrenceId, Value: timestamp of last action
+const recentActions = new Map<string, number>();
+const RATE_LIMIT_COOLDOWN_MS = 2000; // 2 seconds between actions on same class
+
+function checkRateLimit(memberId: string, classOccurrenceId: string): boolean {
+    const key = `${memberId}:${classOccurrenceId}`;
+    const lastAction = recentActions.get(key);
+    const now = Date.now();
+
+    if (lastAction && now - lastAction < RATE_LIMIT_COOLDOWN_MS) {
+        return false; // Rate limited
+    }
+
+    recentActions.set(key, now);
+    // Clean up old entries to prevent memory leak
+    if (recentActions.size > 10000) {
+        const cutoff = now - 60000; // Keep last 60 seconds
+        for (const [k, v] of recentActions.entries()) {
+            if (v < cutoff) recentActions.delete(k);
+        }
+    }
+
+    return true; // Not rate limited
+}
+
 async function resolveBookingMember(
     request: NextRequest,
 ): Promise<Member | null | { _err: string; _status: number }> {
@@ -78,6 +104,14 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 { error: "classOccurrenceId is required" },
                 { status: 400 },
+            );
+        }
+
+        // Rate limiting check
+        if (!checkRateLimit(resolvedMember.id, classOccurrenceId)) {
+            return NextResponse.json(
+                { error: "Please wait a moment before booking another class." },
+                { status: 429 },
             );
         }
 
@@ -212,6 +246,14 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json(
                 { error: "classOccurrenceId is required" },
                 { status: 400 },
+            );
+        }
+
+        // Rate limiting check
+        if (!checkRateLimit(resolvedMember.id, classOccurrenceId)) {
+            return NextResponse.json(
+                { error: "Please wait a moment before cancelling another class." },
+                { status: 429 },
             );
         }
 

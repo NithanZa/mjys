@@ -51,8 +51,28 @@ export async function GET(request: NextRequest) {
             },
         });
 
+        // Group attendances by classOccurrenceId to handle cancelled+rebooked classes
+        const attendancesByClass = new Map<string, typeof attendances>();
+        for (const att of attendances) {
+            if (!attendancesByClass.has(att.classOccurrenceId)) {
+                attendancesByClass.set(att.classOccurrenceId, []);
+            }
+            attendancesByClass.get(att.classOccurrenceId)!.push(att);
+        }
+
+        // For each class, keep only the latest attendance record
+        // This removes "Cancelled" entries if the user rebooked the same class
+        const latestAttendances: typeof attendances = [];
+        for (const classAttendances of attendancesByClass.values()) {
+            // Sort by createdAt descending to get the most recent action
+            classAttendances.sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            );
+            latestAttendances.push(classAttendances[0]);
+        }
+
         // Map Attendance records to ActivityItem shape expected by the frontend
-        const history = attendances.map((att) => {
+        const history = latestAttendances.map((att) => {
             let status: "ATTENDED" | "BOOKED" | "CANCELLED" | "NO_SHOW" = "BOOKED";
             if (att.status === "CHECKED_IN") {
                 status = "ATTENDED";

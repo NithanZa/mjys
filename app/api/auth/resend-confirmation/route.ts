@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
             type: "signup",
             email,
             options: {
-                emailRedirectTo: `${origin}/auth/confirm?next=/`,
+                emailRedirectTo: origin,
             },
         });
 
