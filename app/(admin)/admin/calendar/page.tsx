@@ -73,6 +73,8 @@ export default function AdminCalendarPage() {
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<"week" | "month">("week");
     const [selectedOccurrences, setSelectedOccurrences] = useState<Set<string>>(new Set());
+    const [mobileSelectionMode, setMobileSelectionMode] = useState(false);
+    const selectionAnchorRef = useRef<string | null>(null);
 
     // Sheet states
     const [addSheetOpen, setAddSheetOpen] = useState(false);
@@ -421,6 +423,7 @@ export default function AdminCalendarPage() {
         try {
             let successCount = 0;
             let failureCount = 0;
+            const failedOccurrenceIds = new Set<string>();
 
             for (const occId of selectedOccurrences) {
                 try {
@@ -431,15 +434,18 @@ export default function AdminCalendarPage() {
                         successCount++;
                     } else {
                         failureCount++;
+                        failedOccurrenceIds.add(occId);
                     }
                 } catch {
                     failureCount++;
+                    failedOccurrenceIds.add(occId);
                 }
             }
 
             if (successCount > 0) {
                 alert(`Deleted ${successCount} class session(s).${failureCount > 0 ? ` Failed to delete ${failureCount}.` : ""}`);
-                setSelectedOccurrences(new Set());
+                selectionAnchorRef.current = null;
+                setSelectedOccurrences(failedOccurrenceIds);
                 loadCalendarData();
             } else {
                 alert("Failed to delete classes.");
@@ -449,24 +455,72 @@ export default function AdminCalendarPage() {
         }
     };
 
-    // Toggle selection of an occurrence
+    const orderedOccurrences = [...occurrences].sort(
+        (first, second) => parseISO(first.startsAt).getTime() - parseISO(second.startsAt).getTime(),
+    );
+
     const toggleOccurrenceSelection = (occId: string) => {
-        const newSelected = new Set(selectedOccurrences);
-        if (newSelected.has(occId)) {
-            newSelected.delete(occId);
-        } else {
-            newSelected.add(occId);
-        }
-        setSelectedOccurrences(newSelected);
+        setSelectedOccurrences((currentSelection) => {
+            const nextSelection = new Set(currentSelection);
+            if (nextSelection.has(occId)) {
+                nextSelection.delete(occId);
+            } else {
+                nextSelection.add(occId);
+            }
+            return nextSelection;
+        });
     };
 
-    // Select all occurrences in current view
-    const selectAllInView = () => {
-        if (selectedOccurrences.size === occurrences.length) {
-            setSelectedOccurrences(new Set());
-        } else {
-            setSelectedOccurrences(new Set(occurrences.map((occ) => occ.id)));
+    const handleOccurrenceSelection = (occId: string, withRange: boolean) => {
+        const anchorId = selectionAnchorRef.current;
+        const anchorIndex = orderedOccurrences.findIndex((occ) => occ.id === anchorId);
+        const occurrenceIndex = orderedOccurrences.findIndex((occ) => occ.id === occId);
+
+        if (withRange && anchorIndex >= 0 && occurrenceIndex >= 0) {
+            const [rangeStart, rangeEnd] = [anchorIndex, occurrenceIndex].sort((a, b) => a - b);
+            setSelectedOccurrences((currentSelection) => {
+                const nextSelection = new Set(currentSelection);
+                orderedOccurrences
+                    .slice(rangeStart, rangeEnd + 1)
+                    .forEach((occ) => nextSelection.add(occ.id));
+                return nextSelection;
+            });
+            return;
         }
+
+        selectionAnchorRef.current = occId;
+        toggleOccurrenceSelection(occId);
+    };
+
+    const clearSelection = () => {
+        selectionAnchorRef.current = null;
+        setSelectedOccurrences(new Set());
+    };
+
+    const allOccurrencesSelected =
+        occurrences.length > 0 && occurrences.every((occ) => selectedOccurrences.has(occ.id));
+
+    const selectAllInView = () => {
+        selectionAnchorRef.current = null;
+        setSelectedOccurrences((currentSelection) => {
+            const nextSelection = new Set(currentSelection);
+            for (const occurrence of occurrences) {
+                if (allOccurrencesSelected) {
+                    nextSelection.delete(occurrence.id);
+                } else {
+                    nextSelection.add(occurrence.id);
+                }
+            }
+            return nextSelection;
+        });
+    };
+
+    const changeViewMode = (mode: "week" | "month") => {
+        setViewMode(mode);
+    };
+
+    const changeCalendarDate = (date: Date) => {
+        setCurrentDate(date);
     };
 
     return (
@@ -532,7 +586,7 @@ export default function AdminCalendarPage() {
                         <Button
                             variant={viewMode === "week" ? "primary" : "secondary"}
                             size="sm"
-                            onClick={() => setViewMode("week")}
+                            onClick={() => changeViewMode("week")}
                         >
                             Week
                         </Button>
@@ -540,7 +594,7 @@ export default function AdminCalendarPage() {
                             variant={viewMode === "month" ? "primary" : "secondary"}
                             size="sm"
                             leftIcon={<Grid3x3 className="h-4 w-4" />}
-                            onClick={() => setViewMode("month")}
+                            onClick={() => changeViewMode("month")}
                         >
                             Month
                         </Button>
@@ -549,21 +603,21 @@ export default function AdminCalendarPage() {
                         <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => setCurrentDate(viewMode === "week" ? addDays(currentDate, -7) : addMonths(currentDate, -1))}
+                            onClick={() => changeCalendarDate(viewMode === "week" ? addDays(currentDate, -7) : addMonths(currentDate, -1))}
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => setCurrentDate(new Date())}
+                            onClick={() => changeCalendarDate(new Date())}
                         >
                             Today
                         </Button>
                         <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => setCurrentDate(viewMode === "week" ? addDays(currentDate, 7) : addMonths(currentDate, 1))}
+                            onClick={() => changeCalendarDate(viewMode === "week" ? addDays(currentDate, 7) : addMonths(currentDate, 1))}
                         >
                             <ChevronRight className="h-4 w-4" />
                         </Button>
@@ -576,42 +630,56 @@ export default function AdminCalendarPage() {
                     </div>
                 </div>
 
-                {/* Bulk Selection Controls */}
-                {selectedOccurrences.size > 0 && (
-                    <div className="flex justify-between items-center bg-primary-50 border border-primary-200 rounded-md p-3.5 shadow-sm">
-                        <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-primary-50 border border-primary-200 rounded-md p-3.5 shadow-sm">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Button
+                                variant={mobileSelectionMode ? "primary" : "secondary"}
+                                size="sm"
+                                className="md:hidden"
+                                aria-pressed={mobileSelectionMode}
+                                onClick={() => {
+                                    if (mobileSelectionMode) clearSelection();
+                                    setMobileSelectionMode((isSelecting) => !isSelecting);
+                                }}
+                            >
+                                {mobileSelectionMode ? "Done" : "Select"}
+                            </Button>
                             <span className="font-display text-body font-semibold text-neutral-ink">
-                                {selectedOccurrences.size} class{selectedOccurrences.size !== 1 ? "es" : ""} selected
+                                {selectedOccurrences.size > 0
+                                    ? `${selectedOccurrences.size} class${selectedOccurrences.size !== 1 ? "es" : ""} selected`
+                                    : "Select classes to manage in bulk"}
                             </span>
                             <Button
                                 variant="secondary"
                                 size="sm"
                                 onClick={selectAllInView}
+                                disabled={loading || occurrences.length === 0}
                             >
-                                {selectedOccurrences.size === occurrences.length ? "Deselect All" : "Select All"}
+                                {allOccurrencesSelected ? "Deselect Visible" : "Select Visible"}
                             </Button>
                         </div>
-                        <div className="flex gap-2">
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => setSelectedOccurrences(new Set())}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                leftIcon={<Trash2 className="h-4 w-4" />}
-                                onClick={handleBulkDelete}
-                                loading={submittingEdit}
-                                disabled={submittingEdit}
-                            >
-                                Delete Selected
-                            </Button>
-                        </div>
-                    </div>
-                )}
+                        {selectedOccurrences.size > 0 && (
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={clearSelection}
+                                >
+                                    Clear selection
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    leftIcon={<Trash2 className="h-4 w-4" />}
+                                    onClick={handleBulkDelete}
+                                    loading={submittingEdit}
+                                    disabled={submittingEdit}
+                                >
+                                    Delete Selected
+                                </Button>
+                            </div>
+                        )}
+                </div>
             </div>
 
             {/* Calendar Visual Grid - Week or Month View */}
@@ -665,37 +733,58 @@ export default function AdminCalendarPage() {
                                         const dateStarts = parseISO(occ.startsAt);
                                         const localStarts = toZonedTime(dateStarts, STUDIO_TZ);
                                         const isSpecial = occ.isSpecial;
+                                        const isSelected = selectedOccurrences.has(occ.id);
 
                                         return (
                                             <Card
                                                 key={occ.id}
                                                 interactive
                                                 elevation="flat"
-                                                onClick={() => handleOccurrenceClick(occ)}
+                                                onClick={(e) => {
+                                                    if (mobileSelectionMode || e.ctrlKey || e.metaKey || e.shiftKey) {
+                                                        handleOccurrenceSelection(occ.id, e.shiftKey);
+                                                    } else {
+                                                        handleOccurrenceClick(occ);
+                                                    }
+                                                }}
                                                 className={cn(
                                                     "p-3 flex flex-col gap-2 border border-neutral-line hover:border-primary-400 hover:bg-primary-50/50 rounded-sm transition-all duration-150 text-left cursor-pointer",
+                                                    isSelected && "border-primary-500 ring-2 ring-primary-100 bg-primary-50",
                                                     isSpecial && "border-l-4 border-l-primary-500 bg-primary-50/20",
                                                     occ.isCancelled && "opacity-50 hover:opacity-70 border-error-fg/40 bg-error-bg/20",
                                                 )}
                                             >
-                                                <div className="flex justify-between items-start gap-1">
-                                                    <span
-                                                        className={cn(
-                                                            "font-display text-body-sm font-semibold tracking-wide text-neutral-ink leading-tight",
-                                                            occ.isCancelled && "line-through",
+                                                <div className="flex items-start gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        readOnly
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleOccurrenceSelection(occ.id, e.shiftKey);
+                                                        }}
+                                                        aria-label={`Select ${occ.name}`}
+                                                        className="mt-0.5 hidden h-4 w-4 shrink-0 rounded border-neutral-line text-primary-500 focus:ring-primary-500 md:block"
+                                                    />
+                                                    <div className="flex min-w-0 flex-1 justify-between items-start gap-1">
+                                                        <span
+                                                            className={cn(
+                                                                "font-display text-body-sm font-semibold tracking-wide text-neutral-ink leading-tight",
+                                                                occ.isCancelled && "line-through",
+                                                            )}
+                                                        >
+                                                            {occ.name}
+                                                        </span>
+                                                        {occ.isCancelled ? (
+                                                            <Badge tone="error" className="shrink-0 text-[10px]">
+                                                                Cancelled
+                                                            </Badge>
+                                                        ) : (
+                                                            isSpecial && (
+                                                                <Sparkles className="h-3.5 w-3.5 text-primary-600 shrink-0 mt-0.5" />
+                                                            )
                                                         )}
-                                                    >
-                                                        {occ.name}
-                                                    </span>
-                                                    {occ.isCancelled ? (
-                                                        <Badge tone="error" className="shrink-0 text-[10px]">
-                                                            Cancelled
-                                                        </Badge>
-                                                    ) : (
-                                                        isSpecial && (
-                                                            <Sparkles className="h-3.5 w-3.5 text-primary-600 shrink-0 mt-0.5" />
-                                                        )
-                                                    )}
+                                                    </div>
                                                 </div>
 
                                                 <div className="flex flex-col gap-1 text-neutral-text-3">
@@ -801,9 +890,8 @@ export default function AdminCalendarPage() {
                                                     <div
                                                         key={occ.id}
                                                         onClick={(e) => {
-                                                            if (e.ctrlKey || e.metaKey) {
-                                                                e.stopPropagation();
-                                                                toggleOccurrenceSelection(occ.id);
+                                                            if (mobileSelectionMode || e.ctrlKey || e.metaKey || e.shiftKey) {
+                                                                handleOccurrenceSelection(occ.id, e.shiftKey);
                                                             } else {
                                                                 handleOccurrenceClick(occ);
                                                             }
@@ -818,24 +906,37 @@ export default function AdminCalendarPage() {
                                                         )}
                                                         title={`${occ.name} at ${format(localStarts, "HH:mm")}`}
                                                     >
-                                                        <div className="flex justify-between items-start gap-1">
-                                                            <span
-                                                                className={cn(
-                                                                    "font-display text-caption font-semibold tracking-wide leading-tight line-clamp-2",
-                                                                    occ.isCancelled && "line-through",
+                                                        <div className="flex items-start gap-1.5">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                readOnly
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleOccurrenceSelection(occ.id, e.shiftKey);
+                                                                }}
+                                                                aria-label={`Select ${occ.name}`}
+                                                                className="mt-0.5 hidden h-3.5 w-3.5 shrink-0 rounded border-neutral-line text-primary-500 focus:ring-primary-500 md:block"
+                                                            />
+                                                            <div className="flex min-w-0 flex-1 justify-between items-start gap-1">
+                                                                <span
+                                                                    className={cn(
+                                                                        "font-display text-caption font-semibold tracking-wide leading-tight line-clamp-2",
+                                                                        occ.isCancelled && "line-through",
+                                                                    )}
+                                                                >
+                                                                    {occ.name}
+                                                                </span>
+                                                                {!isSelected && occ.isCancelled ? (
+                                                                    <Badge tone="error" className="shrink-0 text-[9px]">
+                                                                        Cancelled
+                                                                    </Badge>
+                                                                ) : (
+                                                                    !isSelected && isSpecial && (
+                                                                        <Sparkles className="h-3 w-3 text-primary-600 shrink-0" />
+                                                                    )
                                                                 )}
-                                                            >
-                                                                {occ.name}
-                                                            </span>
-                                                            {!isSelected && occ.isCancelled ? (
-                                                                <Badge tone="error" className="shrink-0 text-[9px]">
-                                                                    Cancelled
-                                                                </Badge>
-                                                            ) : (
-                                                                !isSelected && isSpecial && (
-                                                                    <Sparkles className="h-3 w-3 text-primary-600 shrink-0" />
-                                                                )
-                                                            )}
+                                                            </div>
                                                         </div>
 
                                                         <div className={cn(
