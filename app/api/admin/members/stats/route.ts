@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
-import { startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { STUDIO_TZ } from "@/lib/dates";
 
@@ -19,7 +19,10 @@ interface MembersStats {
     name: string;
     count: number;
   } | null;
-  sixMonthMemberTrend: number[];
+  sixMonthMemberTrend: {
+    month: string;
+    members: number | null;
+  }[];
 }
 
 /**
@@ -154,33 +157,41 @@ export async function GET(request: NextRequest) {
     }
 
     // 6-month member trend: new member count for last 6 months (including current)
-    const sixMonthMemberTrend: number[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const trendMonth = new Date(year, month - 1 - i, 1);
-      const trendMonthStart = new Date(
-        trendMonth.getFullYear(),
-        trendMonth.getMonth(),
-        1
-      );
-      const trendMonthEnd = new Date(
-        trendMonth.getFullYear(),
-        trendMonth.getMonth() + 1,
-        0,
-        23,
-        59,
-        59
-      );
+    const now = toZonedTime(new Date(), STUDIO_TZ);
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const sixMonthMemberTrend = await Promise.all(
+      Array.from({ length: 6 }, async (_, index) => {
+        const trendMonth = new Date(year, month - 6 + index, 1);
 
-      const count = await prisma.member.count({
-        where: {
-          createdAt: {
-            gte: trendMonthStart,
-            lte: trendMonthEnd,
+        if (trendMonth > currentMonth) {
+          return { month: format(trendMonth, "MMM"), members: null };
+        }
+
+        const trendMonthStart = new Date(
+          trendMonth.getFullYear(),
+          trendMonth.getMonth(),
+          1
+        );
+        const trendMonthEnd = new Date(
+          trendMonth.getFullYear(),
+          trendMonth.getMonth() + 1,
+          0,
+          23,
+          59,
+          59
+        );
+        const members = await prisma.member.count({
+          where: {
+            createdAt: {
+              gte: trendMonthStart,
+              lte: trendMonthEnd,
+            },
           },
-        },
-      });
-      sixMonthMemberTrend.push(count);
-    }
+        });
+
+        return { month: format(trendMonth, "MMM"), members };
+      })
+    );
 
     const stats: MembersStats = {
       totalMembers,

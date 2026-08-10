@@ -5,6 +5,7 @@ import { format, parseISO } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { STUDIO_TZ } from "@/lib/dates";
 import { getLevel } from "@/lib/levels";
+import { cn } from "@/lib/cn";
 import { Button, Card, Badge, Sheet, Modal, Input, Sparkline } from "@/components/ui";
 import {
     Users,
@@ -318,7 +319,12 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
     }, [searchQuery, loadMembers]);
 
     return (
-        <div className="flex flex-col gap-6">
+        <div
+            className={cn(
+                "flex flex-col gap-6 transition-[margin] duration-300",
+                selectedMember && "lg:mr-[32rem] xl:mr-[35rem]",
+            )}
+        >
             {/* SEARCH AND FILTERS */}
             <div className="flex flex-col gap-3 bg-neutral-card border border-neutral-line rounded-md p-3.5 shadow-sm">
                 <div className="flex gap-4 items-center">
@@ -427,10 +433,10 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                                         />
                                     </th>
                                     <th className="p-4">Customer Name</th>
-                                    <th className="p-4">Contact Info</th>
+                                    <th className={cn("hidden p-4 sm:table-cell sm:w-[18rem]", selectedMember && "sm:hidden")}>Contact Info</th>
                                     <th className="p-4">Tier Level</th>
                                     <th className="p-4">Attended Classes</th>
-                                    <th className="p-4">Status</th>
+                                    <th className={cn("hidden p-4 sm:table-cell", selectedMember && "sm:hidden")}>Status</th>
                                     <th className="p-4">Registered On</th>
                                     <th className="p-4 text-right">Action</th>
                                 </tr>
@@ -463,10 +469,10 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                                                     {member.displayName}
                                                 </span>
                                             </td>
-                                            <td className="p-4">
+                                            <td className={cn("hidden p-4 sm:table-cell sm:w-[18rem]", selectedMember && "sm:hidden")}>
                                                 <div className="flex flex-col gap-0.5 font-sans text-caption text-neutral-text-3">
-                                                    <span>📞 {member.phone}</span>
-                                                    <span>✉️ {member.email}</span>
+                                                    <span className="whitespace-nowrap">📞 {member.phone}</span>
+                                                    <span className="whitespace-nowrap">✉️ {member.email}</span>
                                                 </div>
                                             </td>
                                             <td className="p-4">
@@ -484,9 +490,9 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                                                 </Badge>
                                             </td>
                                             <td className="p-4 font-semibold text-neutral-ink">
-                                                {member.classesAttended} classes
+                                                {member.classesAttended} <span className={selectedMember ? "hidden" : "hidden sm:inline"}>classes</span><span className={selectedMember ? "" : "sm:hidden"}>cls</span>
                                             </td>
-                                            <td className="p-4">
+                                            <td className={cn("hidden p-4 sm:table-cell", selectedMember && "sm:hidden")}>
                                                 {member.riskStatus === "inactive" && (
                                                     <Badge tone="error" className="text-caption">
                                                         Inactive 30+ days
@@ -513,7 +519,14 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                                                     rightIcon={<ChevronRight className="h-4 w-4" />}
                                                     onClick={() => handleMemberClick(member)}
                                                 >
-                                                    View Profile
+                                                    {selectedMember ? (
+                                                        "View"
+                                                    ) : (
+                                                        <>
+                                                            <span className="sm:hidden">View</span>
+                                                            <span className="hidden sm:inline">View Profile</span>
+                                                        </>
+                                                    )}
                                                 </Button>
                                             </td>
                                         </tr>
@@ -532,31 +545,31 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                     setAdminDeleteModalOpen(false);
                     setAdminResetModalOpen(false);
                 }}
-                title={selectedMember?.displayName ?? "Member Profile"}
+                title={selectedMember ? (
+                    <div className="flex items-center gap-2">
+                        <span>{selectedMember.displayName}</span>
+                        {selectedMember.riskStatus === "inactive" && (
+                            <Badge tone="error" className="text-caption">
+                                Inactive 30+ days
+                            </Badge>
+                        )}
+                        {selectedMember.riskStatus === "expiring" && (
+                            <Badge tone="warning" className="text-caption">
+                                Expiring Soon
+                            </Badge>
+                        )}
+                        {selectedMember.riskStatus === "active" && (
+                            <Badge tone="success" className="text-caption">
+                                Active
+                            </Badge>
+                        )}
+                    </div>
+                ) : "Member Profile"}
+                desktopSidebar
+                className="lg:w-[34rem] xl:w-[38rem]"
             >
                 {selectedMember && (
-                    <div className="flex flex-col gap-6 mt-6 font-sans pb-4">
-                        {/* 6-Month Attendance Sparkline */}
-                        {sixMonthAttendanceTrend.length > 0 && (
-                            <Card className="border border-neutral-line p-4 flex flex-col gap-3">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-caption font-semibold uppercase tracking-[0.05em] text-neutral-text-3">
-                                        6-Month Attendance Trend
-                                    </p>
-                                    <Sparkline
-                                        data={sixMonthAttendanceTrend}
-                                        width={80}
-                                        height={20}
-                                        color="currentColor"
-                                        className="text-primary-600"
-                                    />
-                                </div>
-                                <p className="text-caption text-neutral-text-3">
-                                    Classes attended per month (checked-in only)
-                                </p>
-                            </Card>
-                        )}
-
+                    <div className="flex flex-col gap-6 mt-6 font-sans pb-4 lg:mt-0">
                         {/* Level progress strip */}
                         <div className="bg-primary-50/50 border border-primary-200 rounded-md p-4 flex justify-between items-center gap-4">
                             <div className="flex-1">
@@ -593,6 +606,27 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                             </div>
                             <Award className="h-10 w-10 text-primary-500 shrink-0" />
                         </div>
+
+                        {/* 6-Month Attendance Sparkline */}
+                        {sixMonthAttendanceTrend.length > 0 && (
+                            <Card className="border border-neutral-line p-4 flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-caption font-semibold uppercase tracking-[0.05em] text-neutral-text-3">
+                                        6-Month Attendance Trend
+                                    </p>
+                                    <Sparkline
+                                        data={sixMonthAttendanceTrend}
+                                        width={80}
+                                        height={20}
+                                        color="currentColor"
+                                        className="text-primary-600"
+                                    />
+                                </div>
+                                <p className="text-caption text-neutral-text-3">
+                                    Classes attended per month (checked-in only)
+                                </p>
+                            </Card>
+                        )}
 
                         {/* Contact info details card */}
                         <Card className="border border-neutral-line p-4 flex flex-col gap-3">

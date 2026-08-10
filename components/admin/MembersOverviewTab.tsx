@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardHeader, CardBody, Sparkline } from "@/components/ui";
+import { Card, CardBody } from "@/components/ui";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { ChevronLeft, ChevronRight, Users, TrendingUp, Package, DollarSign } from "lucide-react";
 import { formatMonthYear } from "@/lib/dates";
 import { addMonths, subMonths } from "date-fns";
@@ -20,7 +29,10 @@ interface MembersStats {
     name: string;
     count: number;
   } | null;
-  sixMonthMemberTrend: number[];
+  sixMonthMemberTrend: {
+    month: string;
+    members: number | null;
+  }[];
 }
 
 interface MembersOverviewTabProps {
@@ -67,6 +79,10 @@ export function MembersOverviewTab({ onLoading }: MembersOverviewTabProps) {
   const handleNextMonth = () => {
     setSelectedDate((prev) => addMonths(prev, 1));
   };
+
+  const latestGrowthPoint = [...(stats?.sixMonthMemberTrend ?? [])]
+    .reverse()
+    .find(({ members }) => members !== null);
 
   return (
     <div className="flex flex-col gap-6">
@@ -227,22 +243,71 @@ export function MembersOverviewTab({ onLoading }: MembersOverviewTabProps) {
 
           {/* 6-Month Trend */}
           <Card elevation="sm" className="border border-neutral-line">
-            <CardBody className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <p className="text-caption font-semibold uppercase tracking-[0.05em] text-neutral-text-3">
-                  6-Month Member Growth
-                </p>
-                <Sparkline
-                  data={stats.sixMonthMemberTrend}
-                  width={100}
-                  height={24}
-                  color="currentColor"
-                  className="text-primary-600"
-                />
+            <CardBody className="flex flex-col gap-5">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-caption font-semibold uppercase tracking-[0.05em] text-neutral-text-3">
+                    6-Month Member Growth
+                  </p>
+                  <p className="mt-1 text-body-sm text-neutral-text-3">
+                    New members who joined each month
+                  </p>
+                </div>
+                <div className="rounded-sm bg-primary-50 px-3 py-2 text-right">
+                  <p className="text-caption font-semibold uppercase tracking-[0.05em] text-primary-700">
+                    Latest month
+                  </p>
+                  <p className="font-display text-h4 font-bold text-primary-800">
+                    {latestGrowthPoint?.members ?? 0}
+                  </p>
+                </div>
               </div>
-              <p className="text-body-sm text-neutral-text-3">
-                New members per month over the last 6 months
-              </p>
+
+              <div className="h-64 w-full" aria-label="New members by month for the last six months">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={stats.sixMonthMemberTrend} margin={{ top: 10, right: 8, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="member-growth-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--color-primary-500)" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="var(--color-primary-500)" stopOpacity={0.03} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke="var(--color-neutral-line)" strokeDasharray="3 4" />
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "var(--color-neutral-text-3)", fontSize: 12 }}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "var(--color-neutral-text-3)", fontSize: 12 }}
+                    />
+                    <Tooltip
+                      cursor={{ stroke: "var(--color-primary-300)", strokeWidth: 1 }}
+                      contentStyle={{
+                        backgroundColor: "var(--color-neutral-card)",
+                        border: "1px solid var(--color-neutral-line)",
+                        borderRadius: "0.125rem",
+                        boxShadow: "0 4px 12px rgb(42 28 20 / 0.1)",
+                      }}
+                      labelStyle={{ color: "var(--color-neutral-text-2)", fontWeight: 600 }}
+                      formatter={(value) => [`${value} new members`, "Joined"]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="members"
+                      name="New members"
+                      stroke="var(--color-primary-600)"
+                      strokeWidth={2.5}
+                      fill="url(#member-growth-fill)"
+                      activeDot={{ r: 5, fill: "var(--color-primary-600)", stroke: "var(--color-neutral-card)", strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </CardBody>
           </Card>
         </>
