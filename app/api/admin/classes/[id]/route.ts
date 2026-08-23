@@ -20,7 +20,12 @@ export async function PATCH(
     const { id } = await props.params;
     try {
         const body = await request.json();
-        const { action, instructorId, capacity, durationMin, startsAt, name, description, tagline, intensity, isSpecial } = body;
+        const { action, instructorId, capacity, durationMin, startsAt, name, description, tagline, intensity, isSpecial, specialPriceTHB } = body;
+
+        const existing = await prisma.classOccurrence.findUnique({ where: { id } });
+        if (!existing) {
+            return NextResponse.json({ error: "Class session not found." }, { status: 404 });
+        }
 
         // Action: Cancel the class session
         if (action === "CANCEL") {
@@ -40,7 +45,7 @@ export async function PATCH(
                     },
                 });
 
-                // Refund each booked member
+                // Refund each booked member (skip package refund for special classes)
                 for (const booking of bookings) {
                     // Update attendance status to CANCELLED
                     await tx.attendance.update({
@@ -48,25 +53,27 @@ export async function PATCH(
                         data: { status: "CANCELLED" },
                     });
 
-                    // Find their package to refund
-                    const activePkg = await tx.package.findFirst({
-                        where: {
-                            memberId: booking.memberId,
-                            packageOfferId: { not: "pkg_walkin" }, // Walk-in is normally non-refundable
-                            status: { in: ["ACTIVE", "EXHAUSTED"] },
-                            expiresAt: { gte: new Date() },
-                        },
-                        orderBy: { expiresAt: "desc" },
-                    });
-
-                    if (activePkg && activePkg.classesRemaining !== null) {
-                        await tx.package.update({
-                            where: { id: activePkg.id },
-                            data: {
-                                classesRemaining: { increment: 1 },
-                                status: "ACTIVE", // Restore active state if exhausted
+                    // Only refund package credits for normal classes
+                    if (!occurrence.isSpecial) {
+                        const activePkg = await tx.package.findFirst({
+                            where: {
+                                memberId: booking.memberId,
+                                packageOfferId: { not: "pkg_walkin" },
+                                status: { in: ["ACTIVE", "EXHAUSTED"] },
+                                expiresAt: { gte: new Date() },
                             },
+                            orderBy: { expiresAt: "desc" },
                         });
+
+                        if (activePkg && activePkg.classesRemaining !== null) {
+                            await tx.package.update({
+                                where: { id: activePkg.id },
+                                data: {
+                                    classesRemaining: { increment: 1 },
+                                    status: "ACTIVE",
+                                },
+                            });
+                        }
                     }
                 }
 
@@ -115,8 +122,25 @@ export async function PATCH(
         if (intensity !== undefined) {
             updateData.intensity = intensity;
         }
-        if (isSpecial !== undefined) {
-            updateData.isSpecial = Boolean(isSpecial);
+        // Resolve the final isSpecial/specialPriceTHB state (falling back to the
+        // existing row) and validate the required-price invariant authoritatively,
+        // regardless of which fields the client happened to send.
+        const finalIsSpecial = isSpecial !== undefined ? Boolean(isSpecial) : existing.isSpecial;
+
+        if (finalIsSpecial) {
+            const rawPrice = specialPriceTHB !== undefined ? specialPriceTHB : existing.specialPriceTHB;
+            const parsedPrice = typeof rawPrice === "number" ? rawPrice : parseInt(rawPrice, 10);
+            if (!rawPrice || Number.isNaN(parsedPrice) || parsedPrice <= 0) {
+                return NextResponse.json(
+                    { error: "Special classes require a positive price (specialPriceTHB)" },
+                    { status: 400 },
+                );
+            }
+            updateData.isSpecial = true;
+            updateData.specialPriceTHB = parsedPrice;
+        } else {
+            updateData.isSpecial = false;
+            updateData.specialPriceTHB = null;
         }
 
         const updated = await prisma.classOccurrence.update({

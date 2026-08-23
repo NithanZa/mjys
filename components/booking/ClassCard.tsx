@@ -4,6 +4,7 @@ import { BookButton } from "@/components/booking/BookButton";
 import { SlotsRemaining } from "@/components/booking/SlotsRemaining";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 import { formatTime } from "@/lib/dates";
@@ -36,7 +37,7 @@ export function ClassCard({
   className,
 }: ClassCardProps) {
   const isFull = occurrence.slotsLeft <= 0;
-  const { name, intensity, tagline, instructor, startsAt, durationMin } = occurrence;
+  const { name, intensity, tagline, instructor, startsAt, durationMin, isSpecial, specialPriceTHB } = occurrence;
 
   return (
     <Card elevation="sm" className={cn("flex flex-col gap-3", className)}>
@@ -53,6 +54,11 @@ export function ClassCard({
             <h3 className="mt-0.5 font-display text-h2 font-medium text-neutral-ink">
               {name}
             </h3>
+            {isSpecial && specialPriceTHB && (
+              <span className="mt-0.5 font-sans text-caption font-medium text-primary-700">
+                ✨ Special · ฿{specialPriceTHB.toLocaleString()}
+              </span>
+            )}
           </div>
           <Badge tone={intensityTone[intensity]}>{INTENSITY_LABELS[intensity]}</Badge>
         </div>
@@ -79,13 +85,21 @@ export function ClassCard({
           slotsLeft={occurrence.slotsLeft}
           capacity={occurrence.capacity}
         />
-        <BookButton
-          isBooked={isBooked}
-          isFull={isFull}
-          onBook={onBook}
-          onCancel={onCancel}
-          size="sm"
-        />
+        {isSpecial && !isBooked && !isFull ? (
+          <Link href={`/book/${occurrence.id}/pay`}>
+            <Button size="sm" variant="primary">
+              Pay to reserve
+            </Button>
+          </Link>
+        ) : (
+          <BookButton
+            isBooked={isBooked}
+            isFull={isFull}
+            onBook={onBook}
+            onCancel={onCancel}
+            size="sm"
+          />
+        )}
       </div>
     </Card>
   );

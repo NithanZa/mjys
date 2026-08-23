@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
-import { formatTHB, type PackageOffer } from "@/lib/mock/packages";
+import { formatTHB, type PackageOffer } from "@/lib/api/packages";
 import { Check } from "lucide-react";
 import Link from "next/link";
 

@@ -20,14 +20,27 @@ export type PendingPurchaseModel = runtime.Types.Result.DefaultSelection<Prisma.
 
 export type AggregatePendingPurchase = {
   _count: PendingPurchaseCountAggregateOutputType | null
+  _avg: PendingPurchaseAvgAggregateOutputType | null
+  _sum: PendingPurchaseSumAggregateOutputType | null
   _min: PendingPurchaseMinAggregateOutputType | null
   _max: PendingPurchaseMaxAggregateOutputType | null
+}
+
+export type PendingPurchaseAvgAggregateOutputType = {
+  amountTHB: number | null
+}
+
+export type PendingPurchaseSumAggregateOutputType = {
+  amountTHB: number | null
 }
 
 export type PendingPurchaseMinAggregateOutputType = {
   id: string | null
   memberId: string | null
+  kind: $Enums.PurchaseKind | null
+  amountTHB: number | null
   packageOfferId: string | null
+  classOccurrenceId: string | null
   proofImageUrl: string | null
   status: $Enums.PurchaseStatus | null
   rejectionReason: string | null
@@ -38,7 +51,10 @@ export type PendingPurchaseMinAggregateOutputType = {
 export type PendingPurchaseMaxAggregateOutputType = {
   id: string | null
   memberId: string | null
+  kind: $Enums.PurchaseKind | null
+  amountTHB: number | null
   packageOfferId: string | null
+  classOccurrenceId: string | null
   proofImageUrl: string | null
   status: $Enums.PurchaseStatus | null
   rejectionReason: string | null
@@ -49,7 +65,10 @@ export type PendingPurchaseMaxAggregateOutputType = {
 export type PendingPurchaseCountAggregateOutputType = {
   id: number
   memberId: number
+  kind: number
+  amountTHB: number
   packageOfferId: number
+  classOccurrenceId: number
   proofImageUrl: number
   status: number
   rejectionReason: number
@@ -59,10 +78,21 @@ export type PendingPurchaseCountAggregateOutputType = {
 }
 
 
+export type PendingPurchaseAvgAggregateInputType = {
+  amountTHB?: true
+}
+
+export type PendingPurchaseSumAggregateInputType = {
+  amountTHB?: true
+}
+
 export type PendingPurchaseMinAggregateInputType = {
   id?: true
   memberId?: true
+  kind?: true
+  amountTHB?: true
   packageOfferId?: true
+  classOccurrenceId?: true
   proofImageUrl?: true
   status?: true
   rejectionReason?: true
@@ -73,7 +103,10 @@ export type PendingPurchaseMinAggregateInputType = {
 export type PendingPurchaseMaxAggregateInputType = {
   id?: true
   memberId?: true
+  kind?: true
+  amountTHB?: true
   packageOfferId?: true
+  classOccurrenceId?: true
   proofImageUrl?: true
   status?: true
   rejectionReason?: true
@@ -84,7 +117,10 @@ export type PendingPurchaseMaxAggregateInputType = {
 export type PendingPurchaseCountAggregateInputType = {
   id?: true
   memberId?: true
+  kind?: true
+  amountTHB?: true
   packageOfferId?: true
+  classOccurrenceId?: true
   proofImageUrl?: true
   status?: true
   rejectionReason?: true
@@ -131,6 +167,18 @@ export type PendingPurchaseAggregateArgs<ExtArgs extends runtime.Types.Extension
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: PendingPurchaseAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: PendingPurchaseSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: PendingPurchaseMinAggregateInputType
@@ -161,6 +209,8 @@ export type PendingPurchaseGroupByArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   _count?: PendingPurchaseCountAggregateInputType | true
+  _avg?: PendingPurchaseAvgAggregateInputType
+  _sum?: PendingPurchaseSumAggregateInputType
   _min?: PendingPurchaseMinAggregateInputType
   _max?: PendingPurchaseMaxAggregateInputType
 }
@@ -168,13 +218,18 @@ export type PendingPurchaseGroupByArgs<ExtArgs extends runtime.Types.Extensions.
 export type PendingPurchaseGroupByOutputType = {
   id: string
   memberId: string
-  packageOfferId: string
+  kind: $Enums.PurchaseKind
+  amountTHB: number
+  packageOfferId: string | null
+  classOccurrenceId: string | null
   proofImageUrl: string | null
   status: $Enums.PurchaseStatus
   rejectionReason: string | null
   createdAt: Date
   reviewedAt: Date | null
   _count: PendingPurchaseCountAggregateOutputType | null
+  _avg: PendingPurchaseAvgAggregateOutputType | null
+  _sum: PendingPurchaseSumAggregateOutputType | null
   _min: PendingPurchaseMinAggregateOutputType | null
   _max: PendingPurchaseMaxAggregateOutputType | null
 }
@@ -200,20 +255,27 @@ export type PendingPurchaseWhereInput = {
   NOT?: Prisma.PendingPurchaseWhereInput | Prisma.PendingPurchaseWhereInput[]
   id?: Prisma.StringFilter<"PendingPurchase"> | string
   memberId?: Prisma.StringFilter<"PendingPurchase"> | string
-  packageOfferId?: Prisma.StringFilter<"PendingPurchase"> | string
+  kind?: Prisma.EnumPurchaseKindFilter<"PendingPurchase"> | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFilter<"PendingPurchase"> | number
+  packageOfferId?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
+  classOccurrenceId?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   proofImageUrl?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   status?: Prisma.EnumPurchaseStatusFilter<"PendingPurchase"> | $Enums.PurchaseStatus
   rejectionReason?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PendingPurchase"> | Date | string
   reviewedAt?: Prisma.DateTimeNullableFilter<"PendingPurchase"> | Date | string | null
   member?: Prisma.XOR<Prisma.MemberScalarRelationFilter, Prisma.MemberWhereInput>
-  offer?: Prisma.XOR<Prisma.PackageOfferScalarRelationFilter, Prisma.PackageOfferWhereInput>
+  offer?: Prisma.XOR<Prisma.PackageOfferNullableScalarRelationFilter, Prisma.PackageOfferWhereInput> | null
+  classOccurrence?: Prisma.XOR<Prisma.ClassOccurrenceNullableScalarRelationFilter, Prisma.ClassOccurrenceWhereInput> | null
 }
 
 export type PendingPurchaseOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   memberId?: Prisma.SortOrder
-  packageOfferId?: Prisma.SortOrder
+  kind?: Prisma.SortOrder
+  amountTHB?: Prisma.SortOrder
+  packageOfferId?: Prisma.SortOrderInput | Prisma.SortOrder
+  classOccurrenceId?: Prisma.SortOrderInput | Prisma.SortOrder
   proofImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   rejectionReason?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -221,6 +283,7 @@ export type PendingPurchaseOrderByWithRelationInput = {
   reviewedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   member?: Prisma.MemberOrderByWithRelationInput
   offer?: Prisma.PackageOfferOrderByWithRelationInput
+  classOccurrence?: Prisma.ClassOccurrenceOrderByWithRelationInput
 }
 
 export type PendingPurchaseWhereUniqueInput = Prisma.AtLeast<{
@@ -229,28 +292,37 @@ export type PendingPurchaseWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.PendingPurchaseWhereInput[]
   NOT?: Prisma.PendingPurchaseWhereInput | Prisma.PendingPurchaseWhereInput[]
   memberId?: Prisma.StringFilter<"PendingPurchase"> | string
-  packageOfferId?: Prisma.StringFilter<"PendingPurchase"> | string
+  kind?: Prisma.EnumPurchaseKindFilter<"PendingPurchase"> | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFilter<"PendingPurchase"> | number
+  packageOfferId?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
+  classOccurrenceId?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   proofImageUrl?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   status?: Prisma.EnumPurchaseStatusFilter<"PendingPurchase"> | $Enums.PurchaseStatus
   rejectionReason?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PendingPurchase"> | Date | string
   reviewedAt?: Prisma.DateTimeNullableFilter<"PendingPurchase"> | Date | string | null
   member?: Prisma.XOR<Prisma.MemberScalarRelationFilter, Prisma.MemberWhereInput>
-  offer?: Prisma.XOR<Prisma.PackageOfferScalarRelationFilter, Prisma.PackageOfferWhereInput>
+  offer?: Prisma.XOR<Prisma.PackageOfferNullableScalarRelationFilter, Prisma.PackageOfferWhereInput> | null
+  classOccurrence?: Prisma.XOR<Prisma.ClassOccurrenceNullableScalarRelationFilter, Prisma.ClassOccurrenceWhereInput> | null
 }, "id">
 
 export type PendingPurchaseOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   memberId?: Prisma.SortOrder
-  packageOfferId?: Prisma.SortOrder
+  kind?: Prisma.SortOrder
+  amountTHB?: Prisma.SortOrder
+  packageOfferId?: Prisma.SortOrderInput | Prisma.SortOrder
+  classOccurrenceId?: Prisma.SortOrderInput | Prisma.SortOrder
   proofImageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   rejectionReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   reviewedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.PendingPurchaseCountOrderByAggregateInput
+  _avg?: Prisma.PendingPurchaseAvgOrderByAggregateInput
   _max?: Prisma.PendingPurchaseMaxOrderByAggregateInput
   _min?: Prisma.PendingPurchaseMinOrderByAggregateInput
+  _sum?: Prisma.PendingPurchaseSumOrderByAggregateInput
 }
 
 export type PendingPurchaseScalarWhereWithAggregatesInput = {
@@ -259,7 +331,10 @@ export type PendingPurchaseScalarWhereWithAggregatesInput = {
   NOT?: Prisma.PendingPurchaseScalarWhereWithAggregatesInput | Prisma.PendingPurchaseScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"PendingPurchase"> | string
   memberId?: Prisma.StringWithAggregatesFilter<"PendingPurchase"> | string
-  packageOfferId?: Prisma.StringWithAggregatesFilter<"PendingPurchase"> | string
+  kind?: Prisma.EnumPurchaseKindWithAggregatesFilter<"PendingPurchase"> | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntWithAggregatesFilter<"PendingPurchase"> | number
+  packageOfferId?: Prisma.StringNullableWithAggregatesFilter<"PendingPurchase"> | string | null
+  classOccurrenceId?: Prisma.StringNullableWithAggregatesFilter<"PendingPurchase"> | string | null
   proofImageUrl?: Prisma.StringNullableWithAggregatesFilter<"PendingPurchase"> | string | null
   status?: Prisma.EnumPurchaseStatusWithAggregatesFilter<"PendingPurchase"> | $Enums.PurchaseStatus
   rejectionReason?: Prisma.StringNullableWithAggregatesFilter<"PendingPurchase"> | string | null
@@ -269,19 +344,25 @@ export type PendingPurchaseScalarWhereWithAggregatesInput = {
 
 export type PendingPurchaseCreateInput = {
   id?: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
   rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
   member: Prisma.MemberCreateNestedOneWithoutPendingPurchasesInput
-  offer: Prisma.PackageOfferCreateNestedOneWithoutPendingPurchasesInput
+  offer?: Prisma.PackageOfferCreateNestedOneWithoutPendingPurchasesInput
+  classOccurrence?: Prisma.ClassOccurrenceCreateNestedOneWithoutSpecialPurchasesInput
 }
 
 export type PendingPurchaseUncheckedCreateInput = {
   id?: string
   memberId: string
-  packageOfferId: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
+  packageOfferId?: string | null
+  classOccurrenceId?: string | null
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
   rejectionReason?: string | null
@@ -291,19 +372,25 @@ export type PendingPurchaseUncheckedCreateInput = {
 
 export type PendingPurchaseUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
   rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   member?: Prisma.MemberUpdateOneRequiredWithoutPendingPurchasesNestedInput
-  offer?: Prisma.PackageOfferUpdateOneRequiredWithoutPendingPurchasesNestedInput
+  offer?: Prisma.PackageOfferUpdateOneWithoutPendingPurchasesNestedInput
+  classOccurrence?: Prisma.ClassOccurrenceUpdateOneWithoutSpecialPurchasesNestedInput
 }
 
 export type PendingPurchaseUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   memberId?: Prisma.StringFieldUpdateOperationsInput | string
-  packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  packageOfferId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
   rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -314,7 +401,10 @@ export type PendingPurchaseUncheckedUpdateInput = {
 export type PendingPurchaseCreateManyInput = {
   id?: string
   memberId: string
-  packageOfferId: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
+  packageOfferId?: string | null
+  classOccurrenceId?: string | null
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
   rejectionReason?: string | null
@@ -324,6 +414,8 @@ export type PendingPurchaseCreateManyInput = {
 
 export type PendingPurchaseUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
   rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -334,7 +426,10 @@ export type PendingPurchaseUpdateManyMutationInput = {
 export type PendingPurchaseUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   memberId?: Prisma.StringFieldUpdateOperationsInput | string
-  packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  packageOfferId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
   rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -355,7 +450,10 @@ export type PendingPurchaseOrderByRelationAggregateInput = {
 export type PendingPurchaseCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   memberId?: Prisma.SortOrder
+  kind?: Prisma.SortOrder
+  amountTHB?: Prisma.SortOrder
   packageOfferId?: Prisma.SortOrder
+  classOccurrenceId?: Prisma.SortOrder
   proofImageUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   rejectionReason?: Prisma.SortOrder
@@ -363,10 +461,17 @@ export type PendingPurchaseCountOrderByAggregateInput = {
   reviewedAt?: Prisma.SortOrder
 }
 
+export type PendingPurchaseAvgOrderByAggregateInput = {
+  amountTHB?: Prisma.SortOrder
+}
+
 export type PendingPurchaseMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   memberId?: Prisma.SortOrder
+  kind?: Prisma.SortOrder
+  amountTHB?: Prisma.SortOrder
   packageOfferId?: Prisma.SortOrder
+  classOccurrenceId?: Prisma.SortOrder
   proofImageUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   rejectionReason?: Prisma.SortOrder
@@ -377,12 +482,19 @@ export type PendingPurchaseMaxOrderByAggregateInput = {
 export type PendingPurchaseMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   memberId?: Prisma.SortOrder
+  kind?: Prisma.SortOrder
+  amountTHB?: Prisma.SortOrder
   packageOfferId?: Prisma.SortOrder
+  classOccurrenceId?: Prisma.SortOrder
   proofImageUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   rejectionReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   reviewedAt?: Prisma.SortOrder
+}
+
+export type PendingPurchaseSumOrderByAggregateInput = {
+  amountTHB?: Prisma.SortOrder
 }
 
 export type PendingPurchaseCreateNestedManyWithoutMemberInput = {
@@ -424,6 +536,48 @@ export type PendingPurchaseUncheckedUpdateManyWithoutMemberNestedInput = {
   connect?: Prisma.PendingPurchaseWhereUniqueInput | Prisma.PendingPurchaseWhereUniqueInput[]
   update?: Prisma.PendingPurchaseUpdateWithWhereUniqueWithoutMemberInput | Prisma.PendingPurchaseUpdateWithWhereUniqueWithoutMemberInput[]
   updateMany?: Prisma.PendingPurchaseUpdateManyWithWhereWithoutMemberInput | Prisma.PendingPurchaseUpdateManyWithWhereWithoutMemberInput[]
+  deleteMany?: Prisma.PendingPurchaseScalarWhereInput | Prisma.PendingPurchaseScalarWhereInput[]
+}
+
+export type PendingPurchaseCreateNestedManyWithoutClassOccurrenceInput = {
+  create?: Prisma.XOR<Prisma.PendingPurchaseCreateWithoutClassOccurrenceInput, Prisma.PendingPurchaseUncheckedCreateWithoutClassOccurrenceInput> | Prisma.PendingPurchaseCreateWithoutClassOccurrenceInput[] | Prisma.PendingPurchaseUncheckedCreateWithoutClassOccurrenceInput[]
+  connectOrCreate?: Prisma.PendingPurchaseCreateOrConnectWithoutClassOccurrenceInput | Prisma.PendingPurchaseCreateOrConnectWithoutClassOccurrenceInput[]
+  createMany?: Prisma.PendingPurchaseCreateManyClassOccurrenceInputEnvelope
+  connect?: Prisma.PendingPurchaseWhereUniqueInput | Prisma.PendingPurchaseWhereUniqueInput[]
+}
+
+export type PendingPurchaseUncheckedCreateNestedManyWithoutClassOccurrenceInput = {
+  create?: Prisma.XOR<Prisma.PendingPurchaseCreateWithoutClassOccurrenceInput, Prisma.PendingPurchaseUncheckedCreateWithoutClassOccurrenceInput> | Prisma.PendingPurchaseCreateWithoutClassOccurrenceInput[] | Prisma.PendingPurchaseUncheckedCreateWithoutClassOccurrenceInput[]
+  connectOrCreate?: Prisma.PendingPurchaseCreateOrConnectWithoutClassOccurrenceInput | Prisma.PendingPurchaseCreateOrConnectWithoutClassOccurrenceInput[]
+  createMany?: Prisma.PendingPurchaseCreateManyClassOccurrenceInputEnvelope
+  connect?: Prisma.PendingPurchaseWhereUniqueInput | Prisma.PendingPurchaseWhereUniqueInput[]
+}
+
+export type PendingPurchaseUpdateManyWithoutClassOccurrenceNestedInput = {
+  create?: Prisma.XOR<Prisma.PendingPurchaseCreateWithoutClassOccurrenceInput, Prisma.PendingPurchaseUncheckedCreateWithoutClassOccurrenceInput> | Prisma.PendingPurchaseCreateWithoutClassOccurrenceInput[] | Prisma.PendingPurchaseUncheckedCreateWithoutClassOccurrenceInput[]
+  connectOrCreate?: Prisma.PendingPurchaseCreateOrConnectWithoutClassOccurrenceInput | Prisma.PendingPurchaseCreateOrConnectWithoutClassOccurrenceInput[]
+  upsert?: Prisma.PendingPurchaseUpsertWithWhereUniqueWithoutClassOccurrenceInput | Prisma.PendingPurchaseUpsertWithWhereUniqueWithoutClassOccurrenceInput[]
+  createMany?: Prisma.PendingPurchaseCreateManyClassOccurrenceInputEnvelope
+  set?: Prisma.PendingPurchaseWhereUniqueInput | Prisma.PendingPurchaseWhereUniqueInput[]
+  disconnect?: Prisma.PendingPurchaseWhereUniqueInput | Prisma.PendingPurchaseWhereUniqueInput[]
+  delete?: Prisma.PendingPurchaseWhereUniqueInput | Prisma.PendingPurchaseWhereUniqueInput[]
+  connect?: Prisma.PendingPurchaseWhereUniqueInput | Prisma.PendingPurchaseWhereUniqueInput[]
+  update?: Prisma.PendingPurchaseUpdateWithWhereUniqueWithoutClassOccurrenceInput | Prisma.PendingPurchaseUpdateWithWhereUniqueWithoutClassOccurrenceInput[]
+  updateMany?: Prisma.PendingPurchaseUpdateManyWithWhereWithoutClassOccurrenceInput | Prisma.PendingPurchaseUpdateManyWithWhereWithoutClassOccurrenceInput[]
+  deleteMany?: Prisma.PendingPurchaseScalarWhereInput | Prisma.PendingPurchaseScalarWhereInput[]
+}
+
+export type PendingPurchaseUncheckedUpdateManyWithoutClassOccurrenceNestedInput = {
+  create?: Prisma.XOR<Prisma.PendingPurchaseCreateWithoutClassOccurrenceInput, Prisma.PendingPurchaseUncheckedCreateWithoutClassOccurrenceInput> | Prisma.PendingPurchaseCreateWithoutClassOccurrenceInput[] | Prisma.PendingPurchaseUncheckedCreateWithoutClassOccurrenceInput[]
+  connectOrCreate?: Prisma.PendingPurchaseCreateOrConnectWithoutClassOccurrenceInput | Prisma.PendingPurchaseCreateOrConnectWithoutClassOccurrenceInput[]
+  upsert?: Prisma.PendingPurchaseUpsertWithWhereUniqueWithoutClassOccurrenceInput | Prisma.PendingPurchaseUpsertWithWhereUniqueWithoutClassOccurrenceInput[]
+  createMany?: Prisma.PendingPurchaseCreateManyClassOccurrenceInputEnvelope
+  set?: Prisma.PendingPurchaseWhereUniqueInput | Prisma.PendingPurchaseWhereUniqueInput[]
+  disconnect?: Prisma.PendingPurchaseWhereUniqueInput | Prisma.PendingPurchaseWhereUniqueInput[]
+  delete?: Prisma.PendingPurchaseWhereUniqueInput | Prisma.PendingPurchaseWhereUniqueInput[]
+  connect?: Prisma.PendingPurchaseWhereUniqueInput | Prisma.PendingPurchaseWhereUniqueInput[]
+  update?: Prisma.PendingPurchaseUpdateWithWhereUniqueWithoutClassOccurrenceInput | Prisma.PendingPurchaseUpdateWithWhereUniqueWithoutClassOccurrenceInput[]
+  updateMany?: Prisma.PendingPurchaseUpdateManyWithWhereWithoutClassOccurrenceInput | Prisma.PendingPurchaseUpdateManyWithWhereWithoutClassOccurrenceInput[]
   deleteMany?: Prisma.PendingPurchaseScalarWhereInput | Prisma.PendingPurchaseScalarWhereInput[]
 }
 
@@ -469,23 +623,33 @@ export type PendingPurchaseUncheckedUpdateManyWithoutOfferNestedInput = {
   deleteMany?: Prisma.PendingPurchaseScalarWhereInput | Prisma.PendingPurchaseScalarWhereInput[]
 }
 
+export type EnumPurchaseKindFieldUpdateOperationsInput = {
+  set?: $Enums.PurchaseKind
+}
+
 export type EnumPurchaseStatusFieldUpdateOperationsInput = {
   set?: $Enums.PurchaseStatus
 }
 
 export type PendingPurchaseCreateWithoutMemberInput = {
   id?: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
   rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
-  offer: Prisma.PackageOfferCreateNestedOneWithoutPendingPurchasesInput
+  offer?: Prisma.PackageOfferCreateNestedOneWithoutPendingPurchasesInput
+  classOccurrence?: Prisma.ClassOccurrenceCreateNestedOneWithoutSpecialPurchasesInput
 }
 
 export type PendingPurchaseUncheckedCreateWithoutMemberInput = {
   id?: string
-  packageOfferId: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
+  packageOfferId?: string | null
+  classOccurrenceId?: string | null
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
   rejectionReason?: string | null
@@ -525,7 +689,10 @@ export type PendingPurchaseScalarWhereInput = {
   NOT?: Prisma.PendingPurchaseScalarWhereInput | Prisma.PendingPurchaseScalarWhereInput[]
   id?: Prisma.StringFilter<"PendingPurchase"> | string
   memberId?: Prisma.StringFilter<"PendingPurchase"> | string
-  packageOfferId?: Prisma.StringFilter<"PendingPurchase"> | string
+  kind?: Prisma.EnumPurchaseKindFilter<"PendingPurchase"> | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFilter<"PendingPurchase"> | number
+  packageOfferId?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
+  classOccurrenceId?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   proofImageUrl?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
   status?: Prisma.EnumPurchaseStatusFilter<"PendingPurchase"> | $Enums.PurchaseStatus
   rejectionReason?: Prisma.StringNullableFilter<"PendingPurchase"> | string | null
@@ -533,19 +700,77 @@ export type PendingPurchaseScalarWhereInput = {
   reviewedAt?: Prisma.DateTimeNullableFilter<"PendingPurchase"> | Date | string | null
 }
 
-export type PendingPurchaseCreateWithoutOfferInput = {
+export type PendingPurchaseCreateWithoutClassOccurrenceInput = {
   id?: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
   rejectionReason?: string | null
   createdAt?: Date | string
   reviewedAt?: Date | string | null
   member: Prisma.MemberCreateNestedOneWithoutPendingPurchasesInput
+  offer?: Prisma.PackageOfferCreateNestedOneWithoutPendingPurchasesInput
+}
+
+export type PendingPurchaseUncheckedCreateWithoutClassOccurrenceInput = {
+  id?: string
+  memberId: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
+  packageOfferId?: string | null
+  proofImageUrl?: string | null
+  status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
+  createdAt?: Date | string
+  reviewedAt?: Date | string | null
+}
+
+export type PendingPurchaseCreateOrConnectWithoutClassOccurrenceInput = {
+  where: Prisma.PendingPurchaseWhereUniqueInput
+  create: Prisma.XOR<Prisma.PendingPurchaseCreateWithoutClassOccurrenceInput, Prisma.PendingPurchaseUncheckedCreateWithoutClassOccurrenceInput>
+}
+
+export type PendingPurchaseCreateManyClassOccurrenceInputEnvelope = {
+  data: Prisma.PendingPurchaseCreateManyClassOccurrenceInput | Prisma.PendingPurchaseCreateManyClassOccurrenceInput[]
+  skipDuplicates?: boolean
+}
+
+export type PendingPurchaseUpsertWithWhereUniqueWithoutClassOccurrenceInput = {
+  where: Prisma.PendingPurchaseWhereUniqueInput
+  update: Prisma.XOR<Prisma.PendingPurchaseUpdateWithoutClassOccurrenceInput, Prisma.PendingPurchaseUncheckedUpdateWithoutClassOccurrenceInput>
+  create: Prisma.XOR<Prisma.PendingPurchaseCreateWithoutClassOccurrenceInput, Prisma.PendingPurchaseUncheckedCreateWithoutClassOccurrenceInput>
+}
+
+export type PendingPurchaseUpdateWithWhereUniqueWithoutClassOccurrenceInput = {
+  where: Prisma.PendingPurchaseWhereUniqueInput
+  data: Prisma.XOR<Prisma.PendingPurchaseUpdateWithoutClassOccurrenceInput, Prisma.PendingPurchaseUncheckedUpdateWithoutClassOccurrenceInput>
+}
+
+export type PendingPurchaseUpdateManyWithWhereWithoutClassOccurrenceInput = {
+  where: Prisma.PendingPurchaseScalarWhereInput
+  data: Prisma.XOR<Prisma.PendingPurchaseUpdateManyMutationInput, Prisma.PendingPurchaseUncheckedUpdateManyWithoutClassOccurrenceInput>
+}
+
+export type PendingPurchaseCreateWithoutOfferInput = {
+  id?: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
+  proofImageUrl?: string | null
+  status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
+  createdAt?: Date | string
+  reviewedAt?: Date | string | null
+  member: Prisma.MemberCreateNestedOneWithoutPendingPurchasesInput
+  classOccurrence?: Prisma.ClassOccurrenceCreateNestedOneWithoutSpecialPurchasesInput
 }
 
 export type PendingPurchaseUncheckedCreateWithoutOfferInput = {
   id?: string
   memberId: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
+  classOccurrenceId?: string | null
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
   rejectionReason?: string | null
@@ -581,7 +806,10 @@ export type PendingPurchaseUpdateManyWithWhereWithoutOfferInput = {
 
 export type PendingPurchaseCreateManyMemberInput = {
   id?: string
-  packageOfferId: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
+  packageOfferId?: string | null
+  classOccurrenceId?: string | null
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
   rejectionReason?: string | null
@@ -591,17 +819,23 @@ export type PendingPurchaseCreateManyMemberInput = {
 
 export type PendingPurchaseUpdateWithoutMemberInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
   rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  offer?: Prisma.PackageOfferUpdateOneRequiredWithoutPendingPurchasesNestedInput
+  offer?: Prisma.PackageOfferUpdateOneWithoutPendingPurchasesNestedInput
+  classOccurrence?: Prisma.ClassOccurrenceUpdateOneWithoutSpecialPurchasesNestedInput
 }
 
 export type PendingPurchaseUncheckedUpdateWithoutMemberInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  packageOfferId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
   rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -611,7 +845,62 @@ export type PendingPurchaseUncheckedUpdateWithoutMemberInput = {
 
 export type PendingPurchaseUncheckedUpdateManyWithoutMemberInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  packageOfferId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+}
+
+export type PendingPurchaseCreateManyClassOccurrenceInput = {
+  id?: string
+  memberId: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
+  packageOfferId?: string | null
+  proofImageUrl?: string | null
+  status?: $Enums.PurchaseStatus
+  rejectionReason?: string | null
+  createdAt?: Date | string
+  reviewedAt?: Date | string | null
+}
+
+export type PendingPurchaseUpdateWithoutClassOccurrenceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  member?: Prisma.MemberUpdateOneRequiredWithoutPendingPurchasesNestedInput
+  offer?: Prisma.PackageOfferUpdateOneWithoutPendingPurchasesNestedInput
+}
+
+export type PendingPurchaseUncheckedUpdateWithoutClassOccurrenceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  packageOfferId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+}
+
+export type PendingPurchaseUncheckedUpdateManyWithoutClassOccurrenceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  packageOfferId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
   rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -622,6 +911,9 @@ export type PendingPurchaseUncheckedUpdateManyWithoutMemberInput = {
 export type PendingPurchaseCreateManyOfferInput = {
   id?: string
   memberId: string
+  kind?: $Enums.PurchaseKind
+  amountTHB: number
+  classOccurrenceId?: string | null
   proofImageUrl?: string | null
   status?: $Enums.PurchaseStatus
   rejectionReason?: string | null
@@ -631,17 +923,23 @@ export type PendingPurchaseCreateManyOfferInput = {
 
 export type PendingPurchaseUpdateWithoutOfferInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
   rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reviewedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   member?: Prisma.MemberUpdateOneRequiredWithoutPendingPurchasesNestedInput
+  classOccurrence?: Prisma.ClassOccurrenceUpdateOneWithoutSpecialPurchasesNestedInput
 }
 
 export type PendingPurchaseUncheckedUpdateWithoutOfferInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   memberId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  classOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
   rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -652,6 +950,9 @@ export type PendingPurchaseUncheckedUpdateWithoutOfferInput = {
 export type PendingPurchaseUncheckedUpdateManyWithoutOfferInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   memberId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumPurchaseKindFieldUpdateOperationsInput | $Enums.PurchaseKind
+  amountTHB?: Prisma.IntFieldUpdateOperationsInput | number
+  classOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   proofImageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumPurchaseStatusFieldUpdateOperationsInput | $Enums.PurchaseStatus
   rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -664,46 +965,61 @@ export type PendingPurchaseUncheckedUpdateManyWithoutOfferInput = {
 export type PendingPurchaseSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   memberId?: boolean
+  kind?: boolean
+  amountTHB?: boolean
   packageOfferId?: boolean
+  classOccurrenceId?: boolean
   proofImageUrl?: boolean
   status?: boolean
   rejectionReason?: boolean
   createdAt?: boolean
   reviewedAt?: boolean
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
-  offer?: boolean | Prisma.PackageOfferDefaultArgs<ExtArgs>
+  offer?: boolean | Prisma.PendingPurchase$offerArgs<ExtArgs>
+  classOccurrence?: boolean | Prisma.PendingPurchase$classOccurrenceArgs<ExtArgs>
 }, ExtArgs["result"]["pendingPurchase"]>
 
 export type PendingPurchaseSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   memberId?: boolean
+  kind?: boolean
+  amountTHB?: boolean
   packageOfferId?: boolean
+  classOccurrenceId?: boolean
   proofImageUrl?: boolean
   status?: boolean
   rejectionReason?: boolean
   createdAt?: boolean
   reviewedAt?: boolean
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
-  offer?: boolean | Prisma.PackageOfferDefaultArgs<ExtArgs>
+  offer?: boolean | Prisma.PendingPurchase$offerArgs<ExtArgs>
+  classOccurrence?: boolean | Prisma.PendingPurchase$classOccurrenceArgs<ExtArgs>
 }, ExtArgs["result"]["pendingPurchase"]>
 
 export type PendingPurchaseSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   memberId?: boolean
+  kind?: boolean
+  amountTHB?: boolean
   packageOfferId?: boolean
+  classOccurrenceId?: boolean
   proofImageUrl?: boolean
   status?: boolean
   rejectionReason?: boolean
   createdAt?: boolean
   reviewedAt?: boolean
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
-  offer?: boolean | Prisma.PackageOfferDefaultArgs<ExtArgs>
+  offer?: boolean | Prisma.PendingPurchase$offerArgs<ExtArgs>
+  classOccurrence?: boolean | Prisma.PendingPurchase$classOccurrenceArgs<ExtArgs>
 }, ExtArgs["result"]["pendingPurchase"]>
 
 export type PendingPurchaseSelectScalar = {
   id?: boolean
   memberId?: boolean
+  kind?: boolean
+  amountTHB?: boolean
   packageOfferId?: boolean
+  classOccurrenceId?: boolean
   proofImageUrl?: boolean
   status?: boolean
   rejectionReason?: boolean
@@ -711,30 +1027,37 @@ export type PendingPurchaseSelectScalar = {
   reviewedAt?: boolean
 }
 
-export type PendingPurchaseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "memberId" | "packageOfferId" | "proofImageUrl" | "status" | "rejectionReason" | "createdAt" | "reviewedAt", ExtArgs["result"]["pendingPurchase"]>
+export type PendingPurchaseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "memberId" | "kind" | "amountTHB" | "packageOfferId" | "classOccurrenceId" | "proofImageUrl" | "status" | "rejectionReason" | "createdAt" | "reviewedAt", ExtArgs["result"]["pendingPurchase"]>
 export type PendingPurchaseInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
-  offer?: boolean | Prisma.PackageOfferDefaultArgs<ExtArgs>
+  offer?: boolean | Prisma.PendingPurchase$offerArgs<ExtArgs>
+  classOccurrence?: boolean | Prisma.PendingPurchase$classOccurrenceArgs<ExtArgs>
 }
 export type PendingPurchaseIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
-  offer?: boolean | Prisma.PackageOfferDefaultArgs<ExtArgs>
+  offer?: boolean | Prisma.PendingPurchase$offerArgs<ExtArgs>
+  classOccurrence?: boolean | Prisma.PendingPurchase$classOccurrenceArgs<ExtArgs>
 }
 export type PendingPurchaseIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
-  offer?: boolean | Prisma.PackageOfferDefaultArgs<ExtArgs>
+  offer?: boolean | Prisma.PendingPurchase$offerArgs<ExtArgs>
+  classOccurrence?: boolean | Prisma.PendingPurchase$classOccurrenceArgs<ExtArgs>
 }
 
 export type $PendingPurchasePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "PendingPurchase"
   objects: {
     member: Prisma.$MemberPayload<ExtArgs>
-    offer: Prisma.$PackageOfferPayload<ExtArgs>
+    offer: Prisma.$PackageOfferPayload<ExtArgs> | null
+    classOccurrence: Prisma.$ClassOccurrencePayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     memberId: string
-    packageOfferId: string
+    kind: $Enums.PurchaseKind
+    amountTHB: number
+    packageOfferId: string | null
+    classOccurrenceId: string | null
     proofImageUrl: string | null
     status: $Enums.PurchaseStatus
     rejectionReason: string | null
@@ -1135,7 +1458,8 @@ readonly fields: PendingPurchaseFieldRefs;
 export interface Prisma__PendingPurchaseClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   member<T extends Prisma.MemberDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MemberDefaultArgs<ExtArgs>>): Prisma.Prisma__MemberClient<runtime.Types.Result.GetResult<Prisma.$MemberPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  offer<T extends Prisma.PackageOfferDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PackageOfferDefaultArgs<ExtArgs>>): Prisma.Prisma__PackageOfferClient<runtime.Types.Result.GetResult<Prisma.$PackageOfferPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  offer<T extends Prisma.PendingPurchase$offerArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PendingPurchase$offerArgs<ExtArgs>>): Prisma.Prisma__PackageOfferClient<runtime.Types.Result.GetResult<Prisma.$PackageOfferPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  classOccurrence<T extends Prisma.PendingPurchase$classOccurrenceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PendingPurchase$classOccurrenceArgs<ExtArgs>>): Prisma.Prisma__ClassOccurrenceClient<runtime.Types.Result.GetResult<Prisma.$ClassOccurrencePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1167,7 +1491,10 @@ export interface Prisma__PendingPurchaseClient<T, Null = never, ExtArgs extends 
 export interface PendingPurchaseFieldRefs {
   readonly id: Prisma.FieldRef<"PendingPurchase", 'String'>
   readonly memberId: Prisma.FieldRef<"PendingPurchase", 'String'>
+  readonly kind: Prisma.FieldRef<"PendingPurchase", 'PurchaseKind'>
+  readonly amountTHB: Prisma.FieldRef<"PendingPurchase", 'Int'>
   readonly packageOfferId: Prisma.FieldRef<"PendingPurchase", 'String'>
+  readonly classOccurrenceId: Prisma.FieldRef<"PendingPurchase", 'String'>
   readonly proofImageUrl: Prisma.FieldRef<"PendingPurchase", 'String'>
   readonly status: Prisma.FieldRef<"PendingPurchase", 'PurchaseStatus'>
   readonly rejectionReason: Prisma.FieldRef<"PendingPurchase", 'String'>
@@ -1571,6 +1898,44 @@ export type PendingPurchaseDeleteManyArgs<ExtArgs extends runtime.Types.Extensio
    * Limit how many PendingPurchases to delete.
    */
   limit?: number
+}
+
+/**
+ * PendingPurchase.offer
+ */
+export type PendingPurchase$offerArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PackageOffer
+   */
+  select?: Prisma.PackageOfferSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PackageOffer
+   */
+  omit?: Prisma.PackageOfferOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PackageOfferInclude<ExtArgs> | null
+  where?: Prisma.PackageOfferWhereInput
+}
+
+/**
+ * PendingPurchase.classOccurrence
+ */
+export type PendingPurchase$classOccurrenceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ClassOccurrence
+   */
+  select?: Prisma.ClassOccurrenceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ClassOccurrence
+   */
+  omit?: Prisma.ClassOccurrenceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ClassOccurrenceInclude<ExtArgs> | null
+  where?: Prisma.ClassOccurrenceWhereInput
 }
 
 /**

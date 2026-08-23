@@ -6,13 +6,27 @@ import { useEffect, type ReactNode } from "react";
 import { IconButton } from "./IconButton";
 import { X } from "lucide-react";
 
+export type ModalSize = "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
+
 export interface ModalProps {
   open: boolean;
   onClose: () => void;
   title?: ReactNode;
   children: ReactNode;
   className?: string;
+  size?: ModalSize;
 }
+
+const sizeClasses: Record<ModalSize, string> = {
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+  "2xl": "max-w-2xl",
+  "3xl": "max-w-3xl",
+  "4xl": "max-w-4xl",
+  "5xl": "max-w-5xl",
+};
 
 /**
  * Centered modal. Prefer Sheet on mobile; use Modal for short confirmations.
@@ -23,6 +37,7 @@ export function Modal({
   title,
   children,
   className,
+  size = "sm",
 }: ModalProps) {
   useEffect(() => {
     if (!open) return;
@@ -56,7 +71,8 @@ export function Modal({
             transition={{ type: "spring", damping: 28, stiffness: 320 }}
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              "w-full max-w-sm bg-neutral-bg rounded-lg shadow-lg p-5",
+              "w-full bg-neutral-bg rounded-lg shadow-lg p-5 max-h-[90vh] overflow-y-auto",
+              sizeClasses[size],
               className,
             )}
           >

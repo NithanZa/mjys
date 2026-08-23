@@ -16,6 +16,7 @@ export interface ClassOccurrenceBase {
     intensity: "A" | "B" | "I";
     isSpecial: boolean;
     isCancelled: boolean;
+    specialPriceTHB: number | null;
 }
 
 /** Occurrence shape used throughout the client app: `startsAt` is a real `Date`. */

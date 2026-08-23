@@ -42,11 +42,10 @@ export function useClassHistory(): UseClassHistoryResult {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const isMock = isStandalone ? false : status !== "ready" || !isLoggedIn || !liff;
-
     const fetchHistory = useCallback(async () => {
-        if (isMock) {
+        if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) {
             setHistory([]);
+            setError("LINE authentication is unavailable. Please open this page from an authenticated LINE session.");
             setLoading(false);
             return;
         }
@@ -88,7 +87,7 @@ export function useClassHistory(): UseClassHistoryResult {
         } finally {
             setLoading(false);
         }
-    }, [isMock, liff]);
+    }, [isLoggedIn, liff, status]);
 
     useEffect(() => {
         fetchHistory();

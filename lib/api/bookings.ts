@@ -8,10 +8,7 @@
 // with standalone mode off, where no member session can exist.
 
 import { useLiff } from "@/lib/liff";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
-
-const STORAGE_KEY = "mjys.bookings.v1";
-const CHANGE_EVENT = "mjys:bookings-changed";
+import { useCallback, useEffect, useState } from "react";
 
 /** True when the app runs as a regular web app (cookie auth, no LINE). */
 const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
@@ -19,56 +16,22 @@ const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
 export interface Booking {
     occurrenceId: string;
     bookedAt: string;
+    isPaidSpecial: boolean;
 }
 
 /** Attendance row shape returned by `GET /api/bookings`. */
 interface AttendanceWire {
     classOccurrenceId: string;
     createdAt: string;
+    isPaidSpecial?: boolean;
 }
-
-// ---- snapshot caching for the dev localStorage fallback ----
-let cachedRaw: string | null | undefined = undefined;
-let cachedList: Booking[] = [];
-
-function readSnapshot(): Booking[] {
-    if (typeof window === "undefined") return [];
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw === cachedRaw) return cachedList;
-    cachedRaw = raw;
-    try {
-        cachedList = raw ? (JSON.parse(raw) as Booking[]) : [];
-    } catch {
-        cachedList = [];
-    }
-    return cachedList;
-}
-
-function writeSnapshot(list: Booking[]) {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    cachedRaw = undefined;
-    window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
-}
-
-function subscribe(callback: () => void) {
-    if (typeof window === "undefined") return () => {};
-    window.addEventListener(CHANGE_EVENT, callback);
-    window.addEventListener("storage", callback);
-    return () => {
-        window.removeEventListener(CHANGE_EVENT, callback);
-        window.removeEventListener("storage", callback);
-    };
-}
-
-const SERVER_SNAPSHOT: Booking[] = [];
-const getServerSnapshot = (): Booking[] => SERVER_SNAPSHOT;
 
 export interface UseBookingsResult {
     bookings: Booking[];
     loading: boolean;
     error: string | null;
     isBooked: (occurrenceId: string) => boolean;
+    isPaidSpecialBooking: (occurrenceId: string) => boolean;
     book: (occurrenceId: string) => Promise<void>;
     cancel: (occurrenceId: string) => Promise<void>;
     toggle: (occurrenceId: string) => Promise<boolean>;
@@ -80,19 +43,7 @@ export function useBookings(): UseBookingsResult {
     const [realBookings, setRealBookings] = useState<Booking[]>([]);
     const [error, setError] = useState<string | null>(null);
 
-    // In standalone mode auth is cookie-based, so always use the real API.
-    // In LIFF mode fall back to local storage only while LIFF isn't usable.
-    const isMock = isStandalone
-        ? false
-        : status !== "ready" || !isLoggedIn || !liff;
-
-    const [loading, setLoading] = useState(!isMock);
-
-    const mockBookings = useSyncExternalStore(
-        subscribe,
-        readSnapshot,
-        getServerSnapshot,
-    );
+    const [loading, setLoading] = useState(true);
 
     /** Auth headers for the current mode (cookie mode needs none). */
     const authHeaders = useCallback((): Record<string, string> => {
@@ -107,7 +58,7 @@ export function useBookings(): UseBookingsResult {
     }, [liff]);
 
     const fetchRealBookings = useCallback(async () => {
-        if (isMock) return;
+        if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) return;
 
         try {
             const res = await fetch("/api/bookings", {
@@ -126,6 +77,7 @@ export function useBookings(): UseBookingsResult {
                 (data.bookings as AttendanceWire[]).map((b) => ({
                     occurrenceId: b.classOccurrenceId,
                     bookedAt: b.createdAt,
+                    isPaidSpecial: b.isPaidSpecial ?? false,
                 })),
             );
             setError(null);
@@ -137,13 +89,13 @@ export function useBookings(): UseBookingsResult {
         } finally {
             setLoading(false);
         }
-    }, [isMock, authHeaders]);
+    }, [authHeaders, isLoggedIn, liff, status]);
 
     useEffect(() => {
         fetchRealBookings();
     }, [fetchRealBookings]);
 
-    const activeBookings = isMock ? mockBookings : realBookings;
+    const activeBookings = realBookings;
 
     const isBooked = useCallback(
         (occurrenceId: string) =>
@@ -151,18 +103,16 @@ export function useBookings(): UseBookingsResult {
         [activeBookings],
     );
 
+    const isPaidSpecialBooking = useCallback(
+        (occurrenceId: string) =>
+            activeBookings.some(
+                (booking) => booking.occurrenceId === occurrenceId && booking.isPaidSpecial,
+            ),
+        [activeBookings],
+    );
+
     const book = useCallback(
         async (occurrenceId: string) => {
-            if (isMock) {
-                const current = readSnapshot();
-                if (current.some((b) => b.occurrenceId === occurrenceId)) return;
-                writeSnapshot([
-                    ...current,
-                    { occurrenceId, bookedAt: new Date().toISOString() },
-                ]);
-                return;
-            }
-
             setLoading(true);
             try {
                 const res = await fetch("/api/bookings", {
@@ -189,20 +139,11 @@ export function useBookings(): UseBookingsResult {
                 setLoading(false);
             }
         },
-        [isMock, authHeaders, fetchRealBookings],
+        [authHeaders, fetchRealBookings],
     );
 
     const cancel = useCallback(
         async (occurrenceId: string) => {
-            if (isMock) {
-                const current = readSnapshot();
-                if (!current.some((b) => b.occurrenceId === occurrenceId)) return;
-                writeSnapshot(
-                    current.filter((b) => b.occurrenceId !== occurrenceId),
-                );
-                return;
-            }
-
             setLoading(true);
             try {
                 const res = await fetch(
@@ -228,7 +169,7 @@ export function useBookings(): UseBookingsResult {
                 setLoading(false);
             }
         },
-        [isMock, authHeaders, fetchRealBookings],
+        [authHeaders, fetchRealBookings],
     );
 
     const toggle = useCallback(
@@ -248,6 +189,7 @@ export function useBookings(): UseBookingsResult {
         loading,
         error,
         isBooked,
+        isPaidSpecialBooking,
         book,
         cancel,
         toggle,

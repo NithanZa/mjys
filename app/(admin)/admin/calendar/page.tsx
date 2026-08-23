@@ -43,6 +43,7 @@ interface Occurrence {
     intensity: string;
     isSpecial: boolean;
     isCancelled: boolean;
+    specialPriceTHB: number | null;
     instructor: {
         id: string;
         name: string;
@@ -88,6 +89,7 @@ export default function AdminCalendarPage() {
     const [formTagline, setFormTagline] = useState("");
     const [formIntensity, setFormIntensity] = useState("A");
     const [formIsSpecial, setFormIsSpecial] = useState(false);
+    const [formSpecialPrice, setFormSpecialPrice] = useState("");
     const [formInstructorId, setFormInstructorId] = useState("");
     const [formDate, setFormDate] = useState("");
     const [formTime, setFormTime] = useState("09:00");
@@ -105,6 +107,7 @@ export default function AdminCalendarPage() {
     const [editTagline, setEditTagline] = useState("");
     const [editIntensity, setEditIntensity] = useState("A");
     const [editIsSpecial, setEditIsSpecial] = useState(false);
+    const [editSpecialPrice, setEditSpecialPrice] = useState("");
     const [submittingEdit, setSubmittingEdit] = useState(false);
 
     // Import / export
@@ -162,6 +165,7 @@ export default function AdminCalendarPage() {
             setFormTagline(match.tagline);
             setFormIntensity(match.intensity);
             setFormIsSpecial(match.isSpecial);
+            setFormSpecialPrice(match.specialPriceTHB ? String(match.specialPriceTHB) : "");
             setFormDuration(match.durationMin);
         }
         setShowNameSuggestions(false);
@@ -177,6 +181,7 @@ export default function AdminCalendarPage() {
         setEditTagline(occ.tagline);
         setEditIntensity(occ.intensity);
         setEditIsSpecial(occ.isSpecial);
+        setEditSpecialPrice(occ.specialPriceTHB ? String(occ.specialPriceTHB) : "");
         setLoadingRoster(true);
         setRoster([]);
 
@@ -201,6 +206,10 @@ export default function AdminCalendarPage() {
             setFormError("Class name, instructor, date, and time are required.");
             return;
         }
+        if (formIsSpecial && (!formSpecialPrice || parseInt(formSpecialPrice, 10) <= 0)) {
+            setFormError("Special classes require a positive special class price.");
+            return;
+        }
 
         setSubmittingAdd(true);
         try {
@@ -214,6 +223,7 @@ export default function AdminCalendarPage() {
                     tagline: formTagline.trim(),
                     intensity: formIntensity,
                     isSpecial: formIsSpecial,
+                    specialPriceTHB: formIsSpecial ? formSpecialPrice : null,
                     instructorId: formInstructorId,
                     startsAt,
                     durationMin: formDuration,
@@ -229,6 +239,7 @@ export default function AdminCalendarPage() {
                 setFormTagline("");
                 setFormIntensity("A");
                 setFormIsSpecial(false);
+                setFormSpecialPrice("");
                 setFormInstructorId("");
                 setFormDate("");
                 setFormTime("09:00");
@@ -250,6 +261,10 @@ export default function AdminCalendarPage() {
     // Save edited class occurrence (capacity, instructor, and inline metadata)
     const handleSaveEdit = async () => {
         if (!selectedOcc) return;
+        if (editIsSpecial && (!editSpecialPrice || parseInt(editSpecialPrice, 10) <= 0)) {
+            alert("Special classes require a positive special class price.");
+            return;
+        }
         setSubmittingEdit(true);
         try {
             const res = await fetch(`/api/admin/classes/${selectedOcc.id}`, {
@@ -261,6 +276,7 @@ export default function AdminCalendarPage() {
                     tagline: editTagline.trim(),
                     intensity: editIntensity,
                     isSpecial: editIsSpecial,
+                    specialPriceTHB: editIsSpecial ? editSpecialPrice : null,
                     capacity: editCapacity,
                     instructorId: editInstructorId,
                 }),
@@ -1053,6 +1069,18 @@ export default function AdminCalendarPage() {
                                 <span className="text-body-sm text-neutral-text-2">Mark as special masterclass</span>
                             </span>
                         </label>
+                        {formIsSpecial && (
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-caption font-medium text-neutral-text-2">Special Class Price (THB)</label>
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    value={formSpecialPrice}
+                                    onChange={(e) => setFormSpecialPrice(e.target.value)}
+                                    placeholder="e.g. 850"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -1261,6 +1289,18 @@ export default function AdminCalendarPage() {
                                         <span className="text-body-sm text-neutral-text-2">Mark as special masterclass</span>
                                     </span>
                                 </label>
+                                {editIsSpecial && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-caption font-medium text-neutral-text-2">Special Class Price (THB)</label>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            value={editSpecialPrice}
+                                            onChange={(e) => setEditSpecialPrice(e.target.value)}
+                                            placeholder="e.g. 850"
+                                        />
+                                    </div>
+                                )}
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-caption font-medium text-neutral-text-2">Tagline</label>

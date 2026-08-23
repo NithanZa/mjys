@@ -2,7 +2,6 @@
 
 import { useLiff } from "@/lib/liff";
 import { useCallback, useEffect, useState } from "react";
-import { useMockMember } from "./mock-store";
 import { type Level } from "@/lib/levels";
 
 export interface Member {
@@ -60,17 +59,14 @@ function getRequiredIDToken(liff: any): string {
 
 export function useMember(): UseMemberResult {
     const { liff, status, isLoggedIn } = useLiff();
-    const mockStore = useMockMember();
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // In standalone mode the app uses real APIs with cookie auth — never mock.
-    // In LIFF mode fall back to mock when LIFF is not ready or user is not logged in.
-    const isMock = isStandalone ? false : status !== "ready" || !isLoggedIn || !liff;
-
     const fetchMember = useCallback(async () => {
-        if (isMock) {
+        if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) {
+            setMember(null);
+            setError("LINE authentication is unavailable. Please open this page from an authenticated LINE session.");
             setLoading(false);
             return;
         }
@@ -107,7 +103,7 @@ export function useMember(): UseMemberResult {
         } finally {
             setLoading(false);
         }
-    }, [isMock, liff]);
+    }, [isLoggedIn, liff, status]);
 
     useEffect(() => {
         fetchMember();
@@ -123,19 +119,6 @@ export function useMember(): UseMemberResult {
             tocAccepted: boolean;
             password?: string;
         }) => {
-            if (isMock) {
-                const registeredMock = mockStore.register(input);
-                // Map MockMember to Member shape
-                const mapped: Member = {
-                    ...registeredMock,
-                    lineUserId: registeredMock.lineUserId ?? "",
-                    celebratedLevels: registeredMock.celebrated.map((t) =>
-                        t === 20 ? "TIGER" : t === 50 ? "LEOPARD" : "CAT",
-                    ),
-                };
-                return mapped;
-            }
-
             try {
                 let res: Response;
                 if (isStandalone) {
@@ -173,31 +156,11 @@ export function useMember(): UseMemberResult {
                 throw err;
             }
         },
-        [isMock, liff, mockStore],
+        [liff],
     );
 
     const login = useCallback(
         async (input: { email: string; password?: string }) => {
-            if (isMock) {
-                // In mock mode (e.g. dev outside LINE and standalone is false), just mock-register or mock-login
-                const mockReg = mockStore.register({
-                    displayName: "Mock Member",
-                    email: input.email,
-                    phone: "0812345678",
-                    dob: "2000-01-01",
-                    address: "123 Mock Lane",
-                    tocAccepted: true,
-                });
-                const mapped: Member = {
-                    ...mockReg,
-                    lineUserId: mockReg.lineUserId ?? "",
-                    celebratedLevels: mockReg.celebrated.map((t) =>
-                        t === 20 ? "TIGER" : t === 50 ? "LEOPARD" : "CAT",
-                    ),
-                };
-                return mapped;
-            }
-
             try {
                 const res = await fetch("/api/auth/login", {
                     method: "POST",
@@ -224,16 +187,11 @@ export function useMember(): UseMemberResult {
                 throw err;
             }
         },
-        [isMock, mockStore],
+        [],
     );
 
     const markCelebrated = useCallback(
         async (threshold: number) => {
-            if (isMock) {
-                mockStore.markCelebrated(threshold);
-                return;
-            }
-
             if (!member) return;
             const levelMap: Record<number, Level> = {
                 20: "TIGER",
@@ -272,14 +230,10 @@ export function useMember(): UseMemberResult {
                 console.error("Failed to mark celebrated:", err);
             }
         },
-        [isMock, member, mockStore, liff],
+        [member, liff],
     );
 
     const reset = useCallback(async () => {
-        if (isMock) {
-            mockStore.reset();
-            return;
-        }
         if (isStandalone) {
             try {
                 const res = await fetch("/api/auth/logout", {
@@ -309,15 +263,9 @@ export function useMember(): UseMemberResult {
         } catch (err) {
             console.error("Failed to reset account:", err);
         }
-    }, [isMock, mockStore, liff]);
+    }, [liff]);
 
     const deleteAccount = useCallback(async () => {
-        if (isMock) {
-            mockStore.reset();
-            setMember(null);
-            return;
-        }
-
         setLoading(true);
         try {
             let res: Response;
@@ -348,25 +296,11 @@ export function useMember(): UseMemberResult {
         } finally {
             setLoading(false);
         }
-    }, [isMock, isStandalone, liff, mockStore]);
-
-    const activeMember = isMock
-        ? mockStore.member
-            ? {
-                  ...mockStore.member,
-                  lineUserId: mockStore.member.lineUserId ?? "",
-                  celebratedLevels: mockStore.member.celebrated.map((t) =>
-                      t === 20 ? "TIGER" : t === 50 ? "LEOPARD" : "CAT",
-                  ) as Level[],
-              }
-            : null
-        : member;
-
-    const activeLoading = isMock ? false : loading;
+    }, [liff]);
 
     return {
-        member: activeMember,
-        loading: activeLoading,
+        member,
+        loading,
         error,
         register,
         login,

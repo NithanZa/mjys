@@ -1462,7 +1462,8 @@ export const ClassOccurrenceScalarFieldEnum = {
   tagline: 'tagline',
   intensity: 'intensity',
   isSpecial: 'isSpecial',
-  isCancelled: 'isCancelled'
+  isCancelled: 'isCancelled',
+  specialPriceTHB: 'specialPriceTHB'
 } as const
 
 export type ClassOccurrenceScalarFieldEnum = (typeof ClassOccurrenceScalarFieldEnum)[keyof typeof ClassOccurrenceScalarFieldEnum]
@@ -1534,7 +1535,10 @@ export type PackageOfferScalarFieldEnum = (typeof PackageOfferScalarFieldEnum)[k
 export const PendingPurchaseScalarFieldEnum = {
   id: 'id',
   memberId: 'memberId',
+  kind: 'kind',
+  amountTHB: 'amountTHB',
   packageOfferId: 'packageOfferId',
+  classOccurrenceId: 'classOccurrenceId',
   proofImageUrl: 'proofImageUrl',
   status: 'status',
   rejectionReason: 'rejectionReason',
@@ -1736,6 +1740,20 @@ export type EnumPackageTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Pris
  * Reference to a field of type 'PackageType[]'
  */
 export type ListEnumPackageTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PackageType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'PurchaseKind'
+ */
+export type EnumPurchaseKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PurchaseKind'>
+    
+
+
+/**
+ * Reference to a field of type 'PurchaseKind[]'
+ */
+export type ListEnumPurchaseKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PurchaseKind[]'>
     
 
 

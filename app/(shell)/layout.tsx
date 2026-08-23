@@ -7,7 +7,7 @@ import {
   TopBar,
 } from "@/components/layout";
 import { LoginForm, RegistrationForm } from "@/components/profile";
-import { Button, EmptyState } from "@/components/ui";
+import { EmptyState } from "@/components/ui";
 import { useLiff } from "@/lib/liff";
 import { useMember } from "@/lib/profile/use-member";
 import { Smartphone, Loader2 } from "lucide-react";
@@ -16,15 +16,9 @@ import { useState, type ReactNode } from "react";
 const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
 
 export default function ShellLayout({ children }: { children: ReactNode }) {
-  const { status, isInClient, isLoggedIn, liff, error: liffError } = useLiff();
+  const { status, isLoggedIn, liff, error: liffError } = useLiff();
   const { member, loading, register, login } = useMember();
-  const [bypassLineCheck, setBypassLineCheck] = useState(false);
   const [showLogin, setShowLogin] = useState(isStandalone);
-
-  // Determine if we should show the LINE fallback
-  const isMock = status !== "ready" || !isLoggedIn || !liff;
-  const showLineFallback =
-    status === "ready" && !isInClient && !bypassLineCheck && !isMock;
 
   if (status === "loading" || (status === "ready" && loading)) {
     return (
@@ -58,23 +52,14 @@ export default function ShellLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (showLineFallback) {
+  if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) {
     return (
       <div className="flex min-h-dvh flex-col bg-neutral-bg">
         <main className="flex-1 flex items-center justify-center p-4">
           <EmptyState
             icon={<Smartphone strokeWidth={1.75} className="h-6 w-6" />}
             title="Open in LINE to continue"
-            description="Your MiTR member profile is tied to your LINE account. Open this link inside the LINE app to register."
-            action={
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setBypassLineCheck(true)}
-              >
-                Continue anyway (dev)
-              </Button>
-            }
+            description="Your MiTR member profile requires an authenticated LINE session. Open this link inside the LINE app and sign in to continue."
           />
         </main>
       </div>

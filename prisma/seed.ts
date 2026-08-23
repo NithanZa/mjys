@@ -75,7 +75,7 @@ const INSTRUCTORS = [
     },
 ];
 
-const CLASS_DATA: Record<string, { name: string; description: string; tagline: string; intensity: string; isSpecial: boolean; durationMin: number }> = {
+const CLASS_DATA: Record<string, { name: string; description: string; tagline: string; intensity: string; isSpecial: boolean; durationMin: number; specialPriceTHB?: number }> = {
     tpl_easy_flow: {
         name: "Easy Flow",
         description: "A gentle and slow-paced flow focused on foundational postures, alignment, and simple transitions. Perfect for beginners and those seeking a mindful, relaxing practice.",
@@ -187,6 +187,7 @@ const CLASS_DATA: Record<string, { name: string; description: string; tagline: s
         intensity: "I",
         isSpecial: true,
         durationMin: 180,
+        specialPriceTHB: 850,
     },
     tpl_gentle_flow: {
         name: "Gentle Flow",
@@ -454,6 +455,7 @@ async function main() {
                     tagline: classData.tagline,
                     intensity: classData.intensity,
                     isSpecial: classData.isSpecial,
+                    specialPriceTHB: classData.specialPriceTHB ?? null,
                 },
             });
         }

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { QRCode } from "@/components/ui/QRCode";
 import { Sheet } from "@/components/ui/Sheet";
-import { formatTHB, type PackageOffer } from "@/lib/mock/packages";
+import { formatTHB, type PackageOffer } from "@/lib/api/packages";
 import { CheckCircle2, Clock, Copy } from "lucide-react";
 import { useState } from "react";
 

@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 import { studioDaysBetween } from "@/lib/dates";
-import type { ActivePackageView } from "@/lib/mock/purchases-store";
+import type { ActivePackageView } from "@/lib/api/purchases";
 import { Infinity as InfinityIcon, Ticket } from "lucide-react";
 
 export interface ActivePackageStripProps {

@@ -30,12 +30,14 @@ export type ClassOccurrenceAvgAggregateOutputType = {
   durationMin: number | null
   capacity: number | null
   bookedCount: number | null
+  specialPriceTHB: number | null
 }
 
 export type ClassOccurrenceSumAggregateOutputType = {
   durationMin: number | null
   capacity: number | null
   bookedCount: number | null
+  specialPriceTHB: number | null
 }
 
 export type ClassOccurrenceMinAggregateOutputType = {
@@ -51,6 +53,7 @@ export type ClassOccurrenceMinAggregateOutputType = {
   intensity: string | null
   isSpecial: boolean | null
   isCancelled: boolean | null
+  specialPriceTHB: number | null
 }
 
 export type ClassOccurrenceMaxAggregateOutputType = {
@@ -66,6 +69,7 @@ export type ClassOccurrenceMaxAggregateOutputType = {
   intensity: string | null
   isSpecial: boolean | null
   isCancelled: boolean | null
+  specialPriceTHB: number | null
 }
 
 export type ClassOccurrenceCountAggregateOutputType = {
@@ -81,6 +85,7 @@ export type ClassOccurrenceCountAggregateOutputType = {
   intensity: number
   isSpecial: number
   isCancelled: number
+  specialPriceTHB: number
   _all: number
 }
 
@@ -89,12 +94,14 @@ export type ClassOccurrenceAvgAggregateInputType = {
   durationMin?: true
   capacity?: true
   bookedCount?: true
+  specialPriceTHB?: true
 }
 
 export type ClassOccurrenceSumAggregateInputType = {
   durationMin?: true
   capacity?: true
   bookedCount?: true
+  specialPriceTHB?: true
 }
 
 export type ClassOccurrenceMinAggregateInputType = {
@@ -110,6 +117,7 @@ export type ClassOccurrenceMinAggregateInputType = {
   intensity?: true
   isSpecial?: true
   isCancelled?: true
+  specialPriceTHB?: true
 }
 
 export type ClassOccurrenceMaxAggregateInputType = {
@@ -125,6 +133,7 @@ export type ClassOccurrenceMaxAggregateInputType = {
   intensity?: true
   isSpecial?: true
   isCancelled?: true
+  specialPriceTHB?: true
 }
 
 export type ClassOccurrenceCountAggregateInputType = {
@@ -140,6 +149,7 @@ export type ClassOccurrenceCountAggregateInputType = {
   intensity?: true
   isSpecial?: true
   isCancelled?: true
+  specialPriceTHB?: true
   _all?: true
 }
 
@@ -242,6 +252,7 @@ export type ClassOccurrenceGroupByOutputType = {
   intensity: string
   isSpecial: boolean
   isCancelled: boolean
+  specialPriceTHB: number | null
   _count: ClassOccurrenceCountAggregateOutputType | null
   _avg: ClassOccurrenceAvgAggregateOutputType | null
   _sum: ClassOccurrenceSumAggregateOutputType | null
@@ -280,8 +291,10 @@ export type ClassOccurrenceWhereInput = {
   intensity?: Prisma.StringFilter<"ClassOccurrence"> | string
   isSpecial?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
   isCancelled?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
+  specialPriceTHB?: Prisma.IntNullableFilter<"ClassOccurrence"> | number | null
   instructor?: Prisma.XOR<Prisma.InstructorScalarRelationFilter, Prisma.InstructorWhereInput>
   attendances?: Prisma.AttendanceListRelationFilter
+  specialPurchases?: Prisma.PendingPurchaseListRelationFilter
 }
 
 export type ClassOccurrenceOrderByWithRelationInput = {
@@ -297,8 +310,10 @@ export type ClassOccurrenceOrderByWithRelationInput = {
   intensity?: Prisma.SortOrder
   isSpecial?: Prisma.SortOrder
   isCancelled?: Prisma.SortOrder
+  specialPriceTHB?: Prisma.SortOrderInput | Prisma.SortOrder
   instructor?: Prisma.InstructorOrderByWithRelationInput
   attendances?: Prisma.AttendanceOrderByRelationAggregateInput
+  specialPurchases?: Prisma.PendingPurchaseOrderByRelationAggregateInput
 }
 
 export type ClassOccurrenceWhereUniqueInput = Prisma.AtLeast<{
@@ -317,8 +332,10 @@ export type ClassOccurrenceWhereUniqueInput = Prisma.AtLeast<{
   intensity?: Prisma.StringFilter<"ClassOccurrence"> | string
   isSpecial?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
   isCancelled?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
+  specialPriceTHB?: Prisma.IntNullableFilter<"ClassOccurrence"> | number | null
   instructor?: Prisma.XOR<Prisma.InstructorScalarRelationFilter, Prisma.InstructorWhereInput>
   attendances?: Prisma.AttendanceListRelationFilter
+  specialPurchases?: Prisma.PendingPurchaseListRelationFilter
 }, "id">
 
 export type ClassOccurrenceOrderByWithAggregationInput = {
@@ -334,6 +351,7 @@ export type ClassOccurrenceOrderByWithAggregationInput = {
   intensity?: Prisma.SortOrder
   isSpecial?: Prisma.SortOrder
   isCancelled?: Prisma.SortOrder
+  specialPriceTHB?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.ClassOccurrenceCountOrderByAggregateInput
   _avg?: Prisma.ClassOccurrenceAvgOrderByAggregateInput
   _max?: Prisma.ClassOccurrenceMaxOrderByAggregateInput
@@ -357,6 +375,7 @@ export type ClassOccurrenceScalarWhereWithAggregatesInput = {
   intensity?: Prisma.StringWithAggregatesFilter<"ClassOccurrence"> | string
   isSpecial?: Prisma.BoolWithAggregatesFilter<"ClassOccurrence"> | boolean
   isCancelled?: Prisma.BoolWithAggregatesFilter<"ClassOccurrence"> | boolean
+  specialPriceTHB?: Prisma.IntNullableWithAggregatesFilter<"ClassOccurrence"> | number | null
 }
 
 export type ClassOccurrenceCreateInput = {
@@ -371,8 +390,10 @@ export type ClassOccurrenceCreateInput = {
   intensity: string
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: number | null
   instructor: Prisma.InstructorCreateNestedOneWithoutOccurrencesInput
   attendances?: Prisma.AttendanceCreateNestedManyWithoutClassOccurrenceInput
+  specialPurchases?: Prisma.PendingPurchaseCreateNestedManyWithoutClassOccurrenceInput
 }
 
 export type ClassOccurrenceUncheckedCreateInput = {
@@ -388,7 +409,9 @@ export type ClassOccurrenceUncheckedCreateInput = {
   intensity: string
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: number | null
   attendances?: Prisma.AttendanceUncheckedCreateNestedManyWithoutClassOccurrenceInput
+  specialPurchases?: Prisma.PendingPurchaseUncheckedCreateNestedManyWithoutClassOccurrenceInput
 }
 
 export type ClassOccurrenceUpdateInput = {
@@ -403,8 +426,10 @@ export type ClassOccurrenceUpdateInput = {
   intensity?: Prisma.StringFieldUpdateOperationsInput | string
   isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  specialPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   instructor?: Prisma.InstructorUpdateOneRequiredWithoutOccurrencesNestedInput
   attendances?: Prisma.AttendanceUpdateManyWithoutClassOccurrenceNestedInput
+  specialPurchases?: Prisma.PendingPurchaseUpdateManyWithoutClassOccurrenceNestedInput
 }
 
 export type ClassOccurrenceUncheckedUpdateInput = {
@@ -420,7 +445,9 @@ export type ClassOccurrenceUncheckedUpdateInput = {
   intensity?: Prisma.StringFieldUpdateOperationsInput | string
   isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  specialPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attendances?: Prisma.AttendanceUncheckedUpdateManyWithoutClassOccurrenceNestedInput
+  specialPurchases?: Prisma.PendingPurchaseUncheckedUpdateManyWithoutClassOccurrenceNestedInput
 }
 
 export type ClassOccurrenceCreateManyInput = {
@@ -436,6 +463,7 @@ export type ClassOccurrenceCreateManyInput = {
   intensity: string
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: number | null
 }
 
 export type ClassOccurrenceUpdateManyMutationInput = {
@@ -450,6 +478,7 @@ export type ClassOccurrenceUpdateManyMutationInput = {
   intensity?: Prisma.StringFieldUpdateOperationsInput | string
   isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  specialPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type ClassOccurrenceUncheckedUpdateManyInput = {
@@ -465,6 +494,7 @@ export type ClassOccurrenceUncheckedUpdateManyInput = {
   intensity?: Prisma.StringFieldUpdateOperationsInput | string
   isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  specialPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type ClassOccurrenceListRelationFilter = {
@@ -490,12 +520,14 @@ export type ClassOccurrenceCountOrderByAggregateInput = {
   intensity?: Prisma.SortOrder
   isSpecial?: Prisma.SortOrder
   isCancelled?: Prisma.SortOrder
+  specialPriceTHB?: Prisma.SortOrder
 }
 
 export type ClassOccurrenceAvgOrderByAggregateInput = {
   durationMin?: Prisma.SortOrder
   capacity?: Prisma.SortOrder
   bookedCount?: Prisma.SortOrder
+  specialPriceTHB?: Prisma.SortOrder
 }
 
 export type ClassOccurrenceMaxOrderByAggregateInput = {
@@ -511,6 +543,7 @@ export type ClassOccurrenceMaxOrderByAggregateInput = {
   intensity?: Prisma.SortOrder
   isSpecial?: Prisma.SortOrder
   isCancelled?: Prisma.SortOrder
+  specialPriceTHB?: Prisma.SortOrder
 }
 
 export type ClassOccurrenceMinOrderByAggregateInput = {
@@ -526,17 +559,24 @@ export type ClassOccurrenceMinOrderByAggregateInput = {
   intensity?: Prisma.SortOrder
   isSpecial?: Prisma.SortOrder
   isCancelled?: Prisma.SortOrder
+  specialPriceTHB?: Prisma.SortOrder
 }
 
 export type ClassOccurrenceSumOrderByAggregateInput = {
   durationMin?: Prisma.SortOrder
   capacity?: Prisma.SortOrder
   bookedCount?: Prisma.SortOrder
+  specialPriceTHB?: Prisma.SortOrder
 }
 
 export type ClassOccurrenceScalarRelationFilter = {
   is?: Prisma.ClassOccurrenceWhereInput
   isNot?: Prisma.ClassOccurrenceWhereInput
+}
+
+export type ClassOccurrenceNullableScalarRelationFilter = {
+  is?: Prisma.ClassOccurrenceWhereInput | null
+  isNot?: Prisma.ClassOccurrenceWhereInput | null
 }
 
 export type ClassOccurrenceCreateNestedManyWithoutInstructorInput = {
@@ -581,6 +621,14 @@ export type ClassOccurrenceUncheckedUpdateManyWithoutInstructorNestedInput = {
   deleteMany?: Prisma.ClassOccurrenceScalarWhereInput | Prisma.ClassOccurrenceScalarWhereInput[]
 }
 
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type ClassOccurrenceCreateNestedOneWithoutAttendancesInput = {
   create?: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutAttendancesInput, Prisma.ClassOccurrenceUncheckedCreateWithoutAttendancesInput>
   connectOrCreate?: Prisma.ClassOccurrenceCreateOrConnectWithoutAttendancesInput
@@ -595,6 +643,22 @@ export type ClassOccurrenceUpdateOneRequiredWithoutAttendancesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ClassOccurrenceUpdateToOneWithWhereWithoutAttendancesInput, Prisma.ClassOccurrenceUpdateWithoutAttendancesInput>, Prisma.ClassOccurrenceUncheckedUpdateWithoutAttendancesInput>
 }
 
+export type ClassOccurrenceCreateNestedOneWithoutSpecialPurchasesInput = {
+  create?: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutSpecialPurchasesInput, Prisma.ClassOccurrenceUncheckedCreateWithoutSpecialPurchasesInput>
+  connectOrCreate?: Prisma.ClassOccurrenceCreateOrConnectWithoutSpecialPurchasesInput
+  connect?: Prisma.ClassOccurrenceWhereUniqueInput
+}
+
+export type ClassOccurrenceUpdateOneWithoutSpecialPurchasesNestedInput = {
+  create?: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutSpecialPurchasesInput, Prisma.ClassOccurrenceUncheckedCreateWithoutSpecialPurchasesInput>
+  connectOrCreate?: Prisma.ClassOccurrenceCreateOrConnectWithoutSpecialPurchasesInput
+  upsert?: Prisma.ClassOccurrenceUpsertWithoutSpecialPurchasesInput
+  disconnect?: Prisma.ClassOccurrenceWhereInput | boolean
+  delete?: Prisma.ClassOccurrenceWhereInput | boolean
+  connect?: Prisma.ClassOccurrenceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ClassOccurrenceUpdateToOneWithWhereWithoutSpecialPurchasesInput, Prisma.ClassOccurrenceUpdateWithoutSpecialPurchasesInput>, Prisma.ClassOccurrenceUncheckedUpdateWithoutSpecialPurchasesInput>
+}
+
 export type ClassOccurrenceCreateWithoutInstructorInput = {
   id?: string
   startsAt: Date | string
@@ -607,7 +671,9 @@ export type ClassOccurrenceCreateWithoutInstructorInput = {
   intensity: string
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: number | null
   attendances?: Prisma.AttendanceCreateNestedManyWithoutClassOccurrenceInput
+  specialPurchases?: Prisma.PendingPurchaseCreateNestedManyWithoutClassOccurrenceInput
 }
 
 export type ClassOccurrenceUncheckedCreateWithoutInstructorInput = {
@@ -622,7 +688,9 @@ export type ClassOccurrenceUncheckedCreateWithoutInstructorInput = {
   intensity: string
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: number | null
   attendances?: Prisma.AttendanceUncheckedCreateNestedManyWithoutClassOccurrenceInput
+  specialPurchases?: Prisma.PendingPurchaseUncheckedCreateNestedManyWithoutClassOccurrenceInput
 }
 
 export type ClassOccurrenceCreateOrConnectWithoutInstructorInput = {
@@ -667,6 +735,7 @@ export type ClassOccurrenceScalarWhereInput = {
   intensity?: Prisma.StringFilter<"ClassOccurrence"> | string
   isSpecial?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
   isCancelled?: Prisma.BoolFilter<"ClassOccurrence"> | boolean
+  specialPriceTHB?: Prisma.IntNullableFilter<"ClassOccurrence"> | number | null
 }
 
 export type ClassOccurrenceCreateWithoutAttendancesInput = {
@@ -681,7 +750,9 @@ export type ClassOccurrenceCreateWithoutAttendancesInput = {
   intensity: string
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: number | null
   instructor: Prisma.InstructorCreateNestedOneWithoutOccurrencesInput
+  specialPurchases?: Prisma.PendingPurchaseCreateNestedManyWithoutClassOccurrenceInput
 }
 
 export type ClassOccurrenceUncheckedCreateWithoutAttendancesInput = {
@@ -697,6 +768,8 @@ export type ClassOccurrenceUncheckedCreateWithoutAttendancesInput = {
   intensity: string
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: number | null
+  specialPurchases?: Prisma.PendingPurchaseUncheckedCreateNestedManyWithoutClassOccurrenceInput
 }
 
 export type ClassOccurrenceCreateOrConnectWithoutAttendancesInput = {
@@ -727,7 +800,9 @@ export type ClassOccurrenceUpdateWithoutAttendancesInput = {
   intensity?: Prisma.StringFieldUpdateOperationsInput | string
   isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  specialPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   instructor?: Prisma.InstructorUpdateOneRequiredWithoutOccurrencesNestedInput
+  specialPurchases?: Prisma.PendingPurchaseUpdateManyWithoutClassOccurrenceNestedInput
 }
 
 export type ClassOccurrenceUncheckedUpdateWithoutAttendancesInput = {
@@ -743,6 +818,92 @@ export type ClassOccurrenceUncheckedUpdateWithoutAttendancesInput = {
   intensity?: Prisma.StringFieldUpdateOperationsInput | string
   isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  specialPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  specialPurchases?: Prisma.PendingPurchaseUncheckedUpdateManyWithoutClassOccurrenceNestedInput
+}
+
+export type ClassOccurrenceCreateWithoutSpecialPurchasesInput = {
+  id?: string
+  startsAt: Date | string
+  durationMin: number
+  capacity: number
+  bookedCount?: number
+  name: string
+  description: string
+  tagline: string
+  intensity: string
+  isSpecial?: boolean
+  isCancelled?: boolean
+  specialPriceTHB?: number | null
+  instructor: Prisma.InstructorCreateNestedOneWithoutOccurrencesInput
+  attendances?: Prisma.AttendanceCreateNestedManyWithoutClassOccurrenceInput
+}
+
+export type ClassOccurrenceUncheckedCreateWithoutSpecialPurchasesInput = {
+  id?: string
+  instructorId: string
+  startsAt: Date | string
+  durationMin: number
+  capacity: number
+  bookedCount?: number
+  name: string
+  description: string
+  tagline: string
+  intensity: string
+  isSpecial?: boolean
+  isCancelled?: boolean
+  specialPriceTHB?: number | null
+  attendances?: Prisma.AttendanceUncheckedCreateNestedManyWithoutClassOccurrenceInput
+}
+
+export type ClassOccurrenceCreateOrConnectWithoutSpecialPurchasesInput = {
+  where: Prisma.ClassOccurrenceWhereUniqueInput
+  create: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutSpecialPurchasesInput, Prisma.ClassOccurrenceUncheckedCreateWithoutSpecialPurchasesInput>
+}
+
+export type ClassOccurrenceUpsertWithoutSpecialPurchasesInput = {
+  update: Prisma.XOR<Prisma.ClassOccurrenceUpdateWithoutSpecialPurchasesInput, Prisma.ClassOccurrenceUncheckedUpdateWithoutSpecialPurchasesInput>
+  create: Prisma.XOR<Prisma.ClassOccurrenceCreateWithoutSpecialPurchasesInput, Prisma.ClassOccurrenceUncheckedCreateWithoutSpecialPurchasesInput>
+  where?: Prisma.ClassOccurrenceWhereInput
+}
+
+export type ClassOccurrenceUpdateToOneWithWhereWithoutSpecialPurchasesInput = {
+  where?: Prisma.ClassOccurrenceWhereInput
+  data: Prisma.XOR<Prisma.ClassOccurrenceUpdateWithoutSpecialPurchasesInput, Prisma.ClassOccurrenceUncheckedUpdateWithoutSpecialPurchasesInput>
+}
+
+export type ClassOccurrenceUpdateWithoutSpecialPurchasesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  durationMin?: Prisma.IntFieldUpdateOperationsInput | number
+  capacity?: Prisma.IntFieldUpdateOperationsInput | number
+  bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  tagline?: Prisma.StringFieldUpdateOperationsInput | string
+  intensity?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  specialPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  instructor?: Prisma.InstructorUpdateOneRequiredWithoutOccurrencesNestedInput
+  attendances?: Prisma.AttendanceUpdateManyWithoutClassOccurrenceNestedInput
+}
+
+export type ClassOccurrenceUncheckedUpdateWithoutSpecialPurchasesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  instructorId?: Prisma.StringFieldUpdateOperationsInput | string
+  startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  durationMin?: Prisma.IntFieldUpdateOperationsInput | number
+  capacity?: Prisma.IntFieldUpdateOperationsInput | number
+  bookedCount?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  tagline?: Prisma.StringFieldUpdateOperationsInput | string
+  intensity?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  specialPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  attendances?: Prisma.AttendanceUncheckedUpdateManyWithoutClassOccurrenceNestedInput
 }
 
 export type ClassOccurrenceCreateManyInstructorInput = {
@@ -757,6 +918,7 @@ export type ClassOccurrenceCreateManyInstructorInput = {
   intensity: string
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: number | null
 }
 
 export type ClassOccurrenceUpdateWithoutInstructorInput = {
@@ -771,7 +933,9 @@ export type ClassOccurrenceUpdateWithoutInstructorInput = {
   intensity?: Prisma.StringFieldUpdateOperationsInput | string
   isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  specialPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attendances?: Prisma.AttendanceUpdateManyWithoutClassOccurrenceNestedInput
+  specialPurchases?: Prisma.PendingPurchaseUpdateManyWithoutClassOccurrenceNestedInput
 }
 
 export type ClassOccurrenceUncheckedUpdateWithoutInstructorInput = {
@@ -786,7 +950,9 @@ export type ClassOccurrenceUncheckedUpdateWithoutInstructorInput = {
   intensity?: Prisma.StringFieldUpdateOperationsInput | string
   isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  specialPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   attendances?: Prisma.AttendanceUncheckedUpdateManyWithoutClassOccurrenceNestedInput
+  specialPurchases?: Prisma.PendingPurchaseUncheckedUpdateManyWithoutClassOccurrenceNestedInput
 }
 
 export type ClassOccurrenceUncheckedUpdateManyWithoutInstructorInput = {
@@ -801,6 +967,7 @@ export type ClassOccurrenceUncheckedUpdateManyWithoutInstructorInput = {
   intensity?: Prisma.StringFieldUpdateOperationsInput | string
   isSpecial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isCancelled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  specialPriceTHB?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 
@@ -810,10 +977,12 @@ export type ClassOccurrenceUncheckedUpdateManyWithoutInstructorInput = {
 
 export type ClassOccurrenceCountOutputType = {
   attendances: number
+  specialPurchases: number
 }
 
 export type ClassOccurrenceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   attendances?: boolean | ClassOccurrenceCountOutputTypeCountAttendancesArgs
+  specialPurchases?: boolean | ClassOccurrenceCountOutputTypeCountSpecialPurchasesArgs
 }
 
 /**
@@ -833,6 +1002,13 @@ export type ClassOccurrenceCountOutputTypeCountAttendancesArgs<ExtArgs extends r
   where?: Prisma.AttendanceWhereInput
 }
 
+/**
+ * ClassOccurrenceCountOutputType without action
+ */
+export type ClassOccurrenceCountOutputTypeCountSpecialPurchasesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PendingPurchaseWhereInput
+}
+
 
 export type ClassOccurrenceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -847,8 +1023,10 @@ export type ClassOccurrenceSelect<ExtArgs extends runtime.Types.Extensions.Inter
   intensity?: boolean
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: boolean
   instructor?: boolean | Prisma.InstructorDefaultArgs<ExtArgs>
   attendances?: boolean | Prisma.ClassOccurrence$attendancesArgs<ExtArgs>
+  specialPurchases?: boolean | Prisma.ClassOccurrence$specialPurchasesArgs<ExtArgs>
   _count?: boolean | Prisma.ClassOccurrenceCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["classOccurrence"]>
 
@@ -865,6 +1043,7 @@ export type ClassOccurrenceSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   intensity?: boolean
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: boolean
   instructor?: boolean | Prisma.InstructorDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["classOccurrence"]>
 
@@ -881,6 +1060,7 @@ export type ClassOccurrenceSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   intensity?: boolean
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: boolean
   instructor?: boolean | Prisma.InstructorDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["classOccurrence"]>
 
@@ -897,12 +1077,14 @@ export type ClassOccurrenceSelectScalar = {
   intensity?: boolean
   isSpecial?: boolean
   isCancelled?: boolean
+  specialPriceTHB?: boolean
 }
 
-export type ClassOccurrenceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "instructorId" | "startsAt" | "durationMin" | "capacity" | "bookedCount" | "name" | "description" | "tagline" | "intensity" | "isSpecial" | "isCancelled", ExtArgs["result"]["classOccurrence"]>
+export type ClassOccurrenceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "instructorId" | "startsAt" | "durationMin" | "capacity" | "bookedCount" | "name" | "description" | "tagline" | "intensity" | "isSpecial" | "isCancelled" | "specialPriceTHB", ExtArgs["result"]["classOccurrence"]>
 export type ClassOccurrenceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   instructor?: boolean | Prisma.InstructorDefaultArgs<ExtArgs>
   attendances?: boolean | Prisma.ClassOccurrence$attendancesArgs<ExtArgs>
+  specialPurchases?: boolean | Prisma.ClassOccurrence$specialPurchasesArgs<ExtArgs>
   _count?: boolean | Prisma.ClassOccurrenceCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ClassOccurrenceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -917,6 +1099,7 @@ export type $ClassOccurrencePayload<ExtArgs extends runtime.Types.Extensions.Int
   objects: {
     instructor: Prisma.$InstructorPayload<ExtArgs>
     attendances: Prisma.$AttendancePayload<ExtArgs>[]
+    specialPurchases: Prisma.$PendingPurchasePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -931,6 +1114,7 @@ export type $ClassOccurrencePayload<ExtArgs extends runtime.Types.Extensions.Int
     intensity: string
     isSpecial: boolean
     isCancelled: boolean
+    specialPriceTHB: number | null
   }, ExtArgs["result"]["classOccurrence"]>
   composites: {}
 }
@@ -1327,6 +1511,7 @@ export interface Prisma__ClassOccurrenceClient<T, Null = never, ExtArgs extends 
   readonly [Symbol.toStringTag]: "PrismaPromise"
   instructor<T extends Prisma.InstructorDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.InstructorDefaultArgs<ExtArgs>>): Prisma.Prisma__InstructorClient<runtime.Types.Result.GetResult<Prisma.$InstructorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   attendances<T extends Prisma.ClassOccurrence$attendancesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClassOccurrence$attendancesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttendancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  specialPurchases<T extends Prisma.ClassOccurrence$specialPurchasesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClassOccurrence$specialPurchasesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PendingPurchasePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1368,6 +1553,7 @@ export interface ClassOccurrenceFieldRefs {
   readonly intensity: Prisma.FieldRef<"ClassOccurrence", 'String'>
   readonly isSpecial: Prisma.FieldRef<"ClassOccurrence", 'Boolean'>
   readonly isCancelled: Prisma.FieldRef<"ClassOccurrence", 'Boolean'>
+  readonly specialPriceTHB: Prisma.FieldRef<"ClassOccurrence", 'Int'>
 }
     
 
@@ -1790,6 +1976,30 @@ export type ClassOccurrence$attendancesArgs<ExtArgs extends runtime.Types.Extens
   take?: number
   skip?: number
   distinct?: Prisma.AttendanceScalarFieldEnum | Prisma.AttendanceScalarFieldEnum[]
+}
+
+/**
+ * ClassOccurrence.specialPurchases
+ */
+export type ClassOccurrence$specialPurchasesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PendingPurchase
+   */
+  select?: Prisma.PendingPurchaseSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PendingPurchase
+   */
+  omit?: Prisma.PendingPurchaseOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PendingPurchaseInclude<ExtArgs> | null
+  where?: Prisma.PendingPurchaseWhereInput
+  orderBy?: Prisma.PendingPurchaseOrderByWithRelationInput | Prisma.PendingPurchaseOrderByWithRelationInput[]
+  cursor?: Prisma.PendingPurchaseWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PendingPurchaseScalarFieldEnum | Prisma.PendingPurchaseScalarFieldEnum[]
 }
 
 /**

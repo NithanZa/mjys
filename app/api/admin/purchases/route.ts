@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
             include: {
                 member: true,
                 offer: true,
+                classOccurrence: { include: { instructor: true } },
             },
             orderBy: { createdAt: "desc" },
         });
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
         const result = await prisma.$transaction(async (tx) => {
             const pending = await tx.pendingPurchase.findUnique({
                 where: { id: purchaseId },
-                include: { offer: true },
+                include: { offer: true, classOccurrence: true },
             });
 
             if (!pending) throw new Error("PURCHASE_NOT_FOUND");
@@ -89,26 +90,66 @@ export async function POST(request: NextRequest) {
                 include: {
                     member: true,
                     offer: true,
+                    classOccurrence: true,
                 },
             });
 
-            // 2. If approved, create member active Package record
+            // 2. If approved:
+            //    - PACKAGE: create member active Package record
+            //    - SPECIAL_CLASS: auto-book the member into the occurrence atomically
             let memberPackage = null;
+            let attendance = null;
+
             if (status === "APPROVED") {
-                const expiresAt = addDays(new Date(), pending.offer.validityDays);
-                memberPackage = await tx.package.create({
-                    data: {
-                        memberId: pending.memberId,
-                        packageOfferId: pending.packageOfferId,
-                        classesRemaining: pending.offer.classCount,
-                        expiresAt: expiresAt,
-                        status: "ACTIVE",
-                    },
-                    include: { offer: true },
-                });
+                if (pending.kind === "PACKAGE") {
+                    const expiresAt = addDays(new Date(), pending.offer!.validityDays);
+                    memberPackage = await tx.package.create({
+                        data: {
+                            memberId: pending.memberId,
+                            packageOfferId: pending.packageOfferId!,
+                            classesRemaining: pending.offer!.classCount,
+                            expiresAt: expiresAt,
+                            status: "ACTIVE",
+                        },
+                        include: { offer: true },
+                    });
+                } else if (pending.kind === "SPECIAL_CLASS" && pending.classOccurrenceId) {
+                    // Check if already booked (e.g. re-approval edge case)
+                    const existingBooking = await tx.attendance.findFirst({
+                        where: {
+                            memberId: pending.memberId,
+                            classOccurrenceId: pending.classOccurrenceId,
+                            status: "BOOKED",
+                        },
+                    });
+
+                    if (!existingBooking) {
+                        // Check class is not cancelled and has space
+                        const occ = await tx.classOccurrence.findUnique({
+                            where: { id: pending.classOccurrenceId },
+                        });
+
+                        if (occ && !occ.isCancelled) {
+                            // Increment bookedCount
+                            await tx.classOccurrence.update({
+                                where: { id: pending.classOccurrenceId },
+                                data: { bookedCount: { increment: 1 } },
+                            });
+
+                            // Create booking record
+                            attendance = await tx.attendance.create({
+                                data: {
+                                    memberId: pending.memberId,
+                                    classOccurrenceId: pending.classOccurrenceId,
+                                    status: "BOOKED",
+                                },
+                            });
+                        }
+                    }
+                }
             }
 
-            return { pending: updatedPending, package: memberPackage };
+            return { pending: updatedPending, package: memberPackage, booking: attendance };
         });
 
         return NextResponse.json({ success: true, ...result });

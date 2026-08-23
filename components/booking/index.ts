@@ -6,6 +6,8 @@ export { ClassCard } from "./ClassCard";
 export type { ClassCardProps } from "./ClassCard";
 export { BookButton } from "./BookButton";
 export type { BookButtonProps } from "./BookButton";
+export { PaidSpecialClassContactModal } from "./PaidSpecialClassContactModal";
+export type { PaidSpecialClassContactModalProps } from "./PaidSpecialClassContactModal";
 export { SlotsRemaining } from "./SlotsRemaining";
 export type { SlotsRemainingProps } from "./SlotsRemaining";
 export { InlineCalendar } from "./InlineCalendar";

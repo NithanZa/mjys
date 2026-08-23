@@ -39,7 +39,10 @@ export async function GET(request: NextRequest) {
         const [pendingPurchases, activePackages] = await Promise.all([
             prisma.pendingPurchase.findMany({
                 where: { memberId: member.id },
-                include: { offer: true },
+                include: {
+                    offer: true,
+                    classOccurrence: { include: { instructor: true } },
+                },
                 orderBy: { createdAt: "desc" },
             }),
             prisma.package.findMany({
@@ -65,7 +68,7 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// POST: Create a PENDING purchase for a package offer
+// POST: Create a PENDING purchase (package offer or special-class admission)
 export async function POST(request: NextRequest) {
     try {
         const result = await resolveMember(request);
@@ -73,19 +76,91 @@ export async function POST(request: NextRequest) {
         if (!result) return NextResponse.json({ error: "Member not registered" }, { status: 404 });
         const member = result;
 
-        const { packageOfferId, proofImageUrl } = await request.json();
-        if (!packageOfferId) {
-            return NextResponse.json({ error: "packageOfferId is required" }, { status: 400 });
+        const { packageOfferId, classOccurrenceId, proofImageUrl } = await request.json();
+
+        // Exactly one target must be provided
+        if (!packageOfferId && !classOccurrenceId) {
+            return NextResponse.json(
+                { error: "Either packageOfferId or classOccurrenceId is required" },
+                { status: 400 },
+            );
+        }
+        if (packageOfferId && classOccurrenceId) {
+            return NextResponse.json(
+                { error: "Provide only one target: packageOfferId or classOccurrenceId, not both" },
+                { status: 400 },
+            );
         }
 
-        const offer = await prisma.packageOffer.findUnique({ where: { id: packageOfferId } });
-        if (!offer) {
-            return NextResponse.json({ error: "Package offer not found" }, { status: 404 });
+        if (packageOfferId) {
+            // --- Package purchase ---
+            const offer = await prisma.packageOffer.findUnique({ where: { id: packageOfferId } });
+            if (!offer) {
+                return NextResponse.json({ error: "Package offer not found" }, { status: 404 });
+            }
+
+            const amountTHB = offer.discountPriceTHB ?? offer.priceTHB;
+
+            const pendingPurchase = await prisma.pendingPurchase.create({
+                data: {
+                    memberId: member.id,
+                    kind: "PACKAGE",
+                    amountTHB,
+                    packageOfferId,
+                    classOccurrenceId: null,
+                    proofImageUrl: proofImageUrl ?? null,
+                    status: "PENDING",
+                },
+                include: { offer: true },
+            });
+
+            return NextResponse.json({ success: true, pendingPurchase });
+        }
+
+        // --- Special-class purchase ---
+        const occurrence = await prisma.classOccurrence.findUnique({
+            where: { id: classOccurrenceId },
+        });
+        if (!occurrence) {
+            return NextResponse.json({ error: "Class occurrence not found" }, { status: 404 });
+        }
+        if (!occurrence.isSpecial) {
+            return NextResponse.json({ error: "This class is not a special class and does not require separate payment." }, { status: 400 });
+        }
+        if (occurrence.isCancelled) {
+            return NextResponse.json({ error: "This class has been cancelled." }, { status: 400 });
+        }
+        if (occurrence.specialPriceTHB === null || occurrence.specialPriceTHB <= 0) {
+            return NextResponse.json({ error: "This special class does not have a valid price set." }, { status: 400 });
+        }
+        if (occurrence.startsAt.getTime() < Date.now()) {
+            return NextResponse.json({ error: "This class has already started or passed." }, { status: 400 });
+        }
+
+        // Prevent duplicate unresolved (PENDING) purchase for the same occurrence
+        const existingPending = await prisma.pendingPurchase.findFirst({
+            where: {
+                memberId: member.id,
+                classOccurrenceId,
+                kind: "SPECIAL_CLASS",
+                status: "PENDING",
+            },
+        });
+        if (existingPending) {
+            return NextResponse.json({ error: "You already have a pending payment for this class." }, { status: 409 });
         }
 
         const pendingPurchase = await prisma.pendingPurchase.create({
-            data: { memberId: member.id, packageOfferId, proofImageUrl: proofImageUrl ?? null, status: "PENDING" },
-            include: { offer: true },
+            data: {
+                memberId: member.id,
+                kind: "SPECIAL_CLASS",
+                amountTHB: occurrence.specialPriceTHB,
+                packageOfferId: null,
+                classOccurrenceId,
+                proofImageUrl: proofImageUrl ?? null,
+                status: "PENDING",
+            },
+            include: { classOccurrence: { include: { instructor: true } } },
         });
 
         return NextResponse.json({ success: true, pendingPurchase });
@@ -112,7 +187,7 @@ export async function PATCH(request: NextRequest) {
         const result = await prisma.$transaction(async (tx) => {
             const pending = await tx.pendingPurchase.findUnique({
                 where: { id: purchaseId },
-                include: { offer: true },
+                include: { offer: true, classOccurrence: true },
             });
 
             if (!pending) throw new Error("PURCHASE_NOT_FOUND");
@@ -127,23 +202,58 @@ export async function PATCH(request: NextRequest) {
                 },
             });
 
-            // 2. If approved, create active Member Package record
+            // 2. If approved:
+            //    - PACKAGE: create active Member Package record
+            //    - SPECIAL_CLASS: auto-book the member into the occurrence atomically
             let memberPackage = null;
+            let attendance = null;
+
             if (status === "APPROVED") {
-                const expiresAt = addDays(new Date(), pending.offer.validityDays);
-                memberPackage = await tx.package.create({
-                    data: {
-                        memberId: pending.memberId,
-                        packageOfferId: pending.packageOfferId,
-                        classesRemaining: pending.offer.classCount,
-                        expiresAt: expiresAt,
-                        status: "ACTIVE",
-                    },
-                    include: { offer: true },
-                });
+                if (pending.kind === "PACKAGE") {
+                    const expiresAt = addDays(new Date(), pending.offer!.validityDays);
+                    memberPackage = await tx.package.create({
+                        data: {
+                            memberId: pending.memberId,
+                            packageOfferId: pending.packageOfferId!,
+                            classesRemaining: pending.offer!.classCount,
+                            expiresAt: expiresAt,
+                            status: "ACTIVE",
+                        },
+                        include: { offer: true },
+                    });
+                } else if (pending.kind === "SPECIAL_CLASS" && pending.classOccurrenceId) {
+                    const existingBooking = await tx.attendance.findFirst({
+                        where: {
+                            memberId: pending.memberId,
+                            classOccurrenceId: pending.classOccurrenceId,
+                            status: "BOOKED",
+                        },
+                    });
+
+                    if (!existingBooking) {
+                        const occ = await tx.classOccurrence.findUnique({
+                            where: { id: pending.classOccurrenceId },
+                        });
+
+                        if (occ && !occ.isCancelled) {
+                            await tx.classOccurrence.update({
+                                where: { id: pending.classOccurrenceId },
+                                data: { bookedCount: { increment: 1 } },
+                            });
+
+                            attendance = await tx.attendance.create({
+                                data: {
+                                    memberId: pending.memberId,
+                                    classOccurrenceId: pending.classOccurrenceId,
+                                    status: "BOOKED",
+                                },
+                            });
+                        }
+                    }
+                }
             }
 
-            return { pending: updatedPending, package: memberPackage };
+            return { pending: updatedPending, package: memberPackage, booking: attendance };
         });
 
         return NextResponse.json({ success: true, ...result });

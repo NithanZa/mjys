@@ -163,6 +163,8 @@ export async function POST(
             await tx.pendingPurchase.create({
                 data: {
                     memberId: id,
+                    kind: "PACKAGE",
+                    amountTHB: offer.discountPriceTHB ?? offer.priceTHB,
                     packageOfferId,
                     status: "APPROVED",
                     reviewedAt: new Date(),

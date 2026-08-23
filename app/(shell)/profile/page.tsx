@@ -16,7 +16,7 @@ import { useLiff } from "@/lib/liff";
 import { getLevel } from "@/lib/levels";
 import { useMember } from "@/lib/profile/use-member";
 import { useClassHistory } from "@/lib/profile/use-class-history";
-import { usePurchases } from "@/lib/mock/purchases-store";
+import { usePurchases } from "@/lib/api/purchases";
 import { LockIcon, LogOut, Smartphone, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -184,7 +184,7 @@ export default function ProfilePage() {
                 </Card>
 
                 {/* 8. Member QR */}
-                <MemberQRCard memberId={member.id} />
+                <MemberQRCard />
 
                 {/* 9. Privacy note */}
                 <p className="text-center font-sans text-caption text-neutral-text-3">

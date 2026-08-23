@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { name, description, tagline, intensity, isSpecial, instructorId, startsAt, durationMin, capacity } = body;
+        const { name, description, tagline, intensity, isSpecial, specialPriceTHB, instructorId, startsAt, durationMin, capacity } = body;
 
         // Validation
         if (!name || !instructorId || !startsAt || !durationMin || !capacity) {
@@ -19,6 +19,16 @@ export async function POST(request: NextRequest) {
                 { error: "Missing required fields: name, instructorId, startsAt, durationMin, capacity" },
                 { status: 400 },
             );
+        }
+
+        // Special class must have a positive price; normal classes must not have one
+        if (isSpecial) {
+            if (!specialPriceTHB || parseInt(specialPriceTHB, 10) <= 0) {
+                return NextResponse.json(
+                    { error: "Special classes require a positive price (specialPriceTHB)" },
+                    { status: 400 },
+                );
+            }
         }
 
         // Validate instructor exists
@@ -34,6 +44,7 @@ export async function POST(request: NextRequest) {
                 tagline: tagline ?? "",
                 intensity: intensity ?? "A",
                 isSpecial: Boolean(isSpecial),
+                specialPriceTHB: isSpecial ? parseInt(specialPriceTHB, 10) : null,
                 instructorId,
                 startsAt: parseISO(startsAt),
                 durationMin: parseInt(durationMin, 10),

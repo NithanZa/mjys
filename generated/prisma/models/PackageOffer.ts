@@ -543,6 +543,11 @@ export type PackageOfferSumOrderByAggregateInput = {
   sortOrder?: Prisma.SortOrder
 }
 
+export type PackageOfferNullableScalarRelationFilter = {
+  is?: Prisma.PackageOfferWhereInput | null
+  isNot?: Prisma.PackageOfferWhereInput | null
+}
+
 export type PackageOfferScalarRelationFilter = {
   is?: Prisma.PackageOfferWhereInput
   isNot?: Prisma.PackageOfferWhereInput
@@ -556,14 +561,6 @@ export type EnumPackageTypeFieldUpdateOperationsInput = {
   set?: $Enums.PackageType
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type PackageOfferUpdateperksInput = {
   set?: string[]
   push?: string | string[]
@@ -575,10 +572,12 @@ export type PackageOfferCreateNestedOneWithoutPendingPurchasesInput = {
   connect?: Prisma.PackageOfferWhereUniqueInput
 }
 
-export type PackageOfferUpdateOneRequiredWithoutPendingPurchasesNestedInput = {
+export type PackageOfferUpdateOneWithoutPendingPurchasesNestedInput = {
   create?: Prisma.XOR<Prisma.PackageOfferCreateWithoutPendingPurchasesInput, Prisma.PackageOfferUncheckedCreateWithoutPendingPurchasesInput>
   connectOrCreate?: Prisma.PackageOfferCreateOrConnectWithoutPendingPurchasesInput
   upsert?: Prisma.PackageOfferUpsertWithoutPendingPurchasesInput
+  disconnect?: Prisma.PackageOfferWhereInput | boolean
+  delete?: Prisma.PackageOfferWhereInput | boolean
   connect?: Prisma.PackageOfferWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.PackageOfferUpdateToOneWithWhereWithoutPendingPurchasesInput, Prisma.PackageOfferUpdateWithoutPendingPurchasesInput>, Prisma.PackageOfferUncheckedUpdateWithoutPendingPurchasesInput>
 }

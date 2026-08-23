@@ -175,7 +175,9 @@ export async function GET(request: NextRequest) {
             row.getCell(2).value = occ.name;
             row.getCell(3).value = occ.tagline;
             row.getCell(4).value = occ.intensity;
-            row.getCell(5).value = occ.isSpecial ? "✨ Special" : "Regular";
+            row.getCell(5).value = occ.isSpecial
+                ? (occ.specialPriceTHB ? `✨ Special · ฿${occ.specialPriceTHB}` : "✨ Special")
+                : "Regular";
             row.getCell(6).value = occ.instructor.name;
             row.getCell(7).value = `${occ.durationMin} min`;
             row.getCell(8).value = `${occ.bookedCount} / ${occ.capacity}`;

@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
             tagline: string;
             intensity: string;
             isSpecial: boolean;
+            specialPriceTHB: number | null;
             instructorName: string;
             startsAt: Date;
             durationMin: number;
@@ -98,6 +99,22 @@ export async function POST(request: NextRequest) {
             const isSpecial = ["true", "1", "yes"].includes(row.isSpecial?.trim().toLowerCase());
             const intensity = row.intensity?.trim() || "A";
             const instructorName = (row.instructorName ?? "").trim();
+
+            // Parse optional specialPriceTHB
+            let specialPriceTHB: number | null = null;
+            if (isSpecial) {
+                const rawPrice = row.specialPriceTHB?.trim();
+                if (!rawPrice) {
+                    rowErrors.push(`Row ${rowNum}: specialPriceTHB is required when isSpecial is true`);
+                    continue;
+                }
+                const parsedPrice = parseInt(rawPrice, 10);
+                if (Number.isNaN(parsedPrice) || parsedPrice <= 0) {
+                    rowErrors.push(`Row ${rowNum}: specialPriceTHB must be a positive number when isSpecial is true`);
+                    continue;
+                }
+                specialPriceTHB = parsedPrice;
+            }
 
             if (!name) {
                 rowErrors.push(`Row ${rowNum}: name is required`);
@@ -140,6 +157,7 @@ export async function POST(request: NextRequest) {
                 tagline: row.tagline?.trim() || "",
                 intensity,
                 isSpecial,
+                specialPriceTHB,
                 instructorName,
                 startsAt,
                 durationMin,
@@ -192,6 +210,7 @@ export async function POST(request: NextRequest) {
                 tagline: p.tagline,
                 intensity: p.intensity,
                 isSpecial: p.isSpecial,
+                specialPriceTHB: p.specialPriceTHB,
                 instructorId: instructorMap.get(p.instructorName)!,
                 startsAt: p.startsAt,
                 durationMin: p.durationMin,

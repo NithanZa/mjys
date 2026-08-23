@@ -1,7 +1,7 @@
 "use client";
 
 import { TopBar } from "@/components/layout";
-import { ClassCard, InlineCalendar } from "@/components/booking";
+import { ClassCard, InlineCalendar, PaidSpecialClassContactModal } from "@/components/booking";
 import { EmptyState } from "@/components/ui";
 import {
   formatDateLong,
@@ -138,7 +138,8 @@ export default function BookPage() {
     return Object.values(groups).sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [filteredOccurrences]);
 
-  const { isBooked, book, cancel } = useBookings();
+  const { isBooked, isPaidSpecialBooking, book, cancel } = useBookings();
+  const [contactRequestClassName, setContactRequestClassName] = useState<string | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
   // Handle calendar day select / toggle
@@ -342,7 +343,13 @@ export default function BookPage() {
                           occurrence={occ}
                           isBooked={isBooked(occ.id)}
                           onBook={() => book(occ.id)}
-                          onCancel={() => cancel(occ.id)}
+                          onCancel={() => {
+                            if (isPaidSpecialBooking(occ.id)) {
+                              setContactRequestClassName(occ.name);
+                              return;
+                            }
+                            cancel(occ.id);
+                          }}
                         />
                       ))}
                     </div>
@@ -355,6 +362,11 @@ export default function BookPage() {
         </div>
 
       </div>
+      <PaidSpecialClassContactModal
+        open={contactRequestClassName !== null}
+        onClose={() => setContactRequestClassName(null)}
+        className={contactRequestClassName ?? ""}
+      />
     </>
   );
 }

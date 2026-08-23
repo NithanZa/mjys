@@ -20,6 +20,8 @@ import {
 
 interface Purchase {
     id: string;
+    kind: "PACKAGE" | "SPECIAL_CLASS";
+    amountTHB: number;
     status: "PENDING" | "APPROVED" | "REJECTED";
     proofImageUrl: string | null;
     rejectionReason?: string | null;
@@ -37,7 +39,17 @@ interface Purchase {
         priceTHB: number;
         classCount: number | null;
         validityDays: number;
-    };
+    } | null;
+    classOccurrence: {
+        id: string;
+        name: string;
+        startsAt: string;
+        specialPriceTHB: number | null;
+        instructor: {
+            id: string;
+            name: string;
+        };
+    } | null;
 }
 
 export default function AdminSlipsPage() {
@@ -78,11 +90,11 @@ export default function AdminSlipsPage() {
                 return;
             }
         } else {
-            if (
-                !confirm(
-                    `Are you sure you want to mark this transaction as APPROVED?\n\nThis will instantly activate the package and credit classes to the member's account.`,
-                )
-            ) {
+            const confirmMsg =
+                selectedPurchase.kind === "SPECIAL_CLASS" && selectedPurchase.classOccurrence
+                    ? `Are you sure you want to mark this transaction as APPROVED?\n\nThis will automatically reserve and book ${selectedPurchase.member.displayName} into "${selectedPurchase.classOccurrence.name}".`
+                    : `Are you sure you want to mark this transaction as APPROVED?\n\nThis will instantly activate the package and credit classes to the member's account.`;
+            if (!confirm(confirmMsg)) {
                 return;
             }
         }
@@ -203,16 +215,31 @@ export default function AdminSlipsPage() {
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex flex-col">
-                                                    <span className="font-medium text-neutral-ink">
-                                                        {purchase.offer.name}
-                                                    </span>
-                                                    <span className="font-sans text-caption text-neutral-text-3">
-                                                        {purchase.offer.classCount ?? "Unlimited"} classes · {purchase.offer.validityDays}d
-                                                    </span>
+                                                    {purchase.kind === "SPECIAL_CLASS" && purchase.classOccurrence ? (
+                                                        <>
+                                                            <span className="font-medium text-neutral-ink">
+                                                                ✨ {purchase.classOccurrence.name}
+                                                            </span>
+                                                            <span className="font-sans text-caption text-neutral-text-3">
+                                                                Special class · {format(toZonedTime(parseISO(purchase.classOccurrence.startsAt), STUDIO_TZ), "d MMM yyyy, HH:mm")}
+                                                            </span>
+                                                        </>
+                                                    ) : purchase.offer ? (
+                                                        <>
+                                                            <span className="font-medium text-neutral-ink">
+                                                                {purchase.offer.name}
+                                                            </span>
+                                                            <span className="font-sans text-caption text-neutral-text-3">
+                                                                {purchase.offer.classCount ?? "Unlimited"} classes · {purchase.offer.validityDays}d
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="font-medium text-neutral-ink">Unknown purchase</span>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="p-4 font-semibold text-neutral-ink">
-                                                ฿{purchase.offer.priceTHB.toLocaleString()}
+                                                ฿{purchase.amountTHB.toLocaleString()}
                                             </td>
                                             <td className="p-4 text-neutral-text-2">
                                                 {format(createdLocal, "d MMM yyyy, HH:mm")}
@@ -246,18 +273,19 @@ export default function AdminSlipsPage() {
                 open={selectedPurchase !== null}
                 onClose={() => setSelectedOcc(null)}
                 title="Review Transfer Slip"
+                size="4xl"
             >
                 {selectedPurchase && (
-                    <div className="flex flex-col md:flex-row gap-6 max-w-4xl font-sans mt-4">
+                    <div className="flex flex-col md:flex-row gap-6 font-sans mt-4">
                         {/* Left column: Slip Image Preview */}
-                        <div className="flex-1 max-w-md border border-neutral-line rounded-md overflow-hidden bg-neutral-bg flex flex-col justify-center min-h-[300px]">
+                        <div className="flex-1 md:max-w-md border border-neutral-line rounded-md overflow-hidden bg-neutral-bg flex flex-col justify-center min-h-[350px]">
                             {selectedPurchase.proofImageUrl ? (
-                                <div className="p-2">
+                                <div className="p-3 flex items-center justify-center bg-neutral-bg">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={selectedPurchase.proofImageUrl}
                                         alt="Uploaded bank receipt slip"
-                                        className="max-h-[500px] w-full object-contain rounded-sm"
+                                        className="max-h-[65vh] w-full object-contain rounded-sm shadow-xs"
                                     />
                                 </div>
                             ) : (
@@ -274,7 +302,7 @@ export default function AdminSlipsPage() {
                         </div>
 
                         {/* Right column: Roster details and Actions */}
-                        <div className="flex-1 flex flex-col justify-between gap-5">
+                        <div className="flex-1 flex flex-col justify-between gap-6">
                             <div className="flex flex-col gap-4">
                                 <div className="border-b border-neutral-line pb-3">
                                     <span className="text-overline uppercase tracking-[0.08em] text-neutral-text-3">
@@ -305,15 +333,32 @@ export default function AdminSlipsPage() {
                                     </span>
                                     <div className="bg-primary-50/50 border border-primary-200 rounded-md p-4 mt-2 flex justify-between items-center">
                                         <div className="flex flex-col">
-                                            <span className="font-display text-body font-semibold text-neutral-ink">
-                                                {selectedPurchase.offer.name}
-                                            </span>
-                                            <span className="text-caption text-neutral-text-2">
-                                                {selectedPurchase.offer.classCount ?? "Unlimited"} class credits · Valid for {selectedPurchase.offer.validityDays} days
-                                            </span>
+                                            {selectedPurchase.kind === "SPECIAL_CLASS" && selectedPurchase.classOccurrence ? (
+                                                <>
+                                                    <span className="font-display text-body font-semibold text-neutral-ink">
+                                                        ✨ {selectedPurchase.classOccurrence.name}
+                                                    </span>
+                                                    <span className="text-caption text-neutral-text-2">
+                                                        Special class admission · {format(toZonedTime(parseISO(selectedPurchase.classOccurrence.startsAt), STUDIO_TZ), "EEE, d MMM yyyy, HH:mm")}
+                                                    </span>
+                                                </>
+                                            ) : selectedPurchase.offer ? (
+                                                <>
+                                                    <span className="font-display text-body font-semibold text-neutral-ink">
+                                                        {selectedPurchase.offer.name}
+                                                    </span>
+                                                    <span className="text-caption text-neutral-text-2">
+                                                        {selectedPurchase.offer.classCount ?? "Unlimited"} class credits · Valid for {selectedPurchase.offer.validityDays} days
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className="font-display text-body font-semibold text-neutral-ink">
+                                                    Unknown purchase
+                                                </span>
+                                            )}
                                         </div>
                                         <span className="font-display text-h2 font-bold text-neutral-ink">
-                                            ฿{selectedPurchase.offer.priceTHB.toLocaleString()}
+                                            ฿{selectedPurchase.amountTHB.toLocaleString()}
                                         </span>
                                     </div>
                                 </div>
@@ -338,7 +383,9 @@ export default function AdminSlipsPage() {
                                         leftIcon={<Check className="h-5 w-5" />}
                                         onClick={() => handleResolve("APPROVED")}
                                     >
-                                        Approve Payment & Activate Pack
+                                        {selectedPurchase.kind === "SPECIAL_CLASS"
+                                            ? "Approve Payment & Grant Class Access"
+                                            : "Approve Payment & Activate Pack"}
                                     </Button>
                                     <Button
                                         type="button"

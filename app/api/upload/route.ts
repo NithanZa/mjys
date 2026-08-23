@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyLineIdToken } from "@/lib/line/verify-id-token";
+import { parseSessionCookie } from "@/lib/standalone-auth";
 import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
 
@@ -20,22 +21,33 @@ const ALLOWED_TYPES: Record<string, string> = {
  * uploads it to the private Supabase Storage bucket 'slips', and returns its
  * object path. The path is stored as-is in `PendingPurchase.proofImageUrl`;
  * callers must resolve a short-lived signed URL for display (see lib/storage.ts).
- * Authenticated via the member's LINE ID token.
+ * Authenticated via LINE ID token (in LIFF mode) or session cookie (in standalone mode).
  */
 export async function POST(request: NextRequest) {
+    let isAuthenticated = false;
+
     const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return NextResponse.json(
-            { error: "Missing or invalid authorization header" },
-            { status: 401 },
-        );
+    if (authHeader?.startsWith("Bearer ")) {
+        const idToken = authHeader.substring(7);
+        const lineClaims = await verifyLineIdToken(idToken);
+        if (lineClaims) {
+            isAuthenticated = true;
+        } else {
+            return NextResponse.json(
+                { error: "Invalid LINE ID token" },
+                { status: 401 },
+            );
+        }
+    } else if (process.env.NEXT_PUBLIC_STANDALONE_MODE === "true") {
+        const memberId = parseSessionCookie(request);
+        if (memberId) {
+            isAuthenticated = true;
+        }
     }
 
-    const idToken = authHeader.substring(7);
-    const lineClaims = await verifyLineIdToken(idToken);
-    if (!lineClaims) {
+    if (!isAuthenticated) {
         return NextResponse.json(
-            { error: "Invalid LINE ID token" },
+            { error: "Missing or invalid authorization header" },
             { status: 401 },
         );
     }

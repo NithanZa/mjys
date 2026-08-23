@@ -3,11 +3,9 @@
 import { Card } from "@/components/ui/Card";
 import { QRCode } from "@/components/ui/QRCode";
 import { useLiff } from "@/lib/liff";
-import { encodeMemberPass } from "@/lib/qr";
 import { useEffect, useState, useCallback } from "react";
 
 export interface MemberQRCardProps {
-  memberId: string;
   /** Refresh interval in ms. Defaults to 60s, matching the pass TTL. */
   refreshMs?: number;
 }
@@ -16,30 +14,27 @@ export interface MemberQRCardProps {
  * Shows a short-lived QR member-pass. The encoded token rotates every `refreshMs`
  * so a screenshot from yesterday can't be reused at the studio scanner.
  *
- * Secure mode: token is HMAC-signed JWT (jose) requested from the server.
- * Fallback mode: token is simple base64-JSON for offline testing.
+ * The HMAC-signed JWT token is always requested from the server.
  */
-export function MemberQRCard({ memberId, refreshMs = 60_000 }: MemberQRCardProps) {
+export function MemberQRCard({ refreshMs = 60_000 }: MemberQRCardProps) {
   const { liff, status, isLoggedIn } = useLiff();
   const [token, setToken] = useState("");
   const [tick, setTick] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
-  const isMock = !isStandalone && (status !== "ready" || !isLoggedIn || !liff);
 
   const rotateToken = useCallback(async () => {
-    if (isMock) {
-      setToken(encodeMemberPass(memberId, refreshMs));
-      setLoading(false);
-      return;
-    }
-
     try {
       const fetchOptions: RequestInit = { credentials: "same-origin" };
       if (!isStandalone) {
-        const idToken = liff?.getIDToken();
-        if (!idToken) throw new Error("No ID Token available");
+        if (status !== "ready" || !isLoggedIn || !liff) {
+          throw new Error("LINE authentication is unavailable");
+        }
+
+        const idToken = liff.getIDToken();
+        if (!idToken) throw new Error("No LINE ID token available");
         fetchOptions.headers = {
           Authorization: `Bearer ${idToken}`,
         };
@@ -50,17 +45,20 @@ export function MemberQRCard({ memberId, refreshMs = 60_000 }: MemberQRCardProps
       if (!res.ok) throw new Error("Failed to fetch secure QR pass");
 
       const data = await res.json();
+      if (typeof data.token !== "string" || !data.token) {
+        throw new Error("The server did not issue a QR pass");
+      }
+
       setToken(data.token);
+      setError(null);
     } catch (err) {
-      console.error(
-        "[MemberQRCard] Secure QR fetch failed, falling back to mock:",
-        err,
-      );
-      setToken(encodeMemberPass(memberId, refreshMs));
+      console.error("[MemberQRCard] Secure QR fetch failed:", err);
+      setToken("");
+      setError("Your secure member pass is unavailable. Please try again.");
     } finally {
       setLoading(false);
     }
-  }, [isMock, isStandalone, liff, memberId, refreshMs]);
+  }, [isLoggedIn, isStandalone, liff, status]);
 
   useEffect(() => {
     rotateToken();
@@ -79,6 +77,13 @@ export function MemberQRCard({ memberId, refreshMs = 60_000 }: MemberQRCardProps
       {loading ? (
         <div className="h-[208px] w-[208px] bg-neutral-line/20 rounded-xl animate-pulse flex items-center justify-center font-sans text-caption text-neutral-text-3">
           Generating…
+        </div>
+      ) : error ? (
+        <div
+          className="h-[208px] w-[208px] rounded-xl border border-error-fg/30 bg-error-bg flex items-center justify-center p-4 text-center font-sans text-caption text-error-fg"
+          role="alert"
+        >
+          {error}
         </div>
       ) : (
         <QRCode value={token} size={208} />

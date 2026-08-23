@@ -80,7 +80,31 @@ export async function GET(request: NextRequest) {
             },
         });
 
-        return NextResponse.json({ bookings });
+        const specialOccurrenceIds = bookings
+            .filter((booking) => booking.classOccurrence.isSpecial)
+            .map((booking) => booking.classOccurrenceId);
+        const paidSpecialOccurrenceIds = new Set(
+            specialOccurrenceIds.length
+                ? (
+                    await prisma.pendingPurchase.findMany({
+                        where: {
+                            memberId: member.id,
+                            classOccurrenceId: { in: specialOccurrenceIds },
+                            kind: "SPECIAL_CLASS",
+                            status: "APPROVED",
+                        },
+                        select: { classOccurrenceId: true },
+                    })
+                ).flatMap((purchase) => purchase.classOccurrenceId ?? [])
+                : [],
+        );
+
+        return NextResponse.json({
+            bookings: bookings.map((booking) => ({
+                ...booking,
+                isPaidSpecial: paidSpecialOccurrenceIds.has(booking.classOccurrenceId),
+            })),
+        });
     } catch (error) {
         console.error("[api-bookings-get] Error fetching bookings:", error);
         return NextResponse.json({ error: "Database error" }, { status: 500 });
@@ -153,26 +177,41 @@ export async function POST(request: NextRequest) {
             });
             if (duplicate) throw new Error("ALREADY_BOOKED");
 
-            // 4. Phase 5 Package Enforcement (if active packages exist, decrement them)
-            const activePkg = member.packages[0]; // consume soonest expiring active package
-            if (activePkg) {
-                if (
-                    activePkg.classesRemaining !== null &&
-                    activePkg.classesRemaining <= 0
-                ) {
-                    throw new Error("PACKAGE_EXHAUSTED");
-                }
-                if (activePkg.classesRemaining !== null) {
-                    await tx.package.update({
-                        where: { id: activePkg.id },
-                        data: {
-                            classesRemaining: { decrement: 1 },
-                            status:
-                                activePkg.classesRemaining - 1 === 0
-                                    ? "EXHAUSTED"
-                                    : "ACTIVE",
-                        },
-                    });
+            // 4. Entitlement check — branch on isSpecial
+            if (occurrence.isSpecial) {
+                // Special classes require an approved SPECIAL_CLASS purchase for this exact occurrence.
+                // Package credits are never consumed.
+                const approvedPurchase = await tx.pendingPurchase.findFirst({
+                    where: {
+                        memberId: member.id,
+                        classOccurrenceId,
+                        kind: "SPECIAL_CLASS",
+                        status: "APPROVED",
+                    },
+                });
+                if (!approvedPurchase) throw new Error("SPECIAL_ADMISSION_REQUIRED");
+            } else {
+                // Normal class: consume soonest-expiring active package if one exists
+                const activePkg = member.packages[0];
+                if (activePkg) {
+                    if (
+                        activePkg.classesRemaining !== null &&
+                        activePkg.classesRemaining <= 0
+                    ) {
+                        throw new Error("PACKAGE_EXHAUSTED");
+                    }
+                    if (activePkg.classesRemaining !== null) {
+                        await tx.package.update({
+                            where: { id: activePkg.id },
+                            data: {
+                                classesRemaining: { decrement: 1 },
+                                status:
+                                    activePkg.classesRemaining - 1 === 0
+                                        ? "EXHAUSTED"
+                                        : "ACTIVE",
+                            },
+                        });
+                    }
                 }
             }
 
@@ -217,6 +256,12 @@ export async function POST(request: NextRequest) {
         }
         if (msg === "PACKAGE_EXHAUSTED") {
             return NextResponse.json({ error: "Your package is out of classes." }, { status: 403 });
+        }
+        if (msg === "SPECIAL_ADMISSION_REQUIRED") {
+            return NextResponse.json(
+                { error: "This special class requires an approved payment. Please submit a payment slip first." },
+                { status: 403 },
+            );
         }
         return NextResponse.json({ error: "Booking transaction failed." }, { status: 500 });
     }
@@ -277,6 +322,21 @@ export async function DELETE(request: NextRequest) {
 
             if (!attendance) throw new Error("BOOKING_NOT_FOUND");
 
+            if (attendance.classOccurrence.isSpecial) {
+                const paidSpecialPurchase = await tx.pendingPurchase.findFirst({
+                    where: {
+                        memberId: member.id,
+                        classOccurrenceId: attendance.classOccurrenceId,
+                        kind: "SPECIAL_CLASS",
+                        status: "APPROVED",
+                    },
+                    select: { id: true },
+                });
+                if (paidSpecialPurchase) {
+                    throw new Error("PAID_SPECIAL_CANCELLATION_CONTACT_STUDIO");
+                }
+            }
+
             // 2. Perform late cancellation checks (Phase 5: late cancel is < 12 hours)
             const classStartTime = attendance.classOccurrence.startsAt.getTime();
             const now = Date.now();
@@ -297,8 +357,8 @@ export async function DELETE(request: NextRequest) {
                 },
             });
 
-            // 5. Refund package class if cancellation is early (not late)
-            if (!isLateCancel) {
+            // 5. Refund package class if cancellation is early (not late) — only for normal classes
+            if (!isLateCancel && !attendance.classOccurrence.isSpecial) {
                 // Find member's active packages or packages that were exhausted recently
                 const activePkg = await tx.package.findFirst({
                     where: {
@@ -333,6 +393,15 @@ export async function DELETE(request: NextRequest) {
         }
         if (msg === "BOOKING_NOT_FOUND") {
             return NextResponse.json({ error: "Active booking not found." }, { status: 404 });
+        }
+        if (msg === "PAID_SPECIAL_CANCELLATION_CONTACT_STUDIO") {
+            return NextResponse.json(
+                {
+                    code: "PAID_SPECIAL_CANCELLATION_CONTACT_STUDIO",
+                    error: "This paid special-class booking must be changed through the studio. Please contact us for help.",
+                },
+                { status: 409 },
+            );
         }
         return NextResponse.json({ error: "Cancellation transaction failed." }, { status: 500 });
     }

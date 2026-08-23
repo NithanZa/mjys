@@ -48,6 +48,14 @@ export const PurchaseStatus = {
 export type PurchaseStatus = (typeof PurchaseStatus)[keyof typeof PurchaseStatus]
 
 
+export const PurchaseKind = {
+  PACKAGE: 'PACKAGE',
+  SPECIAL_CLASS: 'SPECIAL_CLASS'
+} as const
+
+export type PurchaseKind = (typeof PurchaseKind)[keyof typeof PurchaseKind]
+
+
 export const PackageStatus = {
   ACTIVE: 'ACTIVE',
   EXPIRED: 'EXPIRED',

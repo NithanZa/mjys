@@ -127,7 +127,8 @@ export const ClassOccurrenceScalarFieldEnum = {
   tagline: 'tagline',
   intensity: 'intensity',
   isSpecial: 'isSpecial',
-  isCancelled: 'isCancelled'
+  isCancelled: 'isCancelled',
+  specialPriceTHB: 'specialPriceTHB'
 } as const
 
 export type ClassOccurrenceScalarFieldEnum = (typeof ClassOccurrenceScalarFieldEnum)[keyof typeof ClassOccurrenceScalarFieldEnum]
@@ -199,7 +200,10 @@ export type PackageOfferScalarFieldEnum = (typeof PackageOfferScalarFieldEnum)[k
 export const PendingPurchaseScalarFieldEnum = {
   id: 'id',
   memberId: 'memberId',
+  kind: 'kind',
+  amountTHB: 'amountTHB',
   packageOfferId: 'packageOfferId',
+  classOccurrenceId: 'classOccurrenceId',
   proofImageUrl: 'proofImageUrl',
   status: 'status',
   rejectionReason: 'rejectionReason',

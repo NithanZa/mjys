@@ -2,13 +2,13 @@
 
 import { Badge, Card, Modal } from "@/components/ui";
 import { cn } from "@/lib/cn";
-import { formatTHB, getPackageOffer } from "@/lib/mock/packages";
-import type { MockPurchase, PurchaseStatus } from "@/lib/mock/purchases-store";
+import { formatTHB } from "@/lib/api/packages";
+import type { Purchase, PurchaseStatus } from "@/lib/api/purchases";
 import { Receipt } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export interface TransactionHistoryProps {
-    purchases: MockPurchase[];
+    purchases: Purchase[];
     className?: string;
 }
 
@@ -67,7 +67,7 @@ export function TransactionHistory({
 
             <div className="flex flex-col gap-2">
                 {sorted.map((purchase) => {
-                    const offer = getPackageOffer(purchase.offerId);
+                    const { offer } = purchase;
                     const meta = STATUS_META[purchase.status];
                     return (
                         <Card
@@ -102,12 +102,10 @@ export function TransactionHistory({
 
                             <div className="flex-1 min-w-0">
                                 <div className="font-display text-body-lg font-medium text-neutral-ink truncate">
-                                    {offer?.name ?? "Package"}
+                                    {offer?.name ?? purchase.className ?? "Purchase"}
                                 </div>
                                 <p className="font-sans text-caption text-neutral-text-3">
-                                    {offer ? formatTHB(offer.discountPriceTHB != null && offer.discountPriceTHB < offer.priceTHB ? offer.discountPriceTHB : offer.priceTHB) : ""}
-                                    {offer ? " · " : ""}
-                                    {formatDate(purchase.createdAt)}
+                                    {formatTHB(purchase.amountTHB)} · {formatDate(purchase.createdAt)}
                                 </p>
                                 {purchase.status === "REJECTED" && purchase.rejectionReason && (
                                     <p className="font-sans text-caption text-error-fg mt-1">

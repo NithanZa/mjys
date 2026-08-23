@@ -77,9 +77,11 @@ model ClassOccurrence {
   intensity    String   // "A" (All Level) | "B" (Basic) | "I" (Intermediate)
   isSpecial    Boolean  @default(false)
   isCancelled  Boolean  @default(false)
+  specialPriceTHB Int?  // Required & positive when isSpecial is true; null for normal classes
 
-  instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
-  attendances Attendance[]
+  instructor     Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  attendances    Attendance[]
+  specialPurchases PendingPurchase[]
 
   @@index([instructorId])
   @@index([startsAt])
@@ -172,21 +174,31 @@ enum PurchaseStatus {
   REJECTED
 }
 
-model PendingPurchase {
-  id             String         @id @default(cuid())
-  memberId       String
-  packageOfferId String
-  proofImageUrl  String?
-  status         PurchaseStatus @default(PENDING)
-  rejectionReason String?
-  createdAt      DateTime       @default(now())
-  reviewedAt     DateTime?
+enum PurchaseKind {
+  PACKAGE
+  SPECIAL_CLASS
+}
 
-  member Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  offer  PackageOffer @relation(fields: [packageOfferId], references: [id], onDelete: Cascade)
+model PendingPurchase {
+  id              String         @id @default(cuid())
+  memberId        String
+  kind            PurchaseKind   @default(PACKAGE)
+  amountTHB       Int            // Immutable snapshot of the price at request time
+  packageOfferId  String?
+  classOccurrenceId String?
+  proofImageUrl   String?
+  status          PurchaseStatus @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime       @default(now())
+  reviewedAt      DateTime?
+
+  member         Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  offer          PackageOffer?   @relation(fields: [packageOfferId], references: [id], onDelete: Cascade)
+  classOccurrence ClassOccurrence? @relation(fields: [classOccurrenceId], references: [id], onDelete: Cascade)
 
   @@index([memberId])
   @@index([packageOfferId])
+  @@index([classOccurrenceId])
 }
 
 enum PackageStatus {

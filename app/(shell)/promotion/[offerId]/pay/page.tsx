@@ -3,11 +3,10 @@
 import { TopBar } from "@/components/layout";
 import { PackageCard, SlipUpload } from "@/components/promotion";
 import { Button, Card, EmptyState, QRCode } from "@/components/ui";
-import { formatTHB, getPackageOffer } from "@/lib/mock/packages";
-import { usePurchases } from "@/lib/mock/purchases-store";
-import { CheckCircle2, Clock, Copy, ImageUp, ShieldCheck, Sparkles } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { use, useMemo, useState } from "react";
+import { fetchPackageOffer, formatTHB, type PackageOffer } from "@/lib/api/packages";
+import { usePurchases } from "@/lib/api/purchases";
+import { CheckCircle2, Clock, Copy, ImageUp, ShieldCheck } from "lucide-react";
+import { use, useEffect, useState } from "react";
 
 interface PayPageProps {
     params: Promise<{ offerId: string }>;
@@ -21,20 +20,46 @@ function buildStubQrPayload(offerId: string, amount: number, promptpayId: string
 
 export default function PayPage({ params }: PayPageProps) {
     const { offerId } = use(params);
-    const offer = useMemo(() => getPackageOffer(offerId), [offerId]);
-    const router = useRouter();
+    const [offer, setOffer] = useState<PackageOffer | null>(null);
+    const [offerLoaded, setOfferLoaded] = useState(false);
 
-    const { uploadSlip, createPending, approvePending, purchases } = usePurchases();
+    const { uploadSlip, createPending, purchases } = usePurchases();
     const [purchaseId, setPurchaseId] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const [slipFile, setSlipFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
+    useEffect(() => {
+        let cancelled = false;
+        fetchPackageOffer(offerId)
+            .then((nextOffer) => {
+                if (!cancelled) setOffer(nextOffer);
+            })
+            .catch((err) => console.error("Failed to load package offer:", err))
+            .finally(() => {
+                if (!cancelled) setOfferLoaded(true);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [offerId]);
+
     const purchase = purchaseId
         ? purchases.find((p) => p.id === purchaseId)
         : null;
     const isPending = purchase?.status === "PENDING";
+
+    if (!offerLoaded) {
+        return (
+            <>
+                <TopBar title="Pay" back="/promotion" />
+                <div className="py-12 text-center font-sans text-body-sm text-neutral-text-3">
+                    Loading package…
+                </div>
+            </>
+        );
+    }
 
     if (!offer) {
         return (
@@ -221,30 +246,6 @@ export default function PayPage({ params }: PayPageProps) {
                     </>
                 )}
 
-                {/* Dev-only: simulate the studio approving the pending purchase. */}
-                {process.env.NODE_ENV !== "production" &&
-                    purchaseId &&
-                    isPending && (
-                        <Card elevation="sm" className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2 font-sans text-caption font-medium uppercase tracking-[0.08em] text-neutral-text-3">
-                                <Sparkles
-                                    strokeWidth={1.75}
-                                    className="h-4 w-4"
-                                />
-                                Dev: simulate studio side
-                            </div>
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => {
-                                    approvePending(purchaseId);
-                                    router.push("/profile");
-                                }}
-                            >
-                                Approve this pending purchase
-                            </Button>
-                        </Card>
-                    )}
             </div>
         </>
     );

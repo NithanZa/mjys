@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
                 tagline: att.classOccurrence.tagline,
                 intensity: att.classOccurrence.intensity,
                 isSpecial: att.classOccurrence.isSpecial,
+                specialPriceTHB: att.classOccurrence.specialPriceTHB,
                 durationMin: att.classOccurrence.durationMin ?? 0,
                 instructor: att.classOccurrence.instructor,
                 occurredAt: att.classOccurrence.startsAt,

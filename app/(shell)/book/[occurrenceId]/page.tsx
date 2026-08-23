@@ -1,13 +1,14 @@
 "use client";
 
 import { TopBar } from "@/components/layout";
-import { BookButton, SlotsRemaining } from "@/components/booking";
-import { Avatar, Badge, Card, EmptyState } from "@/components/ui";
+import { BookButton, PaidSpecialClassContactModal, SlotsRemaining } from "@/components/booking";
+import { Avatar, Badge, Button, Card, EmptyState } from "@/components/ui";
 import { formatDateLong, formatTime } from "@/lib/dates";
 import { fetchOccurrence, OccurrenceView } from "@/lib/api/classes";
 import { INTENSITY_LABELS } from "@/lib/intensity";
 import { useBookings } from "@/lib/api/bookings";
-import { CalendarX, Clock } from "lucide-react";
+import { useSpecialAdmission } from "@/lib/api/special-purchases";
+import { CalendarX, Clock, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
@@ -19,7 +20,9 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
   const { occurrenceId } = use(params);
   const [occurrence, setOccurrence] = useState<OccurrenceView | null>(null);
   const [loading, setLoading] = useState(true);
-  const { isBooked, book, cancel } = useBookings();
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const { isBooked, isPaidSpecialBooking, book, cancel } = useBookings();
+  const { admission } = useSpecialAdmission(occurrence?.isSpecial ? occurrenceId : null);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,7 +65,7 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
     );
   }
 
-  const { name, description, tagline, intensity, instructor, startsAt, durationMin } = occurrence;
+  const { name, description, tagline, intensity, instructor, startsAt, durationMin, isSpecial, specialPriceTHB } = occurrence;
   const booked = isBooked(occurrence.id);
   const isFull = occurrence.slotsLeft <= 0;
 
@@ -89,6 +92,12 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
             <Clock strokeWidth={1.75} className="h-4 w-4" aria-hidden />
             {formatTime(startsAt)} · {durationMin} min
           </div>
+          {isSpecial && specialPriceTHB && (
+            <div className="flex items-center gap-2 font-sans text-body-sm font-medium text-primary-700">
+              <Sparkles className="h-4 w-4" aria-hidden />
+              Special class · ฿{specialPriceTHB.toLocaleString()}
+            </div>
+          )}
         </Card>
 
         {/* Description */}
@@ -126,20 +135,63 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
         </Card>
 
         {/* Slots + book CTA */}
-        <Card className="flex items-center justify-between gap-3">
-          <SlotsRemaining
-            slotsLeft={occurrence.slotsLeft}
-            capacity={occurrence.capacity}
-          />
-          <BookButton
-            isBooked={booked}
-            isFull={isFull}
-            onBook={() => book(occurrence.id)}
-            onCancel={() => cancel(occurrence.id)}
-            size="md"
-          />
+        <Card className="flex flex-col gap-3">
+          {isSpecial && !booked && (
+            <div className="rounded-sm bg-primary-50 border border-primary-200 p-3 font-sans text-body-sm text-neutral-text-2">
+              {admission.status === "PENDING" &&
+                "Your payment is awaiting studio approval. Once approved, your spot will be booked automatically."}
+              {admission.status === "REJECTED" &&
+                (admission.rejectionReason
+                  ? `Your last payment was rejected: ${admission.rejectionReason}`
+                  : "Your last payment was rejected. Please submit a new slip.")}
+              {admission.status === "APPROVED" &&
+                "Your payment was approved and your spot is reserved."}
+              {admission.status === "NONE" &&
+                "This special class is purchased separately and cannot use your class pack."}
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-3">
+            <SlotsRemaining
+              slotsLeft={occurrence.slotsLeft}
+              capacity={occurrence.capacity}
+            />
+            {isSpecial && !booked && !isFull && admission.status !== "APPROVED" ? (
+              admission.status === "PENDING" ? (
+                <Button size="md" variant="primary" disabled>
+                  Awaiting slip approval
+                </Button>
+              ) : (
+                <Link href={`/book/${occurrence.id}/pay`}>
+                  <Button size="md" variant="primary">
+                    {admission.status === "REJECTED"
+                      ? "Submit a new slip"
+                      : `Pay to reserve · ฿${specialPriceTHB?.toLocaleString()}`}
+                  </Button>
+                </Link>
+              )
+            ) : (
+              <BookButton
+                isBooked={booked}
+                isFull={isFull}
+                onBook={() => book(occurrence.id)}
+                onCancel={() => {
+                  if (isPaidSpecialBooking(occurrence.id)) {
+                    setContactModalOpen(true);
+                    return;
+                  }
+                  cancel(occurrence.id);
+                }}
+                size="md"
+              />
+            )}
+          </div>
         </Card>
       </div>
+      <PaidSpecialClassContactModal
+        open={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+        className={occurrence.name}
+      />
     </>
   );
 }
