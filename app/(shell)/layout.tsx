@@ -8,14 +8,28 @@ import {
 } from "@/components/layout";
 import { LoginForm, RegistrationForm } from "@/components/profile";
 import { EmptyState } from "@/components/ui";
+import { BookingsProvider } from "@/lib/api/bookings";
+import { PurchasesProvider } from "@/lib/api/purchases";
 import { useLiff } from "@/lib/liff";
-import { useMember } from "@/lib/profile/use-member";
+import { MemberProvider, useMember } from "@/lib/profile/use-member";
 import { Smartphone, Loader2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
 
 export default function ShellLayout({ children }: { children: ReactNode }) {
+  return (
+    <MemberProvider>
+      <PurchasesProvider>
+        <BookingsProvider>
+          <ShellLayoutContent>{children}</ShellLayoutContent>
+        </BookingsProvider>
+      </PurchasesProvider>
+    </MemberProvider>
+  );
+}
+
+function ShellLayoutContent({ children }: { children: ReactNode }) {
   const { status, isLoggedIn, liff, error: liffError } = useLiff();
   const { member, loading, register, login } = useMember();
   const [showLogin, setShowLogin] = useState(isStandalone);

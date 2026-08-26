@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        expireCacheTag(CACHE_TAGS.homeBanners);
         return NextResponse.json({ banner }, { status: 201 });
     } catch (error) {
         console.error("[api-admin-home-banners-create] Error creating banner:", error);

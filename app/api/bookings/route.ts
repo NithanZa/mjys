@@ -4,6 +4,7 @@ import { verifyLineIdToken } from "@/lib/line/verify-id-token";
 import { parseSessionCookie } from "@/lib/standalone-auth";
 import type { Member } from "@/generated/prisma/client";
 import { usableLotsWhere } from "@/lib/packages/balance";
+import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -247,6 +248,7 @@ export async function POST(request: NextRequest) {
             return { attendance, occurrence: updatedOccurrence };
         });
 
+        expireCacheTag(CACHE_TAGS.classes);
         return NextResponse.json({ success: true, booking: result.attendance });
     } catch (error: any) {
         console.error("[api-bookings-post] Error booking class:", error);
@@ -414,6 +416,7 @@ export async function DELETE(request: NextRequest) {
             return { isLateCancel };
         });
 
+        expireCacheTag(CACHE_TAGS.classes);
         return NextResponse.json({ success: true, isLateCancel: result.isLateCancel });
     } catch (error: any) {
         console.error("[api-bookings-delete] Error cancelling booking:", error);

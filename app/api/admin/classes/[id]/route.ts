@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { parseISO } from "date-fns";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { usableLotsWhere } from "@/lib/packages/balance";
+import { CACHE_TAGS, expireCacheTags } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -109,6 +110,11 @@ export async function PATCH(
                 return updated;
             });
 
+            expireCacheTags(
+                CACHE_TAGS.classes,
+                CACHE_TAGS.memberStats,
+                CACHE_TAGS.staffStats,
+            );
             return NextResponse.json({ success: true, occurrence: result });
         }
 
@@ -168,6 +174,7 @@ export async function PATCH(
             },
         });
 
+        expireCacheTags(CACHE_TAGS.classes, CACHE_TAGS.staffStats);
         return NextResponse.json({ success: true, occurrence: updated });
     } catch (error: any) {
         console.error("[api-admin-classes-patch] Error updating class:", error);
@@ -213,6 +220,11 @@ export async function DELETE(
             where: { id },
         });
 
+        expireCacheTags(
+            CACHE_TAGS.classes,
+            CACHE_TAGS.memberStats,
+            CACHE_TAGS.staffStats,
+        );
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("[api-admin-classes-delete] Error deleting class:", error);

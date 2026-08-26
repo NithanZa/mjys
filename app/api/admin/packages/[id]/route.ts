@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
 import type { Prisma } from "@/generated/prisma/client";
+import { CACHE_TAGS, expireCacheTags } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,7 @@ export async function PATCH(
             data: updateData,
         });
 
+        expireCacheTags(CACHE_TAGS.packageOffers, CACHE_TAGS.memberStats);
         return NextResponse.json({ success: true, offer: updated });
     } catch (error) {
         console.error("[api-admin-packages-patch] Error updating package offer:", error);
@@ -147,6 +149,7 @@ export async function DELETE(
             });
         }
 
+        expireCacheTags(CACHE_TAGS.packageOffers, CACHE_TAGS.memberStats);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("[api-admin-packages-delete] Error deleting package offer:", error);

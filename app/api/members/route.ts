@@ -10,6 +10,7 @@ import {
     SESSION_COOKIE_OPTIONS,
 } from "@/lib/standalone-auth";
 import { z } from "zod";
+import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
 const RegistrationSchema = z.object({
     displayName: z.string().trim().min(2).max(60),
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
             const member = await prisma.member.create({
                 data: { lineUserId, displayName, email, phone, dob, address, tocAccepted },
             });
+            expireCacheTag(CACHE_TAGS.memberStats);
 
             if (!emailVerified) {
                 return NextResponse.json(
@@ -140,6 +142,7 @@ export async function POST(request: NextRequest) {
         const member = await prisma.member.create({
             data: { lineUserId, displayName, email, phone, dob, address, tocAccepted },
         });
+        expireCacheTag(CACHE_TAGS.memberStats);
 
         return NextResponse.json({ member }, { status: 201 });
     } catch (error: any) {

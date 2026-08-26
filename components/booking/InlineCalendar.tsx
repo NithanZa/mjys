@@ -11,7 +11,7 @@ import {
 } from "date-fns";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OccurrenceView } from "@/lib/api/classes";
 import Link from "next/link";
 
@@ -20,6 +20,9 @@ export interface InlineCalendarProps {
     onSelect: (date: Date) => void;
     min: Date;
     max: Date;
+    initialMonth?: Date;
+    onVisibleMonthChange?: (month: Date) => void;
+    loading?: boolean;
     occurrences: OccurrenceView[];
     instructorId?: string;
     classType?: string;
@@ -34,6 +37,9 @@ export function InlineCalendar({
     onSelect,
     min,
     max,
+    initialMonth,
+    onVisibleMonthChange,
+    loading = false,
     occurrences: allOccurrences,
     instructorId = "all",
     classType = "all",
@@ -41,8 +47,12 @@ export function InlineCalendar({
     onlyAvailable = false,
 }: InlineCalendarProps) {
     const [cursor, setCursor] = useState<Date>(() =>
-        toZonedTime(selected || min, STUDIO_TZ),
+        toZonedTime(initialMonth || selected || min, STUDIO_TZ),
     );
+
+    useEffect(() => {
+        onVisibleMonthChange?.(fromZonedTime(startOfMonth(cursor), STUDIO_TZ));
+    }, [cursor, onVisibleMonthChange]);
 
     const cells = useMemo(() => {
         const monthStart = startOfMonth(cursor);
@@ -77,6 +87,11 @@ export function InlineCalendar({
             <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display text-h2 font-semibold text-neutral-ink">
                     {format(cursor, "MMMM yyyy")}
+                    {loading && (
+                        <span className="ml-2 font-sans text-caption font-normal text-neutral-text-3">
+                            Loading…
+                        </span>
+                    )}
                 </h2>
                 <div className="flex gap-1.5">
                     <button

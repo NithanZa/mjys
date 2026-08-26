@@ -7,6 +7,7 @@ import { addDays } from "date-fns";
 import type { Member } from "@/generated/prisma/client";
 import { getSignedSlipUrl } from "@/lib/storage";
 import { sumRemaining, syncLotStatus } from "@/lib/packages/balance";
+import { CACHE_TAGS, expireCacheTags } from "@/lib/cache/tags";
 
 async function resolveMember(request: NextRequest): Promise<Member | null | { _err: string; _status: number }> {
     const authHeader = request.headers.get("Authorization");
@@ -280,6 +281,10 @@ export async function PATCH(request: NextRequest) {
             return { pending: updatedPending, package: memberPackage, booking: attendance };
         });
 
+        expireCacheTags(
+            CACHE_TAGS.memberStats,
+            ...(result.booking ? [CACHE_TAGS.classes] : []),
+        );
         return NextResponse.json({ success: true, ...result });
     } catch (error: any) {
         console.error("[api-purchases-patch] Error updating purchase status:", error);
@@ -306,6 +311,7 @@ export async function PUT(request: NextRequest) {
         await prisma.pendingPurchase.deleteMany({ where: { memberId: member.id } });
         await prisma.package.deleteMany({ where: { memberId: member.id } });
 
+        expireCacheTags(CACHE_TAGS.memberStats);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("[api-purchases-reset] Error resetting packages:", error);

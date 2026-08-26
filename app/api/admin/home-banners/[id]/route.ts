@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { supabase } from "@/lib/supabase";
 import { BANNER_BUCKET, extractBannerPath } from "@/lib/storage";
+import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,7 @@ export async function PATCH(
             data,
         });
 
+        expireCacheTag(CACHE_TAGS.homeBanners);
         return NextResponse.json({ banner: updated });
     } catch (error) {
         console.error("[api-admin-home-banners-patch] Error updating banner:", error);
@@ -102,6 +104,7 @@ export async function DELETE(
 
         await prisma.homeBanner.delete({ where: { id } });
 
+        expireCacheTag(CACHE_TAGS.homeBanners);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("[api-admin-home-banners-delete] Error deleting banner:", error);

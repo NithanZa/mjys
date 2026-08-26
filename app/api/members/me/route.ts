@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyLineIdToken } from "@/lib/line/verify-id-token";
 import { parseSessionCookie } from "@/lib/standalone-auth";
+import { CACHE_TAGS, expireCacheTags } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +95,7 @@ export async function DELETE(request: NextRequest) {
         await prisma.member.delete({
             where: { id: member.id },
         });
+        expireCacheTags(CACHE_TAGS.memberStats, CACHE_TAGS.staffStats);
 
         const res = NextResponse.json({ success: true, message: "Member and all personal data deleted successfully" });
         

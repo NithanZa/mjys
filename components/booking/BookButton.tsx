@@ -8,6 +8,7 @@ export interface BookButtonProps {
   isFull: boolean;
   onBook: () => void;
   onCancel: () => void;
+  loading?: boolean;
   size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
 }
@@ -23,9 +24,18 @@ export function BookButton({
   isFull,
   onBook,
   onCancel,
+  loading = false,
   size = "md",
   fullWidth = false,
 }: BookButtonProps) {
+  if (loading) {
+    return (
+      <Button variant="secondary" size={size} fullWidth={fullWidth} disabled>
+        Checking…
+      </Button>
+    );
+  }
+
   if (isFull && !isBooked) {
     return (
       <Button variant="secondary" size={size} fullWidth={fullWidth} disabled>

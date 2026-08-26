@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { getCachedHomeBanners } from "@/lib/cache/catalogs";
 
 export const dynamic = "force-dynamic";
 
@@ -9,18 +9,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
     try {
-        const banners = await prisma.homeBanner.findMany({
-            where: { isActive: true },
-            orderBy: { sortOrder: "asc" },
-            select: {
-                id: true,
-                title: true,
-                eyebrow: true,
-                imageUrl: true,
-                href: true,
-                sortOrder: true,
-            },
-        });
+        const banners = await getCachedHomeBanners();
 
         return NextResponse.json({ banners });
     } catch (error) {
