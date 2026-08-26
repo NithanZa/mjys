@@ -383,8 +383,8 @@ export default function AdminCalendarPage() {
     const buildExportRange = () => {
         const localMonthStart = startOfMonth(toZonedTime(currentDate, STUDIO_TZ));
         const localMonthEnd = endOfMonth(toZonedTime(currentDate, STUDIO_TZ));
-        const startStr = localMonthStart.toISOString();
-        const endStr = localMonthEnd.toISOString();
+        const startStr = fromZonedTime(localMonthStart, STUDIO_TZ).toISOString();
+        const endStr = fromZonedTime(localMonthEnd, STUDIO_TZ).toISOString();
         return { startStr, endStr };
     };
 
