@@ -9,7 +9,27 @@ import {
   STUDIO_TZ,
   isSameStudioDay,
 } from "@/lib/dates";
-import { fetchClasses, OccurrenceView } from "@/lib/api/classes";
+import {
+  fetchClasses,
+  fetchOccurrence,
+  OccurrenceView,
+} from "@/lib/api/classes";
+import {
+  classMonthKey,
+  classMonthRange,
+  classNavigationRange,
+  defaultClassRange,
+  defaultClassMonthKeys,
+} from "@/lib/api/class-range";
+import {
+  clearScheduleSnapshot,
+  readScheduleSnapshot,
+  writeScheduleSnapshot,
+} from "@/lib/cache/client-schedule";
+import {
+  readBookPreferences,
+  writeBookPreferences,
+} from "@/lib/cache/client-preferences";
 import { fetchInstructors, Instructor } from "@/lib/api/instructors";
 import { INTENSITIES, INTENSITY_LABELS } from "@/lib/intensity";
 import { useBookings } from "@/lib/api/bookings";
@@ -19,17 +39,18 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { format, addYears, subDays } from "date-fns";
+import { format } from "date-fns";
+
+const CLIENT_MONTH_TTL_MS = 3 * 60 * 1000;
 
 export default function BookPage() {
   const today = useMemo(() => studioToday(), []);
-  // Wide static range: from a day before today through 2 years out. There is
-  // no admin-side limit on how far in advance a class can be scheduled, so we
-  // don't hardcode a month like the old mock data did.
-  const range = useMemo(
-    () => ({ from: subDays(today, 1), to: addYears(today, 2) }),
+  const initialRange = useMemo(() => defaultClassRange(today), [today]);
+  const navigationRange = useMemo(() => classNavigationRange(today), [today]);
+  const initialMonthKeys = useMemo(
+    () => new Set(defaultClassMonthKeys(today)),
     [today],
   );
 
@@ -44,28 +65,232 @@ export default function BookPage() {
   const [allOccurrences, setAllOccurrences] = useState<OccurrenceView[]>([]);
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [visibleMonth, setVisibleMonth] = useState(today);
+  const [calendarInitialMonth, setCalendarInitialMonth] = useState(today);
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const visibleMonthKey = classMonthKey(visibleMonth);
+  const [loadingMonthKeys, setLoadingMonthKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const loadedMonthKeys = useRef(new Map<string, number>());
+  const inFlightMonthKeys = useRef(new Set<string>());
+  const initialLoadInFlight = useRef(true);
+  const visibleMonthRef = useRef(visibleMonth);
+  visibleMonthRef.current = visibleMonth;
+
+  useEffect(() => {
+    const preferences = readBookPreferences();
+    if (preferences) {
+      const storedMonth = new Date(preferences.visibleMonth);
+      const restoredMonth =
+        storedMonth >= navigationRange.from && storedMonth <= navigationRange.to
+          ? storedMonth
+          : today;
+      const storedSelected = preferences.selectedDate
+        ? new Date(preferences.selectedDate)
+        : null;
+      setVisibleMonth(restoredMonth);
+      setCalendarInitialMonth(restoredMonth);
+      setSelected(
+        storedSelected &&
+          storedSelected >= navigationRange.from &&
+          storedSelected <= navigationRange.to
+          ? storedSelected
+          : null,
+      );
+      setInstructorId(preferences.instructorId);
+      setClassType(preferences.classType);
+      setIntensity(preferences.intensity);
+      setOnlyAvailable(preferences.onlyAvailable);
+    }
+    setPreferencesReady(true);
+  }, [navigationRange.from, navigationRange.to, today]);
+
+  useEffect(() => {
+    if (
+      instructorId !== "all" &&
+      instructors.length > 0 &&
+      !instructors.some((instructor) => instructor.id === instructorId)
+    ) {
+      setInstructorId("all");
+    }
+  }, [instructorId, instructors]);
+
+  const mergeOccurrences = useCallback((occurrences: OccurrenceView[]) => {
+    setAllOccurrences((current) => {
+      const byId = new Map(current.map((occurrence) => [occurrence.id, occurrence]));
+      occurrences.forEach((occurrence) => byId.set(occurrence.id, occurrence));
+      return [...byId.values()].sort(
+        (a, b) => a.startsAt.getTime() - b.startsAt.getTime(),
+      );
+    });
+  }, []);
+
+  const replaceOccurrencesInRange = useCallback(
+    (occurrences: OccurrenceView[], from: Date, to: Date) => {
+      setAllOccurrences((current) => {
+        const byId = new Map(
+          current
+            .filter(
+              (occurrence) =>
+                occurrence.startsAt < from || occurrence.startsAt > to,
+            )
+            .map((occurrence) => [occurrence.id, occurrence]),
+        );
+        occurrences.forEach((occurrence) => byId.set(occurrence.id, occurrence));
+        return [...byId.values()].sort(
+          (a, b) => a.startsAt.getTime() - b.startsAt.getTime(),
+        );
+      });
+    },
+    [],
+  );
+
+  const loadMonth = useCallback(
+    async (month: Date) => {
+      const key = classMonthKey(month);
+      const loadedAt = loadedMonthKeys.current.get(key);
+      const isFresh =
+        loadedAt !== undefined && Date.now() - loadedAt < CLIENT_MONTH_TTL_MS;
+
+      if (
+        isFresh ||
+        inFlightMonthKeys.current.has(key) ||
+        (initialLoadInFlight.current && initialMonthKeys.has(key))
+      ) {
+        return;
+      }
+
+      inFlightMonthKeys.current.add(key);
+      setLoadingMonthKeys((keys) => new Set(keys).add(key));
+
+      try {
+        const range = classMonthRange(month);
+        const occurrences = await fetchClasses(range.from, range.to);
+        replaceOccurrencesInRange(occurrences, range.from, range.to);
+        loadedMonthKeys.current.set(key, Date.now());
+      } catch (error) {
+        console.error("Failed to load a schedule month:", error);
+      } finally {
+        inFlightMonthKeys.current.delete(key);
+        setLoadingMonthKeys((keys) => {
+          const next = new Set(keys);
+          next.delete(key);
+          return next;
+        });
+      }
+    },
+    [initialMonthKeys, replaceOccurrencesInRange],
+  );
+
+  const refreshOccurrence = useCallback(async (occurrenceId: string) => {
+    clearScheduleSnapshot();
+    try {
+      const occurrence = await fetchOccurrence(occurrenceId);
+      setAllOccurrences((current) => {
+        const remaining = current.filter((item) => item.id !== occurrenceId);
+        if (occurrence) remaining.push(occurrence);
+        return remaining.sort(
+          (first, second) =>
+            first.startsAt.getTime() - second.startsAt.getTime(),
+        );
+      });
+    } catch (error) {
+      console.error("Failed to refresh class availability:", error);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      fetchClasses(range.from, range.to),
-      fetchInstructors(),
-    ])
-      .then(([occurrences, ins]) => {
+    const snapshot = readScheduleSnapshot(initialRange.from, initialRange.to);
+    if (snapshot) {
+      mergeOccurrences(snapshot);
+      initialMonthKeys.forEach((key) =>
+        loadedMonthKeys.current.set(key, Date.now()),
+      );
+      setLoading(false);
+    }
+
+    let scheduleFailed = false;
+    fetchClasses(initialRange.from, initialRange.to)
+      .then((occurrences) => {
         if (cancelled) return;
-        setAllOccurrences(occurrences);
-        setInstructors(ins);
+        replaceOccurrencesInRange(
+          occurrences,
+          initialRange.from,
+          initialRange.to,
+        );
+        initialMonthKeys.forEach((key) =>
+          loadedMonthKeys.current.set(key, Date.now()),
+        );
+        writeScheduleSnapshot(initialRange.from, initialRange.to, occurrences);
       })
       .catch((err) => {
+        scheduleFailed = true;
         console.error("Failed to load schedule:", err);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        initialLoadInFlight.current = false;
+        if (!cancelled) {
+          setLoading(false);
+          if (scheduleFailed && !snapshot) {
+            void loadMonth(visibleMonthRef.current);
+          }
+        }
       });
+
+    fetchInstructors()
+      .then((ins) => {
+        if (!cancelled) setInstructors(ins);
+      })
+      .catch((err) => {
+        console.error("Failed to load instructors:", err);
+      });
+
     return () => {
       cancelled = true;
     };
-  }, [range.from, range.to]);
+  }, [
+    initialMonthKeys,
+    initialRange.from,
+    initialRange.to,
+    loadMonth,
+    mergeOccurrences,
+    replaceOccurrencesInRange,
+  ]);
+
+  const handleVisibleMonthChange = useCallback(
+    (month: Date) => {
+      setVisibleMonth(month);
+      void loadMonth(month);
+    },
+    [loadMonth],
+  );
+
+  useEffect(() => {
+    if (!preferencesReady) return;
+    writeBookPreferences({
+      selectedDate: selected?.toISOString() ?? null,
+      visibleMonth: visibleMonth.toISOString(),
+      instructorId,
+      classType,
+      intensity,
+      onlyAvailable,
+    });
+  }, [
+    classType,
+    instructorId,
+    intensity,
+    onlyAvailable,
+    preferencesReady,
+    selected,
+    visibleMonth,
+  ]);
+  const visibleScheduleLoading =
+    loading || loadingMonthKeys.has(visibleMonthKey);
+  const feedLoading =
+    loading ||
+    (selected !== null && loadingMonthKeys.has(classMonthKey(selected)));
 
   // Filter Occurrences for the Upcoming List
   const filteredOccurrences = useMemo(() => {
@@ -138,7 +363,13 @@ export default function BookPage() {
     return Object.values(groups).sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [filteredOccurrences]);
 
-  const { isBooked, isPaidSpecialBooking, book, cancel } = useBookings();
+  const {
+    isBooked,
+    isPaidSpecialBooking,
+    book,
+    cancel,
+    loading: bookingsLoading,
+  } = useBookings();
   const [contactRequestClassName, setContactRequestClassName] = useState<string | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
@@ -147,6 +378,7 @@ export default function BookPage() {
     if (selected && isSameStudioDay(date, selected)) {
       setSelected(null); // Clicked selected date -> toggle off / unfilter!
     } else {
+      void loadMonth(date);
       setSelected(date); // Clicked a new date -> filter to that day!
       // On mobile, auto-scroll to the feed so user sees the results
       if (typeof window !== "undefined" && window.innerWidth < 1024) {
@@ -199,8 +431,11 @@ export default function BookPage() {
           <InlineCalendar
             selected={selected}
             onSelect={handleSelectDate}
-            min={range.from}
-            max={range.to}
+            onVisibleMonthChange={handleVisibleMonthChange}
+            min={navigationRange.from}
+            max={navigationRange.to}
+            initialMonth={calendarInitialMonth}
+            loading={visibleScheduleLoading}
             occurrences={allOccurrences}
             instructorId={instructorId}
             classType={classType}
@@ -305,7 +540,7 @@ export default function BookPage() {
               </span>
             </div>
 
-            {loading ? (
+            {feedLoading ? (
               <div className="py-12 text-center font-sans text-body-sm text-neutral-text-3">
                 Loading schedule…
               </div>
@@ -341,14 +576,19 @@ export default function BookPage() {
                         <ClassCard
                           key={occ.id}
                           occurrence={occ}
+                          bookingLoading={bookingsLoading}
                           isBooked={isBooked(occ.id)}
-                          onBook={() => book(occ.id)}
-                          onCancel={() => {
+                          onBook={async () => {
+                            await book(occ.id);
+                            await refreshOccurrence(occ.id);
+                          }}
+                          onCancel={async () => {
                             if (isPaidSpecialBooking(occ.id)) {
                               setContactRequestClassName(occ.name);
                               return;
                             }
-                            cancel(occ.id);
+                            await cancel(occ.id);
+                            await refreshOccurrence(occ.id);
                           }}
                         />
                       ))}

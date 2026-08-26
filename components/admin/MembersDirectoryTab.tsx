@@ -35,7 +35,7 @@ interface Member {
 
 interface Package {
     id: string;
-    classesRemaining: number | null;
+    classesRemaining: number;
     expiresAt: string;
     status: "ACTIVE" | "EXPIRED" | "EXHAUSTED";
     createdAt: string;
@@ -79,6 +79,9 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
     const [selectedMember, setSelectedMember] = useState<Member | null>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [packages, setPackages] = useState<Package[]>([]);
+    const [remainingClasses, setRemainingClasses] = useState(0);
+    const [remainingClassesInput, setRemainingClassesInput] = useState("0");
+    const [savingRemainingClasses, setSavingRemainingClasses] = useState(false);
     const [attendances, setAttendances] = useState<Attendance[]>([]);
     const [milestones, setMilestones] = useState<Milestone[]>([]);
     const [sixMonthAttendanceTrend, setSixMonthAttendanceTrend] = useState<number[]>([]);
@@ -178,6 +181,8 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
         setSelectedMember(member);
         setLoadingDetail(true);
         setPackages([]);
+        setRemainingClasses(0);
+        setRemainingClassesInput("0");
         setAttendances([]);
         setMilestones([]);
         setSixMonthAttendanceTrend([]);
@@ -188,6 +193,8 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
             if (res.ok) {
                 const data = await res.json();
                 setPackages(data.packages);
+                setRemainingClasses(data.remainingClasses ?? 0);
+                setRemainingClassesInput(String(data.remainingClasses ?? 0));
                 setAttendances(data.attendances);
                 setMilestones(data.milestones);
                 setSixMonthAttendanceTrend(data.sixMonthAttendanceTrend || []);
@@ -197,6 +204,35 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
             console.error("Failed to load member profile:", err);
         } finally {
             setLoadingDetail(false);
+        }
+    };
+
+    const handleRemainingClassesSave = async () => {
+        if (!selectedMember) return;
+        const target = Number(remainingClassesInput);
+        if (!Number.isInteger(target) || target < 0) {
+            alert("Remaining classes must be a non-negative whole number.");
+            return;
+        }
+
+        setSavingRemainingClasses(true);
+        try {
+            const res = await fetch(`/api/admin/members/${selectedMember.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ remainingClasses: target }),
+            });
+            if (!res.ok) {
+                const error = await res.json().catch(() => ({}));
+                alert(error.error || "Failed to update remaining classes.");
+                return;
+            }
+            await handleMemberClick(selectedMember);
+        } catch (error) {
+            console.error("Failed to update remaining classes:", error);
+            alert("Network error.");
+        } finally {
+            setSavingRemainingClasses(false);
         }
     };
 
@@ -695,11 +731,11 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                             </div>
                         </div>
 
-                        {/* Pass adjustments */}
+                        {/* Class-balance adjustments */}
                         <div className="border-t border-neutral-line pt-5 flex flex-col gap-3">
                             <div className="flex justify-between items-center">
                                 <h3 className="font-display text-body font-semibold text-neutral-ink">
-                                    Active Packages & Passes
+                                    Remaining Classes
                                 </h3>
                                 <Button
                                     variant="secondary"
@@ -707,7 +743,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                                     leftIcon={<Plus className="h-4 w-4" />}
                                     onClick={handleOpenGrantModal}
                                 >
-                                    Grant Package Pass
+                                    Add From Offer
                                 </Button>
                             </div>
 
@@ -716,49 +752,84 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                                     <div className="flex items-center justify-center p-4">
                                         <Loader className="h-5 w-5 animate-spin text-neutral-text-3" />
                                     </div>
-                                ) : packages.length === 0 ? (
-                                    <div className="text-center text-caption text-neutral-text-3 italic py-2">
-                                        No active packages or passes.
-                                    </div>
                                 ) : (
-                                    <ul className="divide-y divide-neutral-line">
-                                        {packages.map((pkg) => {
-                                            const expiresLocal = toZonedTime(parseISO(pkg.expiresAt), STUDIO_TZ);
-                                            return (
-                                                <li key={pkg.id} className="p-3 flex items-center justify-between gap-4">
-                                                    <div className="flex flex-col">
-                                                        <span className="font-display text-body-sm font-semibold text-neutral-ink">
-                                                            {pkg.offer.name}
-                                                        </span>
-                                                        <span className="font-sans text-caption text-neutral-text-3 mt-0.5">
-                                                            {pkg.classesRemaining !== null
-                                                                ? `${pkg.classesRemaining} classes remaining`
-                                                                : "Unlimited classes"}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="text-right">
-                                                            <p className="text-caption font-semibold text-neutral-text-2">
-                                                                Expires {format(expiresLocal, "d MMM yyyy")}
-                                                            </p>
-                                                        </div>
-                                                        <Badge
-                                                            tone={
-                                                                pkg.status === "ACTIVE"
-                                                                    ? "success"
-                                                                    : pkg.status === "EXPIRED"
-                                                                      ? "error"
-                                                                      : "neutral"
-                                                            }
-                                                            className="text-caption shrink-0"
-                                                        >
-                                                            {pkg.status}
-                                                        </Badge>
-                                                    </div>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex flex-wrap items-end justify-between gap-3 rounded-sm bg-primary-50 p-3">
+                                            <div>
+                                                <p className="text-caption font-medium text-primary-700">
+                                                    Current balance
+                                                </p>
+                                                <p className="font-display text-h2 font-semibold text-neutral-ink">
+                                                    {remainingClasses} {remainingClasses === 1 ? "class" : "classes"} left
+                                                </p>
+                                            </div>
+                                            <div className="flex items-end gap-2">
+                                                <Input
+                                                    type="number"
+                                                    min={0}
+                                                    step={1}
+                                                    value={remainingClassesInput}
+                                                    onChange={(event) => setRemainingClassesInput(event.target.value)}
+                                                    className="w-24"
+                                                    aria-label="Set remaining classes"
+                                                />
+                                                <Button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    loading={savingRemainingClasses}
+                                                    disabled={
+                                                        savingRemainingClasses ||
+                                                        remainingClassesInput === String(remainingClasses)
+                                                    }
+                                                    onClick={handleRemainingClassesSave}
+                                                >
+                                                    Save
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        {packages.length === 0 ? (
+                                            <div className="text-center text-caption text-neutral-text-3 italic py-2">
+                                                No class-credit lots. Add classes from an offer to define an expiry date.
+                                            </div>
+                                        ) : (
+                                            <ul className="divide-y divide-neutral-line">
+                                                {packages.map((pkg) => {
+                                                    const expiresLocal = toZonedTime(parseISO(pkg.expiresAt), STUDIO_TZ);
+                                                    return (
+                                                        <li key={pkg.id} className="p-3 flex items-center justify-between gap-4">
+                                                            <div className="flex flex-col">
+                                                                <span className="font-display text-body-sm font-semibold text-neutral-ink">
+                                                                    {pkg.offer.name}
+                                                                </span>
+                                                                <span className="font-sans text-caption text-neutral-text-3 mt-0.5">
+                                                                    {pkg.classesRemaining} {pkg.classesRemaining === 1 ? "class" : "classes"} remaining
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="text-right">
+                                                                    <p className="text-caption font-semibold text-neutral-text-2">
+                                                                        Expires {format(expiresLocal, "d MMM yyyy")}
+                                                                    </p>
+                                                                </div>
+                                                                <Badge
+                                                                    tone={
+                                                                        pkg.status === "ACTIVE"
+                                                                            ? "success"
+                                                                            : pkg.status === "EXPIRED"
+                                                                              ? "error"
+                                                                              : "neutral"
+                                                                    }
+                                                                    className="text-caption shrink-0"
+                                                                >
+                                                                    {pkg.status}
+                                                                </Badge>
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -860,7 +931,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
             <Modal
                 open={grantModalOpen}
                 onClose={() => setGrantSheetOpen(false)}
-                title="Grant Package Pass Manually"
+                title="Add Classes From an Offer"
             >
                 {selectedMember && (
                     <form onSubmit={handleGrantSubmit} className="flex flex-col gap-5 max-w-xl font-sans mt-4">
@@ -869,7 +940,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                             <div className="flex flex-col">
                                 <span className="font-bold">Administrative Override</span>
                                 <span className="mt-0.5">
-                                    Manually granting a package allocates it directly to the customer&apos;s active balances. Use this for physical cash payments at the counter or special loyalty awards.
+                                    This adds the offer&apos;s classes to the member&apos;s balance as a new lot with its own expiry date. Use it for counter payments or loyalty awards.
                                 </span>
                             </div>
                         </div>
@@ -880,7 +951,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                            <label className="text-caption font-medium text-neutral-text-2">Select Active Offer</label>
+                            <label className="text-caption font-medium text-neutral-text-2">Select Offer</label>
                             <select
                                 required
                                 value={selectedOfferId}
@@ -911,7 +982,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                                 loading={submittingGrant}
                                 disabled={submittingGrant}
                             >
-                                Grant Active Pass
+                                Add Classes
                             </Button>
                         </div>
                     </form>
@@ -1048,7 +1119,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                         <div className="flex flex-col">
                             <span className="font-bold">Bulk Grant Package</span>
                             <span className="mt-0.5">
-                                Grant the same package to {selectedMemberIds.size} selected members. Each member will receive an active package with the specified validity period.
+                                Add the same offer to {selectedMemberIds.size} selected members. Each member receives a new class-credit lot with the offer&apos;s validity period.
                             </span>
                         </div>
                     </div>

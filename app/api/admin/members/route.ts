@@ -36,7 +36,10 @@ export async function GET(request: NextRequest) {
                     select: { checkedInAt: true },
                 },
                 packages: {
-                    where: { status: "ACTIVE" },
+                    where: {
+                        expiresAt: { gte: new Date() },
+                        classesRemaining: { gt: 0 },
+                    },
                     select: { expiresAt: true },
                 },
             },

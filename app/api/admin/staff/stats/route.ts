@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
-import { startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { STUDIO_TZ } from "@/lib/dates";
+import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -38,13 +38,16 @@ export async function GET(request: NextRequest) {
       month = now.getMonth() + 1; // 1-indexed
     }
 
-    // Validate month
-    if (month < 1 || month > 12) {
+    // Keep cache keys and date calculations within the supported admin range.
+    if (year < 2000 || year > 2100 || month < 1 || month > 12) {
       return NextResponse.json(
-        { error: "Invalid month (1-12)" },
+        { error: "Invalid year or month" },
         { status: 400 }
       );
     }
+
+    const getStats = unstable_cache(
+      async (statsYear: number, statsMonth: number) => {
 
     // Get all instructors
     const instructors = await prisma.instructor.findMany({
@@ -56,8 +59,14 @@ export async function GET(request: NextRequest) {
 
     for (const instructor of instructors) {
       // Month range in studio TZ
-      const monthStart = new Date(year, month - 1, 1); // JS months are 0-indexed
-      const monthEnd = new Date(year, month, 0, 23, 59, 59);
+      const monthStart = fromZonedTime(
+        new Date(statsYear, statsMonth - 1, 1),
+        STUDIO_TZ,
+      );
+      const nextMonthStart = fromZonedTime(
+        new Date(statsYear, statsMonth, 1),
+        STUDIO_TZ,
+      );
 
       // Classes taught this month
       const classesCount = await prisma.classOccurrence.count({
@@ -65,7 +74,7 @@ export async function GET(request: NextRequest) {
           instructorId: instructor.id,
           startsAt: {
             gte: monthStart,
-            lte: monthEnd,
+            lt: nextMonthStart,
           },
           isCancelled: false,
         },
@@ -78,7 +87,7 @@ export async function GET(request: NextRequest) {
             instructorId: instructor.id,
             startsAt: {
               gte: monthStart,
-              lte: monthEnd,
+              lt: nextMonthStart,
             },
             isCancelled: false,
           },
@@ -109,19 +118,14 @@ export async function GET(request: NextRequest) {
       // 6-month trend: class count for last 6 months (including current)
       const sixMonthTrend: number[] = [];
       for (let i = 5; i >= 0; i--) {
-        const trendMonth = new Date(year, month - 1 - i, 1);
-        const trendMonthStart = new Date(
-          trendMonth.getFullYear(),
-          trendMonth.getMonth(),
-          1
+        const trendMonth = new Date(statsYear, statsMonth - 1 - i, 1);
+        const trendMonthStart = fromZonedTime(
+          new Date(trendMonth.getFullYear(), trendMonth.getMonth(), 1),
+          STUDIO_TZ,
         );
-        const trendMonthEnd = new Date(
-          trendMonth.getFullYear(),
-          trendMonth.getMonth() + 1,
-          0,
-          23,
-          59,
-          59
+        const nextTrendMonthStart = fromZonedTime(
+          new Date(trendMonth.getFullYear(), trendMonth.getMonth() + 1, 1),
+          STUDIO_TZ,
         );
 
         const count = await prisma.classOccurrence.count({
@@ -129,7 +133,7 @@ export async function GET(request: NextRequest) {
             instructorId: instructor.id,
             startsAt: {
               gte: trendMonthStart,
-              lte: trendMonthEnd,
+              lt: nextTrendMonthStart,
             },
             isCancelled: false,
           },
@@ -186,6 +190,14 @@ export async function GET(request: NextRequest) {
         uniqueStudents,
       };
     }
+
+        return { stats, allTimeStats };
+      },
+      ["admin-staff-stats"],
+      { revalidate: 180 },
+    );
+
+    const { stats, allTimeStats } = await getStats(year, month);
 
     return NextResponse.json({
       year,

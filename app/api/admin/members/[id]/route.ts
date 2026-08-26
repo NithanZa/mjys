@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { addDays, subMonths } from "date-fns";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { sumRemaining, syncLotStatus, usableLotsWhere } from "@/lib/packages/balance";
 
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/admin/members/[id]
- * Fetch a single member's details, active packages, full class attendance logs, and 6-month sparkline.
+ * Fetch a single member's details, credit lots, full class attendance logs, and 6-month sparkline.
  */
 export async function GET(
     request: NextRequest,
@@ -111,7 +112,15 @@ export async function GET(
 
         return NextResponse.json({
             member,
-            packages,
+            packages: packages.map((lot) => ({
+                ...lot,
+                status: syncLotStatus(lot, now),
+            })),
+            remainingClasses: sumRemaining(
+                packages.filter(
+                    (lot) => lot.expiresAt >= now && lot.classesRemaining > 0,
+                ),
+            ),
             attendances,
             milestones,
             sixMonthAttendanceTrend,
@@ -120,6 +129,111 @@ export async function GET(
     } catch (error) {
         console.error("[api-admin-members-detail] Error loading member deep-dive:", error);
         return NextResponse.json({ error: "Failed to load member profile" }, { status: 500 });
+    }
+}
+
+/**
+ * PATCH /api/admin/members/[id]
+ * Set the member's pooled unexpired remaining-class total.
+ */
+export async function PATCH(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> },
+) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
+    const { id } = await props.params;
+    const body = await request.json().catch(() => ({}));
+    const target = Number(body.remainingClasses);
+
+    if (!Number.isInteger(target) || target < 0) {
+        return NextResponse.json(
+            { error: "remainingClasses must be a non-negative integer" },
+            { status: 400 },
+        );
+    }
+
+    try {
+        const remainingClasses = await prisma.$transaction(async (tx) => {
+            const member = await tx.member.findUnique({
+                where: { id },
+                select: { id: true },
+            });
+            if (!member) throw new Error("MEMBER_NOT_FOUND");
+
+            const now = new Date();
+            const lots = await tx.package.findMany({
+                where: {
+                    memberId: id,
+                    ...usableLotsWhere(now),
+                },
+                orderBy: [
+                    { expiresAt: "asc" },
+                    { createdAt: "asc" },
+                ],
+            });
+            const current = sumRemaining(lots);
+            const delta = target - current;
+
+            if (delta > 0) {
+                const firstLot = lots[0];
+                if (!firstLot) throw new Error("GRANT_REQUIRED");
+                const nextRemaining = firstLot.classesRemaining + delta;
+                await tx.package.update({
+                    where: { id: firstLot.id },
+                    data: {
+                        classesRemaining: nextRemaining,
+                        status: syncLotStatus(
+                            { ...firstLot, classesRemaining: nextRemaining },
+                            now,
+                        ),
+                    },
+                });
+            } else if (delta < 0) {
+                let toRemove = -delta;
+                for (const lot of lots) {
+                    if (toRemove === 0) break;
+                    const removed = Math.min(lot.classesRemaining, toRemove);
+                    const nextRemaining = lot.classesRemaining - removed;
+                    await tx.package.update({
+                        where: { id: lot.id },
+                        data: {
+                            classesRemaining: nextRemaining,
+                            status: syncLotStatus(
+                                { ...lot, classesRemaining: nextRemaining },
+                                now,
+                            ),
+                        },
+                    });
+                    toRemove -= removed;
+                }
+            }
+
+            return target;
+        });
+
+        return NextResponse.json({ success: true, remainingClasses });
+    } catch (error) {
+        if (error instanceof Error && error.message === "MEMBER_NOT_FOUND") {
+            return NextResponse.json(
+                { error: "Member profile not found" },
+                { status: 404 },
+            );
+        }
+        if (error instanceof Error && error.message === "GRANT_REQUIRED") {
+            return NextResponse.json(
+                {
+                    error: "This member has no unexpired credit lot. Grant an offer first so the added classes have an expiry date.",
+                },
+                { status: 409 },
+            );
+        }
+        console.error("[api-admin-members-balance] Error updating remaining classes:", error);
+        return NextResponse.json(
+            { error: "Failed to update remaining classes" },
+            { status: 500 },
+        );
     }
 }
 

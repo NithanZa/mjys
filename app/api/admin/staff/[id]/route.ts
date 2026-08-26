@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,8 @@ export async function PATCH(
             data,
         });
 
+        expireCacheTag(CACHE_TAGS.instructors);
+        expireCacheTag(CACHE_TAGS.classes);
         return NextResponse.json({ instructor: updated });
     } catch (error) {
         console.error("[api-admin-staff-update] Error updating staff:", error);
@@ -110,6 +113,8 @@ export async function DELETE(
 
         await prisma.instructor.delete({ where: { id } });
 
+        expireCacheTag(CACHE_TAGS.instructors);
+        expireCacheTag(CACHE_TAGS.classes);
         return NextResponse.json({
             success: true,
             message: "Staff member deleted successfully.",

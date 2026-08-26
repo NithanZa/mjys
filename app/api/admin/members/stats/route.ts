@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { format } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { STUDIO_TZ } from "@/lib/dates";
+import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -46,13 +47,19 @@ export async function GET(request: NextRequest) {
       month = now.getMonth() + 1; // 1-indexed
     }
 
-    // Validate month
-    if (month < 1 || month > 12) {
+    // Keep cache keys and date calculations within the supported admin range.
+    if (year < 2000 || year > 2100 || month < 1 || month > 12) {
       return NextResponse.json(
-        { error: "Invalid month (1-12)" },
+        { error: "Invalid year or month" },
         { status: 400 }
       );
     }
+
+    const getStats = unstable_cache(
+      async (
+        statsYear: number,
+        statsMonth: number,
+      ): Promise<MembersStats> => {
 
     // Total members
     const totalMembers = await prisma.member.count();
@@ -77,33 +84,41 @@ export async function GET(request: NextRequest) {
     const inactiveMembers = totalMembers - activeMembers;
 
     // New members this month
-    const monthStart = new Date(year, month - 1, 1);
-    const monthEnd = new Date(year, month, 0, 23, 59, 59);
+    const monthStart = fromZonedTime(
+      new Date(statsYear, statsMonth - 1, 1),
+      STUDIO_TZ,
+    );
+    const nextMonthStart = fromZonedTime(
+      new Date(statsYear, statsMonth, 1),
+      STUDIO_TZ,
+    );
 
     const newMembersThisMonth = await prisma.member.count({
       where: {
         createdAt: {
           gte: monthStart,
-          lte: monthEnd,
+          lt: nextMonthStart,
         },
       },
     });
 
-    // Packages expiring this month
+    const queryNow = new Date();
+
+    // Credit lots with remaining classes expiring this month
     const packagesExpiringThisMonth = await prisma.package.count({
       where: {
         expiresAt: {
           gte: monthStart,
-          lte: monthEnd,
+          lt: nextMonthStart,
         },
-        status: { in: ["ACTIVE", "EXPIRED"] },
+        classesRemaining: { gt: 0 },
       },
     });
 
-    // Classes left on table: sum of classesRemaining for expired packages
+    // Classes left on table: remaining classes on time-expired lots.
     const expiredPackages = await prisma.package.findMany({
       where: {
-        status: "EXPIRED",
+        expiresAt: { lt: queryNow },
         classesRemaining: { gt: 0 },
       },
       select: { classesRemaining: true },
@@ -119,7 +134,7 @@ export async function GET(request: NextRequest) {
       where: {
         createdAt: {
           gte: monthStart,
-          lte: monthEnd,
+          lt: nextMonthStart,
         },
       },
       include: {
@@ -161,30 +176,25 @@ export async function GET(request: NextRequest) {
     const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const sixMonthMemberTrend = await Promise.all(
       Array.from({ length: 6 }, async (_, index) => {
-        const trendMonth = new Date(year, month - 6 + index, 1);
+        const trendMonth = new Date(statsYear, statsMonth - 6 + index, 1);
 
         if (trendMonth > currentMonth) {
           return { month: format(trendMonth, "MMM"), members: null };
         }
 
-        const trendMonthStart = new Date(
-          trendMonth.getFullYear(),
-          trendMonth.getMonth(),
-          1
+        const trendMonthStart = fromZonedTime(
+          new Date(trendMonth.getFullYear(), trendMonth.getMonth(), 1),
+          STUDIO_TZ,
         );
-        const trendMonthEnd = new Date(
-          trendMonth.getFullYear(),
-          trendMonth.getMonth() + 1,
-          0,
-          23,
-          59,
-          59
+        const nextTrendMonthStart = fromZonedTime(
+          new Date(trendMonth.getFullYear(), trendMonth.getMonth() + 1, 1),
+          STUDIO_TZ,
         );
         const members = await prisma.member.count({
           where: {
             createdAt: {
               gte: trendMonthStart,
-              lte: trendMonthEnd,
+              lt: nextTrendMonthStart,
             },
           },
         });
@@ -204,6 +214,13 @@ export async function GET(request: NextRequest) {
       mostPopularPackage,
       sixMonthMemberTrend,
     };
+        return stats;
+      },
+      ["admin-member-stats"],
+      { revalidate: 180 },
+    );
+
+    const stats = await getStats(year, month);
 
     return NextResponse.json({
       year,

@@ -37,7 +37,7 @@ interface Purchase {
         id: string;
         name: string;
         priceTHB: number;
-        classCount: number | null;
+        classCount: number;
         validityDays: number;
     } | null;
     classOccurrence: {
@@ -230,7 +230,7 @@ export default function AdminSlipsPage() {
                                                                 {purchase.offer.name}
                                                             </span>
                                                             <span className="font-sans text-caption text-neutral-text-3">
-                                                                {purchase.offer.classCount ?? "Unlimited"} classes · {purchase.offer.validityDays}d
+                                                                {purchase.offer.classCount} classes · {purchase.offer.validityDays}d
                                                             </span>
                                                         </>
                                                     ) : (
@@ -348,7 +348,7 @@ export default function AdminSlipsPage() {
                                                         {selectedPurchase.offer.name}
                                                     </span>
                                                     <span className="text-caption text-neutral-text-2">
-                                                        {selectedPurchase.offer.classCount ?? "Unlimited"} class credits · Valid for {selectedPurchase.offer.validityDays} days
+                                                        {selectedPurchase.offer.classCount} class credits · Valid for {selectedPurchase.offer.validityDays} days
                                                     </span>
                                                 </>
                                             ) : (

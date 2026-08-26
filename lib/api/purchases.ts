@@ -2,7 +2,18 @@
 
 import { useLiff } from "@/lib/liff";
 import type { PackageOffer } from "@/lib/api/packages";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMember } from "@/lib/profile/use-member";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 export type PurchaseStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED" | "EXHAUSTED";
 
@@ -22,18 +33,16 @@ export interface Purchase {
   className: string | null;
 }
 
-export interface ActivePackageView {
-  purchase: Purchase;
-  offer: PackageOffer;
-  classesRemaining: number | null;
+export interface NextExpiryView {
+  classesRemaining: number;
   expiresAt: Date;
-  isUnlimited: boolean;
 }
 
 export interface UsePurchasesResult {
   purchases: Purchase[];
   pendingPurchases: Purchase[];
-  activePackage: ActivePackageView | null;
+  remainingClasses: number;
+  nextExpiry: NextExpiryView | null;
   loading: boolean;
   error: string | null;
   uploadSlip: (file: File) => Promise<string>;
@@ -42,13 +51,18 @@ export interface UsePurchasesResult {
 }
 
 const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+const PurchasesContext = createContext<UsePurchasesResult | null>(null);
 
-export function usePurchases(): UsePurchasesResult {
+function usePurchasesState(): UsePurchasesResult {
   const { liff, status, isLoggedIn } = useLiff();
+  const { member } = useMember();
+  const memberId = member?.id ?? null;
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [activePackage, setActivePackage] = useState<ActivePackageView | null>(null);
+  const [remainingClasses, setRemainingClasses] = useState(0);
+  const [nextExpiry, setNextExpiry] = useState<NextExpiryView | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadedMemberId = useRef<string | null>(null);
 
   const authHeaders = useCallback((): Record<string, string> => {
     if (isStandalone) return {};
@@ -58,6 +72,13 @@ export function usePurchases(): UsePurchasesResult {
   }, [liff]);
 
   const refresh = useCallback(async () => {
+    if (!memberId) {
+      setPurchases([]);
+      setRemainingClasses(0);
+      setNextExpiry(null);
+      setLoading(true);
+      return;
+    }
     if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) return;
 
     setLoading(true);
@@ -65,7 +86,7 @@ export function usePurchases(): UsePurchasesResult {
       const res = await fetch("/api/purchases", { headers: authHeaders() });
       if (!res.ok) throw new Error("Failed to fetch purchases");
       const data = await res.json();
-      const packagePurchases = (data.activePackages as Array<any>).map((pkg) => ({
+      const packagePurchases = (data.packages as Array<any>).map((pkg) => ({
         id: pkg.id,
         offerId: pkg.packageOfferId,
         offer: pkg.offer as PackageOffer,
@@ -99,18 +120,12 @@ export function usePurchases(): UsePurchasesResult {
         }));
       const nextPurchases = [...packagePurchases, ...pendingPurchases];
       setPurchases(nextPurchases);
-      const active = packagePurchases
-        .filter((purchase) => purchase.status === "APPROVED" && purchase.offer && purchase.expiresAt)
-        .filter((purchase) => purchase.classesRemaining !== 0)
-        .sort((a, b) => new Date(a.expiresAt!).getTime() - new Date(b.expiresAt!).getTime())[0];
-      setActivePackage(
-        active && active.offer && active.expiresAt
+      setRemainingClasses(data.remainingClasses ?? 0);
+      setNextExpiry(
+        data.nextExpiry
           ? {
-              purchase: active,
-              offer: active.offer,
-              classesRemaining: active.classesRemaining,
-              expiresAt: new Date(active.expiresAt),
-              isUnlimited: active.classesRemaining === null,
+              classesRemaining: data.nextExpiry.classesRemaining,
+              expiresAt: new Date(data.nextExpiry.expiresAt),
             }
           : null,
       );
@@ -119,15 +134,23 @@ export function usePurchases(): UsePurchasesResult {
       const message = err instanceof Error ? err.message : "Failed to fetch purchases";
       setError(message);
       setPurchases([]);
-      setActivePackage(null);
+      setRemainingClasses(0);
+      setNextExpiry(null);
     } finally {
       setLoading(false);
     }
-  }, [authHeaders, isLoggedIn, liff, status]);
+  }, [authHeaders, isLoggedIn, liff, memberId, status]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (!memberId) {
+      loadedMemberId.current = null;
+      void refresh();
+      return;
+    }
+    if (loadedMemberId.current === memberId) return;
+    loadedMemberId.current = memberId;
+    void refresh();
+  }, [memberId, refresh]);
 
   const uploadSlip = useCallback(async (file: File): Promise<string> => {
     const form = new FormData();
@@ -165,5 +188,28 @@ export function usePurchases(): UsePurchasesResult {
     [purchases],
   );
 
-  return { purchases, pendingPurchases, activePackage, loading, error, uploadSlip, createPending, refresh };
+  return {
+    purchases,
+    pendingPurchases,
+    remainingClasses,
+    nextExpiry,
+    loading,
+    error,
+    uploadSlip,
+    createPending,
+    refresh,
+  };
+}
+
+export function PurchasesProvider({ children }: { children: ReactNode }) {
+  const value = usePurchasesState();
+  return createElement(PurchasesContext.Provider, { value }, children);
+}
+
+export function usePurchases(): UsePurchasesResult {
+  const value = useContext(PurchasesContext);
+  if (!value) {
+    throw new Error("usePurchases must be used within PurchasesProvider");
+  }
+  return value;
 }

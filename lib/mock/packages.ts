@@ -4,7 +4,6 @@ export type PackageType =
     | "CLASSES_5"
     | "CLASSES_10"
     | "CLASSES_20"
-    | "UNLIMITED"
     | "WALK_IN";
 
 export interface PackageOffer {
@@ -14,8 +13,8 @@ export interface PackageOffer {
     priceTHB: number;
     /** Optional discounted price; null/undefined means no discount. */
     discountPriceTHB?: number | null;
-    /** Number of classes; null for UNLIMITED + WALK_IN handled separately. */
-    classCount: number | null;
+    /** Number of classes granted by this offer. */
+    classCount: number;
     validityDays: number;
     tagline: string;
     perks: string[];

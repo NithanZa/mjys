@@ -19,7 +19,7 @@ export default async function AdminDashboardPage() {
     const tomorrow = addDays(today, 1);
 
     // Fetch dashboard stats from Prisma database
-    const [classesTodayCount, pendingSlipsCount, totalMembersCount, activePackagesCount] = await Promise.all([
+    const [classesTodayCount, pendingSlipsCount, totalMembersCount, membersWithClassesCount] = await Promise.all([
         prisma.classOccurrence.count({
             where: {
                 startsAt: {
@@ -35,9 +35,14 @@ export default async function AdminDashboardPage() {
             },
         }),
         prisma.member.count(),
-        prisma.package.count({
+        prisma.member.count({
             where: {
-                status: "ACTIVE",
+                packages: {
+                    some: {
+                        expiresAt: { gte: new Date() },
+                        classesRemaining: { gt: 0 },
+                    },
+                },
             },
         }),
     ]);
@@ -67,8 +72,8 @@ export default async function AdminDashboardPage() {
             href: "/admin/members",
         },
         {
-            name: "Active Member Packages",
-            value: activePackagesCount,
+            name: "Members With Classes Left",
+            value: membersWithClassesCount,
             icon: TrendingUp,
             color: "bg-primary-100 text-primary-700 border-primary-200",
             href: "/admin/members",

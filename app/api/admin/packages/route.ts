@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -48,15 +49,16 @@ export async function POST(request: NextRequest) {
         } = body;
 
         // Validation
-        if (!name || !type || priceTHB === undefined || !validityDays || !tagline || sortOrder === undefined) {
+        const parsedClassCount = parseInt(classCount, 10);
+        if (!name || !type || priceTHB === undefined || !validityDays || !tagline || sortOrder === undefined || !Number.isInteger(parsedClassCount) || parsedClassCount < 1) {
             return NextResponse.json(
-                { error: "Missing required fields: name, type, priceTHB, validityDays, tagline, sortOrder" },
+                { error: "Missing or invalid required fields. Class count must be at least 1." },
                 { status: 400 },
             );
         }
 
         // Validate type is valid PackageType enum
-        const validTypes = ["CLASSES_5", "CLASSES_10", "CLASSES_20", "UNLIMITED", "WALK_IN"];
+        const validTypes = ["CLASSES_5", "CLASSES_10", "CLASSES_20", "WALK_IN"];
         if (!validTypes.includes(type)) {
             return NextResponse.json(
                 { error: `Invalid package type. Must be one of: ${validTypes.join(", ")}` },
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
                 type,
                 priceTHB: parseInt(priceTHB, 10),
                 discountPriceTHB: discountPriceTHB !== null && discountPriceTHB !== undefined && discountPriceTHB !== "" ? parseInt(discountPriceTHB, 10) : null,
-                classCount: classCount !== null && classCount !== undefined ? parseInt(classCount, 10) : null,
+                classCount: parsedClassCount,
                 validityDays: parseInt(validityDays, 10),
                 tagline,
                 perks: Array.isArray(perks) ? perks : [],
@@ -80,6 +82,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        expireCacheTag(CACHE_TAGS.packageOffers);
         return NextResponse.json({ success: true, offer });
     } catch (error) {
         console.error("[api-admin-packages-post] Error creating package offer:", error);

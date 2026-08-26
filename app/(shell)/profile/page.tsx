@@ -38,7 +38,7 @@ export default function ProfilePage() {
         await reset();
         window.location.replace("/");
     };
-    const { activePackage } = usePurchases();
+    const { nextExpiry } = usePurchases();
     const { history: classHistory } = useClassHistory();
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -135,12 +135,11 @@ export default function ProfilePage() {
                     classesAttended={member.classesAttended}
                 />
 
-                {/* 2. Package expiry alert (shows only when ≤7 days left) */}
-                {activePackage && activePackage.expiresAt && (
+                {/* 2. Remaining-classes expiry alert (shows only when ≤7 days left) */}
+                {nextExpiry && (
                     <PackageAlertBanner
-                        packageName={activePackage.offer.name}
-                        expiresAt={activePackage.expiresAt.toISOString()}
-                        classesRemaining={activePackage.classesRemaining ?? 0}
+                        expiresAt={nextExpiry.expiresAt.toISOString()}
+                        classesRemaining={nextExpiry.classesRemaining}
                     />
                 )}
 

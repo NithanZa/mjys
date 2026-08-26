@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
 import Papa from "papaparse";
+import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -223,6 +224,11 @@ export async function POST(request: NextRequest) {
                 skipDuplicates: false,
             });
         });
+
+        expireCacheTag(CACHE_TAGS.classes);
+        if (newInstructorNames.length > 0) {
+            expireCacheTag(CACHE_TAGS.instructors);
+        }
 
         return NextResponse.json({
             success: true,

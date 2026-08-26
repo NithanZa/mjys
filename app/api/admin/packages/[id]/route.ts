@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export async function PATCH(
         const updateData: any = {};
         if (name !== undefined) updateData.name = name;
         if (type !== undefined) {
-            const validTypes = ["CLASSES_5", "CLASSES_10", "CLASSES_20", "UNLIMITED", "WALK_IN"];
+            const validTypes = ["CLASSES_5", "CLASSES_10", "CLASSES_20", "WALK_IN"];
             if (!validTypes.includes(type)) {
                 return NextResponse.json(
                     { error: `Invalid package type. Must be one of: ${validTypes.join(", ")}` },
@@ -36,7 +37,16 @@ export async function PATCH(
         if (discountPriceTHB !== undefined) {
             updateData.discountPriceTHB = discountPriceTHB !== null && discountPriceTHB !== "" ? parseInt(discountPriceTHB, 10) : null;
         }
-        if (classCount !== undefined) updateData.classCount = classCount !== null ? parseInt(classCount, 10) : null;
+        if (classCount !== undefined) {
+            const parsedClassCount = parseInt(classCount, 10);
+            if (!Number.isInteger(parsedClassCount) || parsedClassCount < 1) {
+                return NextResponse.json(
+                    { error: "Class count must be at least 1." },
+                    { status: 400 },
+                );
+            }
+            updateData.classCount = parsedClassCount;
+        }
         if (validityDays !== undefined) updateData.validityDays = parseInt(validityDays, 10);
         if (tagline !== undefined) updateData.tagline = tagline;
         if (perks !== undefined) updateData.perks = perks;
@@ -49,6 +59,7 @@ export async function PATCH(
             data: updateData,
         });
 
+        expireCacheTag(CACHE_TAGS.packageOffers);
         return NextResponse.json({ success: true, offer: updated });
     } catch (error) {
         console.error("[api-admin-packages-patch] Error updating package offer:", error);
@@ -137,6 +148,7 @@ export async function DELETE(
             });
         }
 
+        expireCacheTag(CACHE_TAGS.packageOffers);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("[api-admin-packages-delete] Error deleting package offer:", error);

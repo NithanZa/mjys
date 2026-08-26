@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { parseISO } from "date-fns";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { usableLotsWhere } from "@/lib/packages/balance";
+import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +45,11 @@ export async function PATCH(
                         classOccurrenceId: id,
                         status: "BOOKED",
                     },
+                    include: {
+                        consumedPackage: {
+                            include: { offer: true },
+                        },
+                    },
                 });
 
                 // Refund each booked member (skip package refund for special classes)
@@ -55,19 +62,30 @@ export async function PATCH(
 
                     // Only refund package credits for normal classes
                     if (!occurrence.isSpecial) {
-                        const activePkg = await tx.package.findFirst({
-                            where: {
-                                memberId: booking.memberId,
-                                packageOfferId: { not: "pkg_walkin" },
-                                status: { in: ["ACTIVE", "EXHAUSTED"] },
-                                expiresAt: { gte: new Date() },
-                            },
-                            orderBy: { expiresAt: "desc" },
-                        });
+                        const now = new Date();
+                        let creditLot = booking.consumedPackage;
+                        if (!creditLot) {
+                            creditLot = await tx.package.findFirst({
+                                where: {
+                                    memberId: booking.memberId,
+                                    ...usableLotsWhere(now),
+                                    offer: { type: { not: "WALK_IN" } },
+                                },
+                                include: { offer: true },
+                                orderBy: [
+                                    { expiresAt: "asc" },
+                                    { createdAt: "asc" },
+                                ],
+                            });
+                        }
 
-                        if (activePkg && activePkg.classesRemaining !== null) {
+                        if (
+                            creditLot &&
+                            creditLot.offer.type !== "WALK_IN" &&
+                            creditLot.expiresAt >= now
+                        ) {
                             await tx.package.update({
-                                where: { id: activePkg.id },
+                                where: { id: creditLot.id },
                                 data: {
                                     classesRemaining: { increment: 1 },
                                     status: "ACTIVE",
@@ -92,6 +110,7 @@ export async function PATCH(
                 return updated;
             });
 
+            expireCacheTag(CACHE_TAGS.classes);
             return NextResponse.json({ success: true, occurrence: result });
         }
 
@@ -151,6 +170,7 @@ export async function PATCH(
             },
         });
 
+        expireCacheTag(CACHE_TAGS.classes);
         return NextResponse.json({ success: true, occurrence: updated });
     } catch (error: any) {
         console.error("[api-admin-classes-patch] Error updating class:", error);
@@ -196,6 +216,7 @@ export async function DELETE(
             where: { id },
         });
 
+        expireCacheTag(CACHE_TAGS.classes);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("[api-admin-classes-delete] Error deleting class:", error);

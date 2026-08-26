@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { verifyLineIdToken } from "@/lib/line/verify-id-token";
 import { parseSessionCookie } from "@/lib/standalone-auth";
 import type { Member } from "@/generated/prisma/client";
+import { usableLotsWhere } from "@/lib/packages/balance";
+import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -140,16 +142,17 @@ export async function POST(request: NextRequest) {
         }
 
         const result = await prisma.$transaction(async (tx) => {
-            // 1. Fetch member with their active packages
+            const now = new Date();
+            // 1. Fetch member with their usable credit lots
             const member = await tx.member.findUnique({
                 where: { id: resolvedMember.id },
                 include: {
                     packages: {
-                        where: {
-                            status: "ACTIVE",
-                            expiresAt: { gte: new Date() },
-                        },
-                        orderBy: { expiresAt: "asc" },
+                        where: usableLotsWhere(now),
+                        orderBy: [
+                            { expiresAt: "asc" },
+                            { createdAt: "asc" },
+                        ],
                     },
                 },
             });
@@ -178,6 +181,7 @@ export async function POST(request: NextRequest) {
             if (duplicate) throw new Error("ALREADY_BOOKED");
 
             // 4. Entitlement check — branch on isSpecial
+            let consumedPackageId: string | null = null;
             if (occurrence.isSpecial) {
                 // Special classes require an approved SPECIAL_CLASS purchase for this exact occurrence.
                 // Package credits are never consumed.
@@ -191,28 +195,37 @@ export async function POST(request: NextRequest) {
                 });
                 if (!approvedPurchase) throw new Error("SPECIAL_ADMISSION_REQUIRED");
             } else {
-                // Normal class: consume soonest-expiring active package if one exists
-                const activePkg = member.packages[0];
-                if (activePkg) {
-                    if (
-                        activePkg.classesRemaining !== null &&
-                        activePkg.classesRemaining <= 0
-                    ) {
-                        throw new Error("PACKAGE_EXHAUSTED");
-                    }
-                    if (activePkg.classesRemaining !== null) {
-                        await tx.package.update({
-                            where: { id: activePkg.id },
-                            data: {
-                                classesRemaining: { decrement: 1 },
-                                status:
-                                    activePkg.classesRemaining - 1 === 0
-                                        ? "EXHAUSTED"
-                                        : "ACTIVE",
-                            },
-                        });
-                    }
-                }
+                // Normal class: require and consume the soonest-expiring lot.
+                const creditLot = member.packages[0];
+                if (!creditLot) throw new Error("NO_REMAINING_CLASSES");
+
+                // The remaining-count predicate prevents concurrent requests
+                // from spending the final class twice.
+                const debit = await tx.package.updateMany({
+                    where: {
+                        id: creditLot.id,
+                        classesRemaining: { gt: 0 },
+                        expiresAt: { gte: now },
+                    },
+                    data: {
+                        classesRemaining: { decrement: 1 },
+                    },
+                });
+                if (debit.count !== 1) throw new Error("NO_REMAINING_CLASSES");
+                const debitedLot = await tx.package.findUniqueOrThrow({
+                    where: { id: creditLot.id },
+                    select: { classesRemaining: true },
+                });
+                await tx.package.update({
+                    where: { id: creditLot.id },
+                    data: {
+                        status:
+                            debitedLot.classesRemaining === 0
+                                ? "EXHAUSTED"
+                                : "ACTIVE",
+                    },
+                });
+                consumedPackageId = creditLot.id;
             }
 
             // 5. Atomic increment of bookedCount on class occurrence
@@ -228,6 +241,7 @@ export async function POST(request: NextRequest) {
                 data: {
                     memberId: member.id,
                     classOccurrenceId,
+                    consumedPackageId,
                     status: "BOOKED",
                 },
             });
@@ -235,6 +249,7 @@ export async function POST(request: NextRequest) {
             return { attendance, occurrence: updatedOccurrence };
         });
 
+        expireCacheTag(CACHE_TAGS.classes);
         return NextResponse.json({ success: true, booking: result.attendance });
     } catch (error: any) {
         console.error("[api-bookings-post] Error booking class:", error);
@@ -254,8 +269,11 @@ export async function POST(request: NextRequest) {
         if (msg === "ALREADY_BOOKED") {
             return NextResponse.json({ error: "You already booked this class." }, { status: 409 });
         }
-        if (msg === "PACKAGE_EXHAUSTED") {
-            return NextResponse.json({ error: "Your package is out of classes." }, { status: 403 });
+        if (msg === "NO_REMAINING_CLASSES") {
+            return NextResponse.json(
+                { error: "You have no classes left. Buy a pack to book." },
+                { status: 403 },
+            );
         }
         if (msg === "SPECIAL_ADMISSION_REQUIRED") {
             return NextResponse.json(
@@ -317,6 +335,9 @@ export async function DELETE(request: NextRequest) {
                 },
                 include: {
                     classOccurrence: true,
+                    consumedPackage: {
+                        include: { offer: true },
+                    },
                 },
             });
 
@@ -359,23 +380,36 @@ export async function DELETE(request: NextRequest) {
 
             // 5. Refund package class if cancellation is early (not late) — only for normal classes
             if (!isLateCancel && !attendance.classOccurrence.isSpecial) {
-                // Find member's active packages or packages that were exhausted recently
-                const activePkg = await tx.package.findFirst({
-                    where: {
-                        memberId: member.id,
-                        packageOfferId: { not: "pkg_walkin" }, // Walk-ins typically not refundable or handled differently
-                        status: { in: ["ACTIVE", "EXHAUSTED"] },
-                        expiresAt: { gte: new Date() },
-                    },
-                    orderBy: { expiresAt: "desc" },
-                });
+                const nowDate = new Date();
+                let creditLot = attendance.consumedPackage;
 
-                if (activePkg && activePkg.classesRemaining !== null) {
+                // Legacy bookings have no consumedPackageId. Restore to the
+                // soonest-expiring usable non-walk-in lot as a safe fallback.
+                if (!creditLot) {
+                    creditLot = await tx.package.findFirst({
+                        where: {
+                            memberId: member.id,
+                            ...usableLotsWhere(nowDate),
+                            offer: { type: { not: "WALK_IN" } },
+                        },
+                        include: { offer: true },
+                        orderBy: [
+                            { expiresAt: "asc" },
+                            { createdAt: "asc" },
+                        ],
+                    });
+                }
+
+                if (
+                    creditLot &&
+                    creditLot.offer.type !== "WALK_IN" &&
+                    creditLot.expiresAt >= nowDate
+                ) {
                     await tx.package.update({
-                        where: { id: activePkg.id },
+                        where: { id: creditLot.id },
                         data: {
                             classesRemaining: { increment: 1 },
-                            status: "ACTIVE", // restore active status if previously exhausted
+                            status: "ACTIVE",
                         },
                     });
                 }
@@ -384,6 +418,7 @@ export async function DELETE(request: NextRequest) {
             return { isLateCancel };
         });
 
+        expireCacheTag(CACHE_TAGS.classes);
         return NextResponse.json({ success: true, isLateCancel: result.isLateCancel });
     } catch (error: any) {
         console.error("[api-bookings-delete] Error cancelling booking:", error);

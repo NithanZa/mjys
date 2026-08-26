@@ -1,11 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME } from "@/lib/standalone-auth";
+import { NextResponse } from "next/server";
+import { clearSessionCookie } from "@/lib/standalone-auth";
 
-export async function POST(request: NextRequest) {
-    const res = NextResponse.json({ success: true });
-    res.cookies.set(SESSION_COOKIE_NAME, "", {
-        path: "/",
-        maxAge: -1,
-    });
+export const dynamic = "force-dynamic";
+
+export async function POST() {
+    const res = NextResponse.json(
+        { success: true },
+        { headers: { "Cache-Control": "no-store" } },
+    );
+    clearSessionCookie(res);
     return res;
 }

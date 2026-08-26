@@ -56,7 +56,7 @@ export function MapEmbed({ className }: MapEmbedProps) {
                     icon={<MapPinIcon strokeWidth={1.75} className={iconClass} />}
                     label="Address (EN)"
                 >
-                    322/109 Soi Sua Yai Utit, Chankasem, Chatuchak, Bangkok 10900
+                    32/109 Soi Sua Yai Utit, Chankasem, Chatuchak, Bangkok 10900
                 </MapInfoTile>
                 <MapInfoTile
                     icon={<ClockIcon strokeWidth={1.75} className={iconClass} />}

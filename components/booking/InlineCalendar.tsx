@@ -11,15 +11,18 @@ import {
 } from "date-fns";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OccurrenceView } from "@/lib/api/classes";
 import Link from "next/link";
 
 export interface InlineCalendarProps {
     selected: Date | null;
     onSelect: (date: Date) => void;
+    onVisibleMonthChange?: (month: Date) => void;
     min: Date;
     max: Date;
+    initialMonth?: Date;
+    loading?: boolean;
     occurrences: OccurrenceView[];
     instructorId?: string;
     classType?: string;
@@ -32,8 +35,11 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 export function InlineCalendar({
     selected,
     onSelect,
+    onVisibleMonthChange,
     min,
     max,
+    initialMonth,
+    loading = false,
     occurrences: allOccurrences,
     instructorId = "all",
     classType = "all",
@@ -41,8 +47,18 @@ export function InlineCalendar({
     onlyAvailable = false,
 }: InlineCalendarProps) {
     const [cursor, setCursor] = useState<Date>(() =>
-        toZonedTime(selected || min, STUDIO_TZ),
+        toZonedTime(selected || initialMonth || min, STUDIO_TZ),
     );
+
+    useEffect(() => {
+        if (initialMonth) {
+            setCursor(toZonedTime(initialMonth, STUDIO_TZ));
+        }
+    }, [initialMonth]);
+
+    useEffect(() => {
+        onVisibleMonthChange?.(fromZonedTime(startOfMonth(cursor), STUDIO_TZ));
+    }, [cursor, onVisibleMonthChange]);
 
     const cells = useMemo(() => {
         const monthStart = startOfMonth(cursor);
@@ -236,6 +252,9 @@ export function InlineCalendar({
 
             {/* Legend / Info */}
             <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t border-neutral-line/10 font-sans text-caption text-neutral-text-2">
+                {loading && (
+                    <span className="text-[11px] text-neutral-text-3">Loading classes…</span>
+                )}
                 <div className="flex items-center gap-1.5">
                     <span className="inline-block h-2.5 w-5 rounded-xs border border-primary-200 bg-primary-100" />
                     <span className="text-[11px]">Regular Class</span>

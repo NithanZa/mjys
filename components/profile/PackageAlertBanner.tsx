@@ -3,14 +3,12 @@ import { differenceInCalendarDays } from "date-fns";
 import { PackageIcon } from "lucide-react";
 
 export interface PackageAlertBannerProps {
-    packageName: string;
     expiresAt: string;
     classesRemaining: number;
     className?: string;
 }
 
 export function PackageAlertBanner({
-    packageName,
     expiresAt,
     classesRemaining,
     className,
@@ -39,15 +37,13 @@ export function PackageAlertBanner({
             />
             <div className="min-w-0">
                 <p className="font-sans text-body-sm font-semibold text-amber-800">
-                    Package expires soon!
+                    Classes expire soon
                 </p>
                 <p className="mt-0.5 font-sans text-body-sm text-amber-700">
-                    Your{" "}
-                    <span className="font-semibold">{packageName}</span> expires{" "}
-                    <span className="font-semibold">{expLabel}</span>.{" "}
                     <span className="font-semibold">
-                        {classesRemaining} {classesRemaining === 1 ? "class" : "classes"} remaining.
-                    </span>
+                        {classesRemaining} {classesRemaining === 1 ? "class expires" : "classes expire"}
+                    </span>{" "}
+                    on <span className="font-semibold">{expLabel}</span>.
                 </p>
             </div>
         </div>

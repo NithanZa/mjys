@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { addDays } from "date-fns";
 import { getSignedSlipUrl } from "@/lib/storage";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -152,6 +153,9 @@ export async function POST(request: NextRequest) {
             return { pending: updatedPending, package: memberPackage, booking: attendance };
         });
 
+        if (result.booking) {
+            expireCacheTag(CACHE_TAGS.classes);
+        }
         return NextResponse.json({ success: true, ...result });
     } catch (error: any) {
         console.error("[api-admin-purchases-post] Error updating purchase status:", error);

@@ -20,7 +20,7 @@ export interface MockPurchase {
     offerId: string;
     status: PurchaseStatus;
     /** Set when status === APPROVED (or beyond). */
-    classesRemaining: number | null; // null = unlimited
+    classesRemaining: number | null; // null until a purchase is approved
     expiresAt: string | null; // ISO; null until APPROVED
     createdAt: string;
     reviewedAt: string | null;
@@ -29,12 +29,9 @@ export interface MockPurchase {
     rejectionReason?: string | null;
 }
 
-export interface ActivePackageView {
-    purchase: MockPurchase;
-    offer: PackageOffer;
-    classesRemaining: number | null;
+export interface NextExpiryView {
+    classesRemaining: number;
     expiresAt: Date;
-    isUnlimited: boolean;
 }
 
 // ---- snapshot caching for local storage fallback ----
@@ -77,7 +74,8 @@ const getServerSnapshot = (): MockPurchase[] => SERVER_SNAPSHOT;
 export interface UsePurchasesResult {
     purchases: MockPurchase[];
     pendingPurchases: MockPurchase[];
-    activePackage: ActivePackageView | null;
+    remainingClasses: number;
+    nextExpiry: NextExpiryView | null;
     loading: boolean;
     /** Upload a bank-transfer slip image. Returns its storage object path (or a data URL in mock mode). */
     uploadSlip: (file: File) => Promise<string>;
@@ -140,7 +138,7 @@ export function usePurchases(): UsePurchasesResult {
                 }));
 
                 // Map active Package table records
-                const packagesMapped: MockPurchase[] = data.activePackages.map((p: any) => ({
+                const packagesMapped: MockPurchase[] = data.packages.map((p: any) => ({
                     id: p.id,
                     offerId: p.packageOfferId,
                     status: p.status === "ACTIVE" ? "APPROVED" : p.status, // ACTIVE maps to APPROVED in mock terminology
@@ -175,7 +173,7 @@ export function usePurchases(): UsePurchasesResult {
 
     const activePurchases = isMock ? mockPurchases : realPurchases;
     const pendingPurchases = activePurchases.filter((p) => p.status === "PENDING");
-    const activePackage = pickActivePackage(activePurchases);
+    const balance = getBalance(activePurchases);
 
     const uploadSlip = useCallback(
         async (file: File): Promise<string> => {
@@ -371,7 +369,8 @@ export function usePurchases(): UsePurchasesResult {
     return {
         purchases: activePurchases,
         pendingPurchases,
-        activePackage,
+        remainingClasses: balance.remainingClasses,
+        nextExpiry: balance.nextExpiry,
         loading,
         uploadSlip,
         createPending,
@@ -381,9 +380,9 @@ export function usePurchases(): UsePurchasesResult {
     };
 }
 
-function pickActivePackage(
+function getBalance(
     purchases: MockPurchase[],
-): ActivePackageView | null {
+): { remainingClasses: number; nextExpiry: NextExpiryView | null } {
     const now = Date.now();
     const candidates = purchases
         .filter((p) => p.status === "APPROVED")
@@ -400,15 +399,25 @@ function pickActivePackage(
             return br - ar;
         });
 
-    const top = candidates[0];
-    if (!top) return null;
-    const offer = getPackageOffer(top.offerId);
-    if (!offer || !top.expiresAt) return null;
+    const remainingClasses = candidates.reduce(
+        (total, purchase) => total + (purchase.classesRemaining ?? 0),
+        0,
+    );
+    const top = candidates
+        .filter((purchase) => purchase.expiresAt)
+        .sort(
+            (a, b) =>
+                new Date(a.expiresAt!).getTime() -
+                new Date(b.expiresAt!).getTime(),
+        )[0];
     return {
-        purchase: top,
-        offer,
-        classesRemaining: top.classesRemaining,
-        expiresAt: new Date(top.expiresAt),
-        isUnlimited: top.classesRemaining === null,
+        remainingClasses,
+        nextExpiry:
+            top && top.expiresAt && top.classesRemaining !== null
+                ? {
+                      classesRemaining: top.classesRemaining,
+                      expiresAt: new Date(top.expiresAt),
+                  }
+                : null,
     };
 }
