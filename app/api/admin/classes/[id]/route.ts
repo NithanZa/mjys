@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { parseISO } from "date-fns";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { usableLotsWhere } from "@/lib/packages/balance";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,11 @@ export async function PATCH(
                         classOccurrenceId: id,
                         status: "BOOKED",
                     },
+                    include: {
+                        consumedPackage: {
+                            include: { offer: true },
+                        },
+                    },
                 });
 
                 // Refund each booked member (skip package refund for special classes)
@@ -55,19 +61,30 @@ export async function PATCH(
 
                     // Only refund package credits for normal classes
                     if (!occurrence.isSpecial) {
-                        const activePkg = await tx.package.findFirst({
-                            where: {
-                                memberId: booking.memberId,
-                                packageOfferId: { not: "pkg_walkin" },
-                                status: { in: ["ACTIVE", "EXHAUSTED"] },
-                                expiresAt: { gte: new Date() },
-                            },
-                            orderBy: { expiresAt: "desc" },
-                        });
+                        const now = new Date();
+                        let creditLot = booking.consumedPackage;
+                        if (!creditLot) {
+                            creditLot = await tx.package.findFirst({
+                                where: {
+                                    memberId: booking.memberId,
+                                    ...usableLotsWhere(now),
+                                    offer: { type: { not: "WALK_IN" } },
+                                },
+                                include: { offer: true },
+                                orderBy: [
+                                    { expiresAt: "asc" },
+                                    { createdAt: "asc" },
+                                ],
+                            });
+                        }
 
-                        if (activePkg && activePkg.classesRemaining !== null) {
+                        if (
+                            creditLot &&
+                            creditLot.offer.type !== "WALK_IN" &&
+                            creditLot.expiresAt >= now
+                        ) {
                             await tx.package.update({
-                                where: { id: activePkg.id },
+                                where: { id: creditLot.id },
                                 data: {
                                     classesRemaining: { increment: 1 },
                                     status: "ACTIVE",

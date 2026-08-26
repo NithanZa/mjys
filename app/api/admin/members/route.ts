@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { sumRemaining, usableLotsWhere } from "@/lib/packages/balance";
+import type { Prisma } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q");
 
     try {
-        const where: any = {};
+        const where: Prisma.MemberWhereInput = {};
         if (query) {
             where.OR = [
                 { displayName: { contains: query, mode: "insensitive" } },
@@ -25,6 +27,7 @@ export async function GET(request: NextRequest) {
             ];
         }
 
+        const now = new Date();
         const members = await prisma.member.findMany({
             where,
             orderBy: { createdAt: "desc" },
@@ -36,14 +39,13 @@ export async function GET(request: NextRequest) {
                     select: { checkedInAt: true },
                 },
                 packages: {
-                    where: { status: "ACTIVE" },
-                    select: { expiresAt: true },
+                    where: usableLotsWhere(now),
+                    select: { expiresAt: true, classesRemaining: true },
                 },
             },
         });
 
         // Enrich members with risk status
-        const now = new Date();
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const sevenDaysFromNow = new Date();
@@ -52,7 +54,7 @@ export async function GET(request: NextRequest) {
         const enrichedMembers = members.map((member) => {
             const lastCheckedIn = member.attendances[0]?.checkedInAt || null;
             const hasExpiringPackage = member.packages.some(
-                (pkg) => new Date(pkg.expiresAt) <= sevenDaysFromNow && new Date(pkg.expiresAt) > now
+                (pkg) => new Date(pkg.expiresAt) <= sevenDaysFromNow && new Date(pkg.expiresAt) >= now
             );
 
             let riskStatus: "active" | "inactive" | "expiring" = "active";
@@ -65,6 +67,7 @@ export async function GET(request: NextRequest) {
             return {
                 ...member,
                 lastCheckedInAt: lastCheckedIn,
+                remainingClasses: sumRemaining(member.packages),
                 riskStatus,
                 attendances: undefined,
                 packages: undefined,

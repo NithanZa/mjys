@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/admin/members/bulk-grant
- * Grants a package to multiple members.
+ * Grants a new dated package lot to multiple members, adding its classes to each balance.
  * Body: { memberIds: string[], packageOfferId: string }
  */
 export async function POST(request: NextRequest) {
@@ -42,6 +42,12 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+    if (!Number.isInteger(offer.classCount) || offer.classCount < 1) {
+      return NextResponse.json(
+        { error: "Package offer must grant at least one class" },
+        { status: 409 }
+      );
+    }
 
     // Verify all members exist
     const members = await prisma.member.findMany({
@@ -55,7 +61,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create packages for each member
+    // Create a separate dated lot for each member; pooled balances are derived from these lots.
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + offer.validityDays);
 
@@ -74,7 +80,7 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({
-      message: `Successfully granted package to ${packages.length} members`,
+      message: `Successfully added package classes for ${packages.length} members`,
       grantedCount: packages.length,
     });
   } catch (error) {

@@ -6,6 +6,7 @@ import { verifyAdmin } from "@/lib/admin-auth";
 import { addDays } from "date-fns";
 import type { Member } from "@/generated/prisma/client";
 import { getSignedSlipUrl } from "@/lib/storage";
+import { sumRemaining, syncLotStatus } from "@/lib/packages/balance";
 
 async function resolveMember(request: NextRequest): Promise<Member | null | { _err: string; _status: number }> {
     const authHeader = request.headers.get("Authorization");
@@ -28,7 +29,7 @@ function isAuthError(v: unknown): v is { _err: string; _status: number } {
 
 export const dynamic = "force-dynamic";
 
-// GET: Retrieve purchases and active packages for the logged-in member
+// GET: Retrieve purchases and the member's pooled remaining-class balance.
 export async function GET(request: NextRequest) {
     try {
         const result = await resolveMember(request);
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
         if (!result) return NextResponse.json({ error: "Member not registered" }, { status: 404 });
         const member = result;
 
-        const [pendingPurchases, activePackages] = await Promise.all([
+        const [pendingPurchases, packages] = await Promise.all([
             prisma.pendingPurchase.findMany({
                 where: { memberId: member.id },
                 include: {
@@ -61,7 +62,30 @@ export async function GET(request: NextRequest) {
             })),
         );
 
-        return NextResponse.json({ pendingPurchases: pendingPurchasesWithSignedSlips, activePackages });
+        const now = new Date();
+        const usablePackages = packages
+            .filter((lot) => lot.expiresAt >= now && lot.classesRemaining > 0)
+            .sort(
+                (a, b) =>
+                    a.expiresAt.getTime() - b.expiresAt.getTime() ||
+                    a.createdAt.getTime() - b.createdAt.getTime(),
+            );
+        const nextLot = usablePackages[0] ?? null;
+
+        return NextResponse.json({
+            pendingPurchases: pendingPurchasesWithSignedSlips,
+            packages: packages.map((lot) => ({
+                ...lot,
+                status: syncLotStatus(lot, now),
+            })),
+            remainingClasses: sumRemaining(usablePackages),
+            nextExpiry: nextLot
+                ? {
+                    classesRemaining: nextLot.classesRemaining,
+                    expiresAt: nextLot.expiresAt,
+                }
+                : null,
+        });
     } catch (error) {
         console.error("[api-purchases-get] Error fetching purchases:", error);
         return NextResponse.json({ error: "Database error" }, { status: 500 });

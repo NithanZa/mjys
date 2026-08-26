@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
+import type { Prisma } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +21,10 @@ export async function PATCH(
         const body = await request.json();
         const { name, type, priceTHB, discountPriceTHB, classCount, validityDays, tagline, perks, active, highlight, sortOrder } = body;
 
-        const updateData: any = {};
+        const updateData: Prisma.PackageOfferUpdateInput = {};
         if (name !== undefined) updateData.name = name;
         if (type !== undefined) {
-            const validTypes = ["CLASSES_5", "CLASSES_10", "CLASSES_20", "UNLIMITED", "WALK_IN"];
+            const validTypes = ["CLASSES_5", "CLASSES_10", "CLASSES_20", "WALK_IN"];
             if (!validTypes.includes(type)) {
                 return NextResponse.json(
                     { error: `Invalid package type. Must be one of: ${validTypes.join(", ")}` },
@@ -36,7 +37,16 @@ export async function PATCH(
         if (discountPriceTHB !== undefined) {
             updateData.discountPriceTHB = discountPriceTHB !== null && discountPriceTHB !== "" ? parseInt(discountPriceTHB, 10) : null;
         }
-        if (classCount !== undefined) updateData.classCount = classCount !== null ? parseInt(classCount, 10) : null;
+        if (classCount !== undefined) {
+            const parsedClassCount = Number(classCount);
+            if (!Number.isInteger(parsedClassCount) || parsedClassCount < 1) {
+                return NextResponse.json(
+                    { error: "classCount must be a positive integer" },
+                    { status: 400 },
+                );
+            }
+            updateData.classCount = parsedClassCount;
+        }
         if (validityDays !== undefined) updateData.validityDays = parseInt(validityDays, 10);
         if (tagline !== undefined) updateData.tagline = tagline;
         if (perks !== undefined) updateData.perks = perks;

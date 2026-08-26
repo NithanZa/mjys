@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { addDays, subMonths } from "date-fns";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { sumRemaining, syncLotStatus, usableLotsWhere } from "@/lib/packages/balance";
 
 export const dynamic = "force-dynamic";
 
@@ -109,9 +110,17 @@ export async function GET(
             };
         }
 
+        const usablePackages = packages.filter(
+            (pkg) => pkg.expiresAt >= now && pkg.classesRemaining > 0,
+        );
+
         return NextResponse.json({
             member,
-            packages,
+            remainingClasses: sumRemaining(usablePackages),
+            packages: packages.map((pkg) => ({
+                ...pkg,
+                status: syncLotStatus(pkg, now),
+            })),
             attendances,
             milestones,
             sixMonthAttendanceTrend,
@@ -120,6 +129,108 @@ export async function GET(
     } catch (error) {
         console.error("[api-admin-members-detail] Error loading member deep-dive:", error);
         return NextResponse.json({ error: "Failed to load member profile" }, { status: 500 });
+    }
+}
+
+/**
+ * PATCH /api/admin/members/[id]
+ * Sets the member's pooled unexpired remaining-class balance.
+ */
+export async function PATCH(
+    request: NextRequest,
+    props: { params: Promise<{ id: string }> },
+) {
+    const authError = await verifyAdmin(request);
+    if (authError) return authError;
+
+    const { id } = await props.params;
+
+    try {
+        const body = await request.json();
+        const target = body.remainingClasses;
+
+        if (typeof target !== "number" || !Number.isInteger(target) || target < 0) {
+            return NextResponse.json(
+                { error: "remainingClasses must be a nonnegative integer" },
+                { status: 400 },
+            );
+        }
+
+        const now = new Date();
+        const result = await prisma.$transaction(async (tx) => {
+            const member = await tx.member.findUnique({
+                where: { id },
+                select: { id: true },
+            });
+            if (!member) return { outcome: "not-found" as const };
+
+            const lots = await tx.package.findMany({
+                where: {
+                    memberId: id,
+                    ...usableLotsWhere(now),
+                },
+                orderBy: [
+                    { expiresAt: "asc" },
+                    { createdAt: "asc" },
+                ],
+            });
+
+            const current = sumRemaining(lots);
+            const delta = target - current;
+
+            if (delta > 0) {
+                const earliestLot = lots[0];
+                if (!earliestLot) return { outcome: "no-usable-lot" as const };
+
+                const classesRemaining = earliestLot.classesRemaining + delta;
+                await tx.package.update({
+                    where: { id: earliestLot.id },
+                    data: {
+                        classesRemaining,
+                        status: syncLotStatus({ ...earliestLot, classesRemaining }, now),
+                    },
+                });
+            } else if (delta < 0) {
+                let classesToRemove = -delta;
+
+                for (const lot of lots) {
+                    if (classesToRemove === 0) break;
+
+                    const currentLotBalance = lot.classesRemaining;
+                    const removed = Math.min(currentLotBalance, classesToRemove);
+                    const classesRemaining = currentLotBalance - removed;
+
+                    await tx.package.update({
+                        where: { id: lot.id },
+                        data: {
+                            classesRemaining,
+                            status: syncLotStatus({ ...lot, classesRemaining }, now),
+                        },
+                    });
+                    classesToRemove -= removed;
+                }
+            }
+
+            return { outcome: "updated" as const, remainingClasses: target };
+        });
+
+        if (result.outcome === "not-found") {
+            return NextResponse.json({ error: "Member profile not found" }, { status: 404 });
+        }
+        if (result.outcome === "no-usable-lot") {
+            return NextResponse.json(
+                { error: "This member has no usable package lot. Grant an offer first so the added classes have an expiry date." },
+                { status: 409 },
+            );
+        }
+
+        return NextResponse.json({
+            success: true,
+            remainingClasses: result.remainingClasses,
+        });
+    } catch (error) {
+        console.error("[api-admin-members-balance] Error setting pooled balance:", error);
+        return NextResponse.json({ error: "Failed to update remaining classes" }, { status: 500 });
     }
 }
 
@@ -154,6 +265,9 @@ export async function POST(
         }
         if (!offer) {
             return NextResponse.json({ error: "Package offer option not found" }, { status: 404 });
+        }
+        if (!Number.isInteger(offer.classCount) || offer.classCount < 1) {
+            return NextResponse.json({ error: "Package offer must grant at least one class" }, { status: 409 });
         }
 
         // Add a package atomically in the database

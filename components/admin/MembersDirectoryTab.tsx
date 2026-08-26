@@ -35,7 +35,7 @@ interface Member {
 
 interface Package {
     id: string;
-    classesRemaining: number | null;
+    classesRemaining: number;
     expiresAt: string;
     status: "ACTIVE" | "EXPIRED" | "EXHAUSTED";
     createdAt: string;
@@ -70,6 +70,14 @@ interface MembersDirectoryTabProps {
     onLoading?: (loading: boolean) => void;
 }
 
+interface PackageOfferChoice {
+    id: string;
+    name: string;
+    priceTHB: number;
+    classCount: number;
+    active: boolean;
+}
+
 export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
     const [members, setMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(true);
@@ -79,6 +87,9 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
     const [selectedMember, setSelectedMember] = useState<Member | null>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [packages, setPackages] = useState<Package[]>([]);
+    const [remainingClasses, setRemainingClasses] = useState(0);
+    const [balanceInput, setBalanceInput] = useState<number | "">(0);
+    const [savingBalance, setSavingBalance] = useState(false);
     const [attendances, setAttendances] = useState<Attendance[]>([]);
     const [milestones, setMilestones] = useState<Milestone[]>([]);
     const [sixMonthAttendanceTrend, setSixMonthAttendanceTrend] = useState<number[]>([]);
@@ -86,7 +97,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
 
     // Manual Grant state
     const [grantModalOpen, setGrantSheetOpen] = useState(false);
-    const [packageOffers, setPackageOffers] = useState<Array<{ id: string; name: string; priceTHB: number }>>([]);
+    const [packageOffers, setPackageOffers] = useState<PackageOfferChoice[]>([]);
     const [selectedOfferId, setSelectedOfferId] = useState("");
     const [submittingGrant, setSubmittingGrant] = useState(false);
 
@@ -178,6 +189,8 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
         setSelectedMember(member);
         setLoadingDetail(true);
         setPackages([]);
+        setRemainingClasses(0);
+        setBalanceInput(0);
         setAttendances([]);
         setMilestones([]);
         setSixMonthAttendanceTrend([]);
@@ -188,6 +201,8 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
             if (res.ok) {
                 const data = await res.json();
                 setPackages(data.packages);
+                setRemainingClasses(data.remainingClasses);
+                setBalanceInput(data.remainingClasses);
                 setAttendances(data.attendances);
                 setMilestones(data.milestones);
                 setSixMonthAttendanceTrend(data.sixMonthAttendanceTrend || []);
@@ -200,6 +215,39 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
         }
     };
 
+    const handleBalanceSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedMember) return;
+
+        const nextBalance = Number(balanceInput);
+        if (!Number.isInteger(nextBalance) || nextBalance < 0) {
+            alert("Remaining classes must be a nonnegative integer.");
+            return;
+        }
+
+        setSavingBalance(true);
+        try {
+            const res = await fetch(`/api/admin/members/${selectedMember.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ remainingClasses: nextBalance }),
+            });
+
+            if (res.ok) {
+                setRemainingClasses(nextBalance);
+                await handleMemberClick(selectedMember);
+            } else {
+                const err = await res.json();
+                alert(err.error || "Failed to update remaining classes.");
+            }
+        } catch (err) {
+            console.error("Failed to update remaining classes:", err);
+            alert("Network error.");
+        } finally {
+            setSavingBalance(false);
+        }
+    };
+
     // Load package choices for manual grant modal
     const handleOpenGrantModal = async () => {
         setGrantSheetOpen(true);
@@ -207,7 +255,9 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
             const res = await fetch("/api/admin/packages");
             if (res.ok) {
                 const data = await res.json();
-                setPackageOffers(data.offers.filter((o: any) => o.active));
+                setPackageOffers(
+                    (data.offers as PackageOfferChoice[]).filter((offer) => offer.active),
+                );
             }
         } catch (err) {
             console.error(err);
@@ -227,7 +277,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
             });
 
             if (res.ok) {
-                alert("Package has been manually granted directly to the member!");
+                alert("Package granted. Its classes were added to the member's pooled balance.");
                 setGrantSheetOpen(false);
                 setSelectedOfferId("");
                 // Refresh detail views
@@ -344,7 +394,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                 <div className="flex gap-3 items-center flex-wrap">
                     <select
                         value={levelFilter}
-                        onChange={(e) => setLevelFilter(e.target.value as any)}
+                        onChange={(e) => setLevelFilter(e.target.value as typeof levelFilter)}
                         className="h-9 px-3 rounded-sm bg-neutral-bg border border-neutral-line text-neutral-text focus-visible:outline-primary-500 text-body-sm"
                     >
                         <option value="">All Levels</option>
@@ -355,7 +405,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
 
                     <select
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value as any)}
+                        onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
                         className="h-9 px-3 rounded-sm bg-neutral-bg border border-neutral-line text-neutral-text focus-visible:outline-primary-500 text-body-sm"
                     >
                         <option value="">All Status</option>
@@ -695,11 +745,11 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                             </div>
                         </div>
 
-                        {/* Pass adjustments */}
+                        {/* Pooled class balance and dated lots */}
                         <div className="border-t border-neutral-line pt-5 flex flex-col gap-3">
                             <div className="flex justify-between items-center">
                                 <h3 className="font-display text-body font-semibold text-neutral-ink">
-                                    Active Packages & Passes
+                                    Class Balance & Package Lots
                                 </h3>
                                 <Button
                                     variant="secondary"
@@ -707,18 +757,69 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                                     leftIcon={<Plus className="h-4 w-4" />}
                                     onClick={handleOpenGrantModal}
                                 >
-                                    Grant Package Pass
+                                    Grant Offer
                                 </Button>
                             </div>
 
+                            <form
+                                onSubmit={handleBalanceSubmit}
+                                className="rounded-md border border-primary-200 bg-primary-50/50 p-4"
+                            >
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                                    <div>
+                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-primary-800">
+                                            Pooled Usable Balance
+                                        </p>
+                                        <p className="font-display text-display-sm font-bold text-neutral-ink">
+                                            {remainingClasses} classes
+                                        </p>
+                                        <p className="mt-1 text-caption text-neutral-text-3">
+                                            Sum of unexpired lots with classes remaining.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-end gap-2">
+                                        <div className="flex flex-col gap-1">
+                                            <label
+                                                htmlFor="member-remaining-classes"
+                                                className="text-caption font-medium text-neutral-text-2"
+                                            >
+                                                Set balance
+                                            </label>
+                                            <Input
+                                                id="member-remaining-classes"
+                                                type="number"
+                                                min={0}
+                                                step={1}
+                                                value={balanceInput}
+                                                onChange={(e) => setBalanceInput(e.target.value === "" ? "" : Number(e.target.value))}
+                                                className="w-24"
+                                                required
+                                            />
+                                        </div>
+                                        <Button
+                                            type="submit"
+                                            variant="primary"
+                                            size="sm"
+                                            loading={savingBalance}
+                                            disabled={savingBalance}
+                                        >
+                                            Save
+                                        </Button>
+                                    </div>
+                                </div>
+                            </form>
+
                             <div className="border border-neutral-line bg-neutral-card rounded-md p-3.5">
+                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-text-3">
+                                    Lot Breakdown
+                                </p>
                                 {loadingDetail ? (
                                     <div className="flex items-center justify-center p-4">
                                         <Loader className="h-5 w-5 animate-spin text-neutral-text-3" />
                                     </div>
                                 ) : packages.length === 0 ? (
                                     <div className="text-center text-caption text-neutral-text-3 italic py-2">
-                                        No active packages or passes.
+                                        No package lots. Grant an offer to create a dated lot.
                                     </div>
                                 ) : (
                                     <ul className="divide-y divide-neutral-line">
@@ -731,9 +832,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                                                             {pkg.offer.name}
                                                         </span>
                                                         <span className="font-sans text-caption text-neutral-text-3 mt-0.5">
-                                                            {pkg.classesRemaining !== null
-                                                                ? `${pkg.classesRemaining} classes remaining`
-                                                                : "Unlimited classes"}
+                                                            {pkg.classesRemaining} classes remaining
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
@@ -860,7 +959,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
             <Modal
                 open={grantModalOpen}
                 onClose={() => setGrantSheetOpen(false)}
-                title="Grant Package Pass Manually"
+                title="Grant Package Offer Manually"
             >
                 {selectedMember && (
                     <form onSubmit={handleGrantSubmit} className="flex flex-col gap-5 max-w-xl font-sans mt-4">
@@ -869,7 +968,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                             <div className="flex flex-col">
                                 <span className="font-bold">Administrative Override</span>
                                 <span className="mt-0.5">
-                                    Manually granting a package allocates it directly to the customer&apos;s active balances. Use this for physical cash payments at the counter or special loyalty awards.
+                                    Granting an offer creates a new dated lot and adds its classes to the member&apos;s pooled balance. Use this for physical cash payments at the counter or special loyalty awards.
                                 </span>
                             </div>
                         </div>
@@ -890,7 +989,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                                 <option value="">-- Choose Package --</option>
                                 {packageOffers.map((offer) => (
                                     <option key={offer.id} value={offer.id}>
-                                        {offer.name} (฿{offer.priceTHB.toLocaleString()})
+                                        {offer.name} ({offer.classCount} classes · ฿{offer.priceTHB.toLocaleString()})
                                     </option>
                                 ))}
                             </select>
@@ -911,7 +1010,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                                 loading={submittingGrant}
                                 disabled={submittingGrant}
                             >
-                                Grant Active Pass
+                                Grant & Add Classes
                             </Button>
                         </div>
                     </form>
@@ -1048,7 +1147,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                         <div className="flex flex-col">
                             <span className="font-bold">Bulk Grant Package</span>
                             <span className="mt-0.5">
-                                Grant the same package to {selectedMemberIds.size} selected members. Each member will receive an active package with the specified validity period.
+                                Grant the same offer to {selectedMemberIds.size} selected members. Each member receives a new dated lot whose classes are added to their pooled balance.
                             </span>
                         </div>
                     </div>
@@ -1069,7 +1168,7 @@ export function MembersDirectoryTab({ onLoading }: MembersDirectoryTabProps) {
                             <option value="">-- Choose Package --</option>
                             {packageOffers.map((offer) => (
                                 <option key={offer.id} value={offer.id}>
-                                    {offer.name} (฿{offer.priceTHB.toLocaleString()})
+                                    {offer.name} ({offer.classCount} classes · ฿{offer.priceTHB.toLocaleString()})
                                 </option>
                             ))}
                         </select>

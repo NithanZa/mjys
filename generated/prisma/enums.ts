@@ -32,7 +32,6 @@ export const PackageType = {
   CLASSES_5: 'CLASSES_5',
   CLASSES_10: 'CLASSES_10',
   CLASSES_20: 'CLASSES_20',
-  UNLIMITED: 'UNLIMITED',
   WALK_IN: 'WALK_IN'
 } as const
 
