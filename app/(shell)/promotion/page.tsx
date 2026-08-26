@@ -2,7 +2,7 @@
 
 import { TopBar } from "@/components/layout";
 import {
-  ActivePackageStrip,
+  RemainingClassesStrip,
   PackageCard,
   TransactionHistory,
 } from "@/components/promotion";
@@ -11,7 +11,7 @@ import { usePurchases } from "@/lib/api/purchases";
 import { useState, useEffect } from "react";
 
 export default function PromotionPage() {
-  const { activePackage, pendingPurchases, purchases } = usePurchases();
+  const { remainingClasses, nextExpiry, pendingPurchases, purchases } = usePurchases();
   const [offers, setOffers] = useState<PackageOffer[]>([]);
 
   useEffect(() => {
@@ -25,7 +25,10 @@ export default function PromotionPage() {
       <TopBar title="Packages" />
 
       <div className="flex flex-col gap-4">
-        <ActivePackageStrip active={activePackage} />
+        <RemainingClassesStrip
+          remainingClasses={remainingClasses}
+          nextExpiry={nextExpiry}
+        />
 
         {pendingPurchases.length > 0 && (
           <div className="rounded-md border border-warning-fg/30 bg-warning-bg px-3 py-2 font-sans text-body-sm text-warning-fg">

@@ -22,18 +22,16 @@ export interface Purchase {
   className: string | null;
 }
 
-export interface ActivePackageView {
-  purchase: Purchase;
-  offer: PackageOffer;
-  classesRemaining: number | null;
+export interface NextExpiryView {
+  classesRemaining: number;
   expiresAt: Date;
-  isUnlimited: boolean;
 }
 
 export interface UsePurchasesResult {
   purchases: Purchase[];
   pendingPurchases: Purchase[];
-  activePackage: ActivePackageView | null;
+  remainingClasses: number;
+  nextExpiry: NextExpiryView | null;
   loading: boolean;
   error: string | null;
   uploadSlip: (file: File) => Promise<string>;
@@ -41,12 +39,45 @@ export interface UsePurchasesResult {
   refresh: () => Promise<void>;
 }
 
+interface PackageWire {
+  id: string;
+  packageOfferId: string;
+  offer: PackageOffer;
+  status: "ACTIVE" | "EXPIRED" | "EXHAUSTED";
+  classesRemaining: number;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface PendingPurchaseWire {
+  id: string;
+  packageOfferId: string | null;
+  offer: PackageOffer | null;
+  kind: "PACKAGE" | "SPECIAL_CLASS";
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: string;
+  reviewedAt: string | null;
+  proofImageUrl: string | null;
+  rejectionReason: string | null;
+  amountTHB: number;
+  classOccurrence: { name: string } | null;
+}
+
+interface PurchasesWire {
+  packages: PackageWire[];
+  pendingPurchases: PendingPurchaseWire[];
+  remainingClasses: number;
+  nextExpiry: { classesRemaining: number; expiresAt: string } | null;
+}
+
 const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
 
 export function usePurchases(): UsePurchasesResult {
   const { liff, status, isLoggedIn } = useLiff();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [activePackage, setActivePackage] = useState<ActivePackageView | null>(null);
+  const [remainingClasses, setRemainingClasses] = useState(0);
+  const [nextExpiry, setNextExpiry] = useState<NextExpiryView | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,8 +95,8 @@ export function usePurchases(): UsePurchasesResult {
     try {
       const res = await fetch("/api/purchases", { headers: authHeaders() });
       if (!res.ok) throw new Error("Failed to fetch purchases");
-      const data = await res.json();
-      const packagePurchases = (data.activePackages as Array<any>).map((pkg) => ({
+      const data = (await res.json()) as PurchasesWire;
+      const packagePurchases: Purchase[] = data.packages.map((pkg) => ({
         id: pkg.id,
         offerId: pkg.packageOfferId,
         offer: pkg.offer as PackageOffer,
@@ -80,7 +111,7 @@ export function usePurchases(): UsePurchasesResult {
         amountTHB: pkg.offer.discountPriceTHB ?? pkg.offer.priceTHB,
         className: null,
       }));
-      const pendingPurchases = (data.pendingPurchases as Array<any>)
+      const pendingPurchases: Purchase[] = data.pendingPurchases
         .filter((purchase) => purchase.kind === "SPECIAL_CLASS" || purchase.status !== "APPROVED")
         .map((purchase) => ({
           id: purchase.id,
@@ -99,18 +130,12 @@ export function usePurchases(): UsePurchasesResult {
         }));
       const nextPurchases = [...packagePurchases, ...pendingPurchases];
       setPurchases(nextPurchases);
-      const active = packagePurchases
-        .filter((purchase) => purchase.status === "APPROVED" && purchase.offer && purchase.expiresAt)
-        .filter((purchase) => purchase.classesRemaining !== 0)
-        .sort((a, b) => new Date(a.expiresAt!).getTime() - new Date(b.expiresAt!).getTime())[0];
-      setActivePackage(
-        active && active.offer && active.expiresAt
+      setRemainingClasses(data.remainingClasses ?? 0);
+      setNextExpiry(
+        data.nextExpiry
           ? {
-              purchase: active,
-              offer: active.offer,
-              classesRemaining: active.classesRemaining,
-              expiresAt: new Date(active.expiresAt),
-              isUnlimited: active.classesRemaining === null,
+              classesRemaining: data.nextExpiry.classesRemaining,
+              expiresAt: new Date(data.nextExpiry.expiresAt),
             }
           : null,
       );
@@ -119,7 +144,8 @@ export function usePurchases(): UsePurchasesResult {
       const message = err instanceof Error ? err.message : "Failed to fetch purchases";
       setError(message);
       setPurchases([]);
-      setActivePackage(null);
+      setRemainingClasses(0);
+      setNextExpiry(null);
     } finally {
       setLoading(false);
     }
@@ -165,5 +191,15 @@ export function usePurchases(): UsePurchasesResult {
     [purchases],
   );
 
-  return { purchases, pendingPurchases, activePackage, loading, error, uploadSlip, createPending, refresh };
+  return {
+    purchases,
+    pendingPurchases,
+    remainingClasses,
+    nextExpiry,
+    loading,
+    error,
+    uploadSlip,
+    createPending,
+    refresh,
+  };
 }

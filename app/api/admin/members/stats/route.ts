@@ -96,21 +96,21 @@ export async function GET(request: NextRequest) {
           gte: monthStart,
           lte: monthEnd,
         },
-        status: { in: ["ACTIVE", "EXPIRED"] },
+        classesRemaining: { gt: 0 },
       },
     });
 
     // Classes left on table: sum of classesRemaining for expired packages
     const expiredPackages = await prisma.package.findMany({
       where: {
-        status: "EXPIRED",
+        expiresAt: { lt: new Date() },
         classesRemaining: { gt: 0 },
       },
       select: { classesRemaining: true },
     });
 
     const classesLeftOnTable = expiredPackages.reduce(
-      (sum, pkg) => sum + (pkg.classesRemaining || 0),
+      (sum, pkg) => sum + pkg.classesRemaining,
       0
     );
 

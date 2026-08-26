@@ -1,10 +1,10 @@
 export interface PackageOffer {
   id: string;
   name: string;
-  type: "CLASSES_5" | "CLASSES_10" | "CLASSES_20" | "UNLIMITED" | "WALK_IN";
+  type: "CLASSES_5" | "CLASSES_10" | "CLASSES_20" | "WALK_IN";
   priceTHB: number;
   discountPriceTHB: number | null;
-  classCount: number | null;
+  classCount: number;
   validityDays: number;
   tagline: string;
   perks: string[];

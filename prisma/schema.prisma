@@ -98,6 +98,7 @@ model Attendance {
   id                String           @id @default(cuid())
   memberId          String
   classOccurrenceId String
+  consumedPackageId String?
   status            AttendanceStatus @default(BOOKED)
   checkedInAt       DateTime?
   createdAt         DateTime         @default(now())
@@ -105,9 +106,11 @@ model Attendance {
 
   member           Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
   classOccurrence  ClassOccurrence @relation(fields: [classOccurrenceId], references: [id], onDelete: Cascade)
+  consumedPackage  Package?        @relation(fields: [consumedPackageId], references: [id], onDelete: SetNull)
 
   @@index([memberId])
   @@index([classOccurrenceId])
+  @@index([consumedPackageId])
 }
 
 // -----------------------------------------------------------------------------
@@ -146,7 +149,6 @@ enum PackageType {
   CLASSES_5
   CLASSES_10
   CLASSES_20
-  UNLIMITED
   WALK_IN
 }
 
@@ -156,7 +158,7 @@ model PackageOffer {
   type            PackageType
   priceTHB        Int
   discountPriceTHB Int?       // Optional discounted price; null means no discount
-  classCount      Int?        // Null for UNLIMITED
+  classCount      Int
   validityDays    Int
   tagline         String
   perks           String[]
@@ -211,7 +213,7 @@ model Package {
   id               String        @id @default(cuid())
   memberId         String
   packageOfferId   String
-  classesRemaining Int?          // Null for UNLIMITED
+  classesRemaining Int
   expiresAt        DateTime
   status           PackageStatus @default(ACTIVE)
   createdAt        DateTime      @default(now())
@@ -219,6 +221,7 @@ model Package {
 
   member Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
   offer  PackageOffer @relation(fields: [packageOfferId], references: [id], onDelete: Cascade)
+  consumedAttendances Attendance[]
 
   @@index([memberId])
   @@index([packageOfferId])

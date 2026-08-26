@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { studioToday } from "@/lib/dates";
 import { addDays } from "date-fns";
 import { Card, CardHeader, CardBody } from "@/components/ui";
+import { usableLotsWhere } from "@/lib/packages/balance";
 import {
     Calendar,
     Users,
@@ -19,7 +20,7 @@ export default async function AdminDashboardPage() {
     const tomorrow = addDays(today, 1);
 
     // Fetch dashboard stats from Prisma database
-    const [classesTodayCount, pendingSlipsCount, totalMembersCount, activePackagesCount] = await Promise.all([
+    const [classesTodayCount, pendingSlipsCount, totalMembersCount, membersWithUsableClassesCount] = await Promise.all([
         prisma.classOccurrence.count({
             where: {
                 startsAt: {
@@ -35,9 +36,11 @@ export default async function AdminDashboardPage() {
             },
         }),
         prisma.member.count(),
-        prisma.package.count({
+        prisma.member.count({
             where: {
-                status: "ACTIVE",
+                packages: {
+                    some: usableLotsWhere(new Date()),
+                },
             },
         }),
     ]);
@@ -67,8 +70,8 @@ export default async function AdminDashboardPage() {
             href: "/admin/members",
         },
         {
-            name: "Active Member Packages",
-            value: activePackagesCount,
+            name: "Members with Usable Classes",
+            value: membersWithUsableClassesCount,
             icon: TrendingUp,
             color: "bg-primary-100 text-primary-700 border-primary-200",
             href: "/admin/members",

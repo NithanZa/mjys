@@ -8,6 +8,7 @@ import { fetchOccurrence, OccurrenceView } from "@/lib/api/classes";
 import { INTENSITY_LABELS } from "@/lib/intensity";
 import { useBookings } from "@/lib/api/bookings";
 import { useSpecialAdmission } from "@/lib/api/special-purchases";
+import { usePurchases } from "@/lib/api/purchases";
 import { CalendarX, Clock, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
@@ -23,6 +24,11 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const { isBooked, isPaidSpecialBooking, book, cancel } = useBookings();
   const { admission } = useSpecialAdmission(occurrence?.isSpecial ? occurrenceId : null);
+  const {
+    remainingClasses,
+    loading: balanceLoading,
+    refresh: refreshPurchases,
+  } = usePurchases();
 
   useEffect(() => {
     let cancelled = false;
@@ -169,17 +175,31 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
                   </Button>
                 </Link>
               )
+            ) : !isSpecial && !booked && balanceLoading ? (
+              <Button size="md" variant="primary" disabled>
+                Checking balance…
+              </Button>
+            ) : !isSpecial && !booked && remainingClasses === 0 ? (
+              <Link href="/promotion">
+                <Button size="md" variant="primary">
+                  Buy classes to book
+                </Button>
+              </Link>
             ) : (
               <BookButton
                 isBooked={booked}
                 isFull={isFull}
-                onBook={() => book(occurrence.id)}
-                onCancel={() => {
+                onBook={async () => {
+                  await book(occurrence.id);
+                  await refreshPurchases();
+                }}
+                onCancel={async () => {
                   if (isPaidSpecialBooking(occurrence.id)) {
                     setContactModalOpen(true);
                     return;
                   }
-                  cancel(occurrence.id);
+                  await cancel(occurrence.id);
+                  await refreshPurchases();
                 }}
                 size="md"
               />

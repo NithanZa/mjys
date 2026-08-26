@@ -1473,6 +1473,7 @@ export const AttendanceScalarFieldEnum = {
   id: 'id',
   memberId: 'memberId',
   classOccurrenceId: 'classOccurrenceId',
+  consumedPackageId: 'consumedPackageId',
   status: 'status',
   checkedInAt: 'checkedInAt',
   createdAt: 'createdAt',

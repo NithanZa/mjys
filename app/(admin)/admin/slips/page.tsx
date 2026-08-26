@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { format, parseISO } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { STUDIO_TZ } from "@/lib/dates";
-import { Button, Card, Badge, Modal } from "@/components/ui";
+import { Button, Badge, Modal } from "@/components/ui";
 import {
     FileCheck,
     Check,
@@ -37,7 +37,7 @@ interface Purchase {
         id: string;
         name: string;
         priceTHB: number;
-        classCount: number | null;
+        classCount: number;
         validityDays: number;
     } | null;
     classOccurrence: {
@@ -75,6 +75,8 @@ export default function AdminSlipsPage() {
     }, [activeTab]);
 
     useEffect(() => {
+        // Reload when the selected approval queue changes.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadPurchases();
     }, [loadPurchases]);
 
@@ -93,7 +95,7 @@ export default function AdminSlipsPage() {
             const confirmMsg =
                 selectedPurchase.kind === "SPECIAL_CLASS" && selectedPurchase.classOccurrence
                     ? `Are you sure you want to mark this transaction as APPROVED?\n\nThis will automatically reserve and book ${selectedPurchase.member.displayName} into "${selectedPurchase.classOccurrence.name}".`
-                    : `Are you sure you want to mark this transaction as APPROVED?\n\nThis will instantly activate the package and credit classes to the member's account.`;
+                    : `Are you sure you want to mark this transaction as APPROVED?\n\nThis will create a dated package lot and add its classes to the member's pooled balance.`;
             if (!confirm(confirmMsg)) {
                 return;
             }
@@ -134,7 +136,7 @@ export default function AdminSlipsPage() {
                     Slip Approvals
                 </h1>
                 <p className="text-body-sm text-neutral-text-2">
-                    Verify and approve customer payment slips to activate class passes and packages.
+                    Verify payment slips and add purchased package classes to member balances.
                 </p>
             </div>
 
@@ -230,7 +232,7 @@ export default function AdminSlipsPage() {
                                                                 {purchase.offer.name}
                                                             </span>
                                                             <span className="font-sans text-caption text-neutral-text-3">
-                                                                {purchase.offer.classCount ?? "Unlimited"} classes · {purchase.offer.validityDays}d
+                                                                {purchase.offer.classCount} classes · {purchase.offer.validityDays}d
                                                             </span>
                                                         </>
                                                     ) : (
@@ -348,7 +350,7 @@ export default function AdminSlipsPage() {
                                                         {selectedPurchase.offer.name}
                                                     </span>
                                                     <span className="text-caption text-neutral-text-2">
-                                                        {selectedPurchase.offer.classCount ?? "Unlimited"} class credits · Valid for {selectedPurchase.offer.validityDays} days
+                                                        {selectedPurchase.offer.classCount} class credits · Valid for {selectedPurchase.offer.validityDays} days
                                                     </span>
                                                 </>
                                             ) : (
@@ -385,7 +387,7 @@ export default function AdminSlipsPage() {
                                     >
                                         {selectedPurchase.kind === "SPECIAL_CLASS"
                                             ? "Approve Payment & Grant Class Access"
-                                            : "Approve Payment & Activate Pack"}
+                                            : "Approve Payment & Add Package Classes"}
                                     </Button>
                                     <Button
                                         type="button"

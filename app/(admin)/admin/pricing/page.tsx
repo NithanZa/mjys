@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Button, Card, Badge, Modal, Input, TextField } from "@/components/ui";
+import { Button, Card, Badge, Modal, TextField } from "@/components/ui";
 import {
     Tag,
     Edit3,
@@ -10,18 +10,19 @@ import {
     Check,
     AlertTriangle,
     Loader,
-    Sparkles,
     Trash2,
     Plus,
 } from "lucide-react";
 
+type PackageType = "CLASSES_5" | "CLASSES_10" | "CLASSES_20" | "WALK_IN";
+
 interface Offer {
     id: string;
     name: string;
-    type: string;
+    type: PackageType;
     priceTHB: number;
     discountPriceTHB: number | null;
-    classCount: number | null;
+    classCount: number;
     validityDays: number;
     tagline: string;
     perks: string[];
@@ -45,7 +46,7 @@ export default function AdminPricingPage() {
 
     // Form states
     const [formName, setFormName] = useState("");
-    const [formType, setFormType] = useState("CLASSES_5");
+    const [formType, setFormType] = useState<PackageType>("CLASSES_5");
     const [formPrice, setFormPrice] = useState(0);
     const [formDiscountPrice, setFormDiscountPrice] = useState<number | "">("");
     const [formClassCount, setFormClassCount] = useState<number | "">(5);
@@ -72,6 +73,8 @@ export default function AdminPricingPage() {
     }, []);
 
     useEffect(() => {
+        // Initial client-side load from the admin API.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadOffers();
     }, [loadOffers]);
 
@@ -96,7 +99,7 @@ export default function AdminPricingPage() {
         setFormType(offer.type);
         setFormPrice(offer.priceTHB);
         setFormDiscountPrice(offer.discountPriceTHB ?? "");
-        setFormClassCount(offer.classCount ?? "");
+        setFormClassCount(offer.classCount);
         setFormTagline(offer.tagline);
         setFormPerksStr(offer.perks.join("\n"));
         setFormValidity(offer.validityDays);
@@ -155,7 +158,7 @@ export default function AdminPricingPage() {
                     type: formType,
                     priceTHB: formPrice,
                     discountPriceTHB: formDiscountPrice === "" ? null : parseInt(String(formDiscountPrice), 10),
-                    classCount: formType === "UNLIMITED" ? null : (formClassCount === "" ? null : parseInt(String(formClassCount), 10)),
+                    classCount: parseInt(String(formClassCount), 10),
                     validityDays: formValidity,
                     tagline: formTagline,
                     perks,
@@ -200,7 +203,7 @@ export default function AdminPricingPage() {
                     type: formType,
                     priceTHB: formPrice,
                     discountPriceTHB: formDiscountPrice === "" ? null : parseInt(String(formDiscountPrice), 10),
-                    classCount: formType === "UNLIMITED" ? null : (formClassCount === "" ? null : parseInt(String(formClassCount), 10)),
+                    classCount: parseInt(String(formClassCount), 10),
                     validityDays: formValidity,
                     tagline: formTagline,
                     perks,
@@ -356,7 +359,7 @@ export default function AdminPricingPage() {
                                         </span>
                                     )}
                                     <span className="font-sans text-caption text-neutral-text-3">
-                                        / {offer.classCount ?? "Unlimited"} class{offer.classCount !== 1 ? "es" : ""} · {offer.validityDays}d
+                                        / {offer.classCount} class{offer.classCount !== 1 ? "es" : ""} · {offer.validityDays}d
                                     </span>
                                 </div>
 
@@ -449,40 +452,31 @@ export default function AdminPricingPage() {
                                 required
                                 value={formType}
                                 onChange={(e) => {
-                                    const val = e.target.value;
+                                    const val = e.target.value as PackageType;
                                     setFormType(val);
                                     if (val === "CLASSES_5") setFormClassCount(5);
                                     else if (val === "CLASSES_10") setFormClassCount(10);
                                     else if (val === "CLASSES_20") setFormClassCount(20);
                                     else if (val === "WALK_IN") setFormClassCount(1);
-                                    else if (val === "UNLIMITED") setFormClassCount("");
                                 }}
                                 className="w-full h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500"
                             >
                                 <option value="CLASSES_5">5 Classes</option>
                                 <option value="CLASSES_10">10 Classes</option>
                                 <option value="CLASSES_20">20 Classes</option>
-                                <option value="UNLIMITED">Unlimited Classes</option>
                                 <option value="WALK_IN">Walk-in (1 Class)</option>
                             </select>
                         </div>
 
-                        {formType !== "UNLIMITED" ? (
-                            <TextField
-                                label="Class Count"
-                                type="number"
-                                value={formClassCount}
-                                onChange={(e) => setFormClassCount(e.target.value === "" ? "" : parseInt(e.target.value, 10))}
-                                required
-                            />
-                        ) : (
-                            <div className="flex flex-col gap-1.5 justify-end">
-                                <label className="text-caption font-medium text-neutral-text-2">Class Count</label>
-                                <div className="h-11 flex items-center px-3 bg-neutral-bg border border-neutral-line rounded-sm text-neutral-text-3 text-body-sm italic">
-                                    Unlimited (Null value)
-                                </div>
-                            </div>
-                        )}
+                        <TextField
+                            label="Class Count"
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={formClassCount}
+                            onChange={(e) => setFormClassCount(e.target.value === "" ? "" : parseInt(e.target.value, 10))}
+                            required
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -547,7 +541,7 @@ export default function AdminPricingPage() {
                             />
                             <div className="flex flex-col">
                                 <span className="text-body-sm font-semibold text-neutral-ink">Highlight / Feature</span>
-                                <span className="text-[10px] text-neutral-text-3">Add 'Best Value' label</span>
+                                <span className="text-[10px] text-neutral-text-3">Add &apos;Best Value&apos; label</span>
                             </div>
                         </label>
                     </div>
@@ -612,40 +606,31 @@ export default function AdminPricingPage() {
                                     required
                                     value={formType}
                                     onChange={(e) => {
-                                        const val = e.target.value;
+                                        const val = e.target.value as PackageType;
                                         setFormType(val);
                                         if (val === "CLASSES_5") setFormClassCount(5);
                                         else if (val === "CLASSES_10") setFormClassCount(10);
                                         else if (val === "CLASSES_20") setFormClassCount(20);
                                         else if (val === "WALK_IN") setFormClassCount(1);
-                                        else if (val === "UNLIMITED") setFormClassCount("");
                                     }}
                                     className="w-full h-11 px-3 rounded-sm bg-neutral-card border border-neutral-line text-neutral-text focus-visible:outline-primary-500"
                                 >
                                     <option value="CLASSES_5">5 Classes</option>
                                     <option value="CLASSES_10">10 Classes</option>
                                     <option value="CLASSES_20">20 Classes</option>
-                                    <option value="UNLIMITED">Unlimited Classes</option>
                                     <option value="WALK_IN">Walk-in (1 Class)</option>
                                 </select>
                             </div>
 
-                            {formType !== "UNLIMITED" ? (
-                                <TextField
-                                    label="Class Count"
-                                    type="number"
-                                    value={formClassCount}
-                                    onChange={(e) => setFormClassCount(e.target.value === "" ? "" : parseInt(e.target.value, 10))}
-                                    required
-                                />
-                            ) : (
-                                <div className="flex flex-col gap-1.5 justify-end">
-                                    <label className="text-caption font-medium text-neutral-text-2">Class Count</label>
-                                    <div className="h-11 flex items-center px-3 bg-neutral-bg border border-neutral-line rounded-sm text-neutral-text-3 text-body-sm italic">
-                                        Unlimited (Null value)
-                                    </div>
-                                </div>
-                            )}
+                            <TextField
+                                label="Class Count"
+                                type="number"
+                                min={1}
+                                step={1}
+                                value={formClassCount}
+                                onChange={(e) => setFormClassCount(e.target.value === "" ? "" : parseInt(e.target.value, 10))}
+                                required
+                            />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -709,7 +694,7 @@ export default function AdminPricingPage() {
                                 />
                                 <div className="flex flex-col">
                                     <span className="text-body-sm font-semibold text-neutral-ink">Highlight / Feature</span>
-                                    <span className="text-[10px] text-neutral-text-3">Add 'Best Value' label</span>
+                                    <span className="text-[10px] text-neutral-text-3">Add &apos;Best Value&apos; label</span>
                                 </div>
                             </label>
                         </div>
@@ -776,7 +761,7 @@ export default function AdminPricingPage() {
                                             Delete all current subscriptions
                                         </span>
                                         <span className="text-caption text-neutral-text-3">
-                                            Immediately gets rid of all current members' packages and pending purchases on this plan. Members will lose access to classes.
+                                            Immediately removes all current members&apos; package lots and pending purchases on this plan. Their pooled balances may decrease.
                                         </span>
                                     </div>
                                 </label>
@@ -824,7 +809,7 @@ export default function AdminPricingPage() {
                                         .filter((o) => o.id !== offerToDelete.id)
                                         .map((o) => (
                                             <option key={o.id} value={o.id}>
-                                                {o.name} (฿{o.priceTHB.toLocaleString()} · {o.classCount ?? "Unlimited"} classes)
+                                                {o.name} (฿{o.priceTHB.toLocaleString()} · {o.classCount} classes)
                                             </option>
                                         ))}
                                 </select>

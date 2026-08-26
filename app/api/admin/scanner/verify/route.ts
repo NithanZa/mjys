@@ -42,15 +42,6 @@ export async function POST(request: NextRequest) {
             // 1. Resolve member
             const member = await tx.member.findUnique({
                 where: { id: memberId },
-                include: {
-                    packages: {
-                        where: {
-                            status: "ACTIVE",
-                            expiresAt: { gte: new Date() },
-                        },
-                        orderBy: { expiresAt: "asc" },
-                    },
-                },
             });
 
             if (!member) throw new Error("MEMBER_NOT_FOUND");

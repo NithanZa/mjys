@@ -48,18 +48,26 @@ export async function POST(request: NextRequest) {
         } = body;
 
         // Validation
-        if (!name || !type || priceTHB === undefined || !validityDays || !tagline || sortOrder === undefined) {
+        if (!name || !type || priceTHB === undefined || !validityDays || !tagline || sortOrder === undefined || classCount === undefined) {
             return NextResponse.json(
-                { error: "Missing required fields: name, type, priceTHB, validityDays, tagline, sortOrder" },
+                { error: "Missing required fields: name, type, priceTHB, classCount, validityDays, tagline, sortOrder" },
                 { status: 400 },
             );
         }
 
         // Validate type is valid PackageType enum
-        const validTypes = ["CLASSES_5", "CLASSES_10", "CLASSES_20", "UNLIMITED", "WALK_IN"];
+        const validTypes = ["CLASSES_5", "CLASSES_10", "CLASSES_20", "WALK_IN"];
         if (!validTypes.includes(type)) {
             return NextResponse.json(
                 { error: `Invalid package type. Must be one of: ${validTypes.join(", ")}` },
+                { status: 400 },
+            );
+        }
+
+        const parsedClassCount = Number(classCount);
+        if (!Number.isInteger(parsedClassCount) || parsedClassCount < 1) {
+            return NextResponse.json(
+                { error: "classCount must be a positive integer" },
                 { status: 400 },
             );
         }
@@ -70,7 +78,7 @@ export async function POST(request: NextRequest) {
                 type,
                 priceTHB: parseInt(priceTHB, 10),
                 discountPriceTHB: discountPriceTHB !== null && discountPriceTHB !== undefined && discountPriceTHB !== "" ? parseInt(discountPriceTHB, 10) : null,
-                classCount: classCount !== null && classCount !== undefined ? parseInt(classCount, 10) : null,
+                classCount: parsedClassCount,
                 validityDays: parseInt(validityDays, 10),
                 tagline,
                 perks: Array.isArray(perks) ? perks : [],

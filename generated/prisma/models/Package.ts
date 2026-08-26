@@ -201,7 +201,7 @@ export type PackageGroupByOutputType = {
   id: string
   memberId: string
   packageOfferId: string
-  classesRemaining: number | null
+  classesRemaining: number
   expiresAt: Date
   status: $Enums.PackageStatus
   createdAt: Date
@@ -235,26 +235,28 @@ export type PackageWhereInput = {
   id?: Prisma.StringFilter<"Package"> | string
   memberId?: Prisma.StringFilter<"Package"> | string
   packageOfferId?: Prisma.StringFilter<"Package"> | string
-  classesRemaining?: Prisma.IntNullableFilter<"Package"> | number | null
+  classesRemaining?: Prisma.IntFilter<"Package"> | number
   expiresAt?: Prisma.DateTimeFilter<"Package"> | Date | string
   status?: Prisma.EnumPackageStatusFilter<"Package"> | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFilter<"Package"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Package"> | Date | string
   member?: Prisma.XOR<Prisma.MemberScalarRelationFilter, Prisma.MemberWhereInput>
   offer?: Prisma.XOR<Prisma.PackageOfferScalarRelationFilter, Prisma.PackageOfferWhereInput>
+  consumedAttendances?: Prisma.AttendanceListRelationFilter
 }
 
 export type PackageOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   memberId?: Prisma.SortOrder
   packageOfferId?: Prisma.SortOrder
-  classesRemaining?: Prisma.SortOrderInput | Prisma.SortOrder
+  classesRemaining?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   member?: Prisma.MemberOrderByWithRelationInput
   offer?: Prisma.PackageOfferOrderByWithRelationInput
+  consumedAttendances?: Prisma.AttendanceOrderByRelationAggregateInput
 }
 
 export type PackageWhereUniqueInput = Prisma.AtLeast<{
@@ -264,20 +266,21 @@ export type PackageWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.PackageWhereInput | Prisma.PackageWhereInput[]
   memberId?: Prisma.StringFilter<"Package"> | string
   packageOfferId?: Prisma.StringFilter<"Package"> | string
-  classesRemaining?: Prisma.IntNullableFilter<"Package"> | number | null
+  classesRemaining?: Prisma.IntFilter<"Package"> | number
   expiresAt?: Prisma.DateTimeFilter<"Package"> | Date | string
   status?: Prisma.EnumPackageStatusFilter<"Package"> | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFilter<"Package"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Package"> | Date | string
   member?: Prisma.XOR<Prisma.MemberScalarRelationFilter, Prisma.MemberWhereInput>
   offer?: Prisma.XOR<Prisma.PackageOfferScalarRelationFilter, Prisma.PackageOfferWhereInput>
+  consumedAttendances?: Prisma.AttendanceListRelationFilter
 }, "id">
 
 export type PackageOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   memberId?: Prisma.SortOrder
   packageOfferId?: Prisma.SortOrder
-  classesRemaining?: Prisma.SortOrderInput | Prisma.SortOrder
+  classesRemaining?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -296,7 +299,7 @@ export type PackageScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Package"> | string
   memberId?: Prisma.StringWithAggregatesFilter<"Package"> | string
   packageOfferId?: Prisma.StringWithAggregatesFilter<"Package"> | string
-  classesRemaining?: Prisma.IntNullableWithAggregatesFilter<"Package"> | number | null
+  classesRemaining?: Prisma.IntWithAggregatesFilter<"Package"> | number
   expiresAt?: Prisma.DateTimeWithAggregatesFilter<"Package"> | Date | string
   status?: Prisma.EnumPackageStatusWithAggregatesFilter<"Package"> | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Package"> | Date | string
@@ -305,53 +308,57 @@ export type PackageScalarWhereWithAggregatesInput = {
 
 export type PackageCreateInput = {
   id?: string
-  classesRemaining?: number | null
+  classesRemaining: number
   expiresAt: Date | string
   status?: $Enums.PackageStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   member: Prisma.MemberCreateNestedOneWithoutPackagesInput
   offer: Prisma.PackageOfferCreateNestedOneWithoutPackagesInput
+  consumedAttendances?: Prisma.AttendanceCreateNestedManyWithoutConsumedPackageInput
 }
 
 export type PackageUncheckedCreateInput = {
   id?: string
   memberId: string
   packageOfferId: string
-  classesRemaining?: number | null
+  classesRemaining: number
   expiresAt: Date | string
   status?: $Enums.PackageStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  consumedAttendances?: Prisma.AttendanceUncheckedCreateNestedManyWithoutConsumedPackageInput
 }
 
 export type PackageUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  classesRemaining?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   member?: Prisma.MemberUpdateOneRequiredWithoutPackagesNestedInput
   offer?: Prisma.PackageOfferUpdateOneRequiredWithoutPackagesNestedInput
+  consumedAttendances?: Prisma.AttendanceUpdateManyWithoutConsumedPackageNestedInput
 }
 
 export type PackageUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   memberId?: Prisma.StringFieldUpdateOperationsInput | string
   packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
-  classesRemaining?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  consumedAttendances?: Prisma.AttendanceUncheckedUpdateManyWithoutConsumedPackageNestedInput
 }
 
 export type PackageCreateManyInput = {
   id?: string
   memberId: string
   packageOfferId: string
-  classesRemaining?: number | null
+  classesRemaining: number
   expiresAt: Date | string
   status?: $Enums.PackageStatus
   createdAt?: Date | string
@@ -360,7 +367,7 @@ export type PackageCreateManyInput = {
 
 export type PackageUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  classesRemaining?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -371,7 +378,7 @@ export type PackageUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   memberId?: Prisma.StringFieldUpdateOperationsInput | string
   packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
-  classesRemaining?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -386,6 +393,11 @@ export type PackageListRelationFilter = {
 
 export type PackageOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type PackageNullableScalarRelationFilter = {
+  is?: Prisma.PackageWhereInput | null
+  isNot?: Prisma.PackageWhereInput | null
 }
 
 export type PackageCountOrderByAggregateInput = {
@@ -471,6 +483,22 @@ export type PackageUncheckedUpdateManyWithoutMemberNestedInput = {
   deleteMany?: Prisma.PackageScalarWhereInput | Prisma.PackageScalarWhereInput[]
 }
 
+export type PackageCreateNestedOneWithoutConsumedAttendancesInput = {
+  create?: Prisma.XOR<Prisma.PackageCreateWithoutConsumedAttendancesInput, Prisma.PackageUncheckedCreateWithoutConsumedAttendancesInput>
+  connectOrCreate?: Prisma.PackageCreateOrConnectWithoutConsumedAttendancesInput
+  connect?: Prisma.PackageWhereUniqueInput
+}
+
+export type PackageUpdateOneWithoutConsumedAttendancesNestedInput = {
+  create?: Prisma.XOR<Prisma.PackageCreateWithoutConsumedAttendancesInput, Prisma.PackageUncheckedCreateWithoutConsumedAttendancesInput>
+  connectOrCreate?: Prisma.PackageCreateOrConnectWithoutConsumedAttendancesInput
+  upsert?: Prisma.PackageUpsertWithoutConsumedAttendancesInput
+  disconnect?: Prisma.PackageWhereInput | boolean
+  delete?: Prisma.PackageWhereInput | boolean
+  connect?: Prisma.PackageWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PackageUpdateToOneWithWhereWithoutConsumedAttendancesInput, Prisma.PackageUpdateWithoutConsumedAttendancesInput>, Prisma.PackageUncheckedUpdateWithoutConsumedAttendancesInput>
+}
+
 export type PackageCreateNestedManyWithoutOfferInput = {
   create?: Prisma.XOR<Prisma.PackageCreateWithoutOfferInput, Prisma.PackageUncheckedCreateWithoutOfferInput> | Prisma.PackageCreateWithoutOfferInput[] | Prisma.PackageUncheckedCreateWithoutOfferInput[]
   connectOrCreate?: Prisma.PackageCreateOrConnectWithoutOfferInput | Prisma.PackageCreateOrConnectWithoutOfferInput[]
@@ -519,22 +547,24 @@ export type EnumPackageStatusFieldUpdateOperationsInput = {
 
 export type PackageCreateWithoutMemberInput = {
   id?: string
-  classesRemaining?: number | null
+  classesRemaining: number
   expiresAt: Date | string
   status?: $Enums.PackageStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   offer: Prisma.PackageOfferCreateNestedOneWithoutPackagesInput
+  consumedAttendances?: Prisma.AttendanceCreateNestedManyWithoutConsumedPackageInput
 }
 
 export type PackageUncheckedCreateWithoutMemberInput = {
   id?: string
   packageOfferId: string
-  classesRemaining?: number | null
+  classesRemaining: number
   expiresAt: Date | string
   status?: $Enums.PackageStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  consumedAttendances?: Prisma.AttendanceUncheckedCreateNestedManyWithoutConsumedPackageInput
 }
 
 export type PackageCreateOrConnectWithoutMemberInput = {
@@ -570,31 +600,93 @@ export type PackageScalarWhereInput = {
   id?: Prisma.StringFilter<"Package"> | string
   memberId?: Prisma.StringFilter<"Package"> | string
   packageOfferId?: Prisma.StringFilter<"Package"> | string
-  classesRemaining?: Prisma.IntNullableFilter<"Package"> | number | null
+  classesRemaining?: Prisma.IntFilter<"Package"> | number
   expiresAt?: Prisma.DateTimeFilter<"Package"> | Date | string
   status?: Prisma.EnumPackageStatusFilter<"Package"> | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFilter<"Package"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Package"> | Date | string
 }
 
-export type PackageCreateWithoutOfferInput = {
+export type PackageCreateWithoutConsumedAttendancesInput = {
   id?: string
-  classesRemaining?: number | null
+  classesRemaining: number
   expiresAt: Date | string
   status?: $Enums.PackageStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   member: Prisma.MemberCreateNestedOneWithoutPackagesInput
+  offer: Prisma.PackageOfferCreateNestedOneWithoutPackagesInput
+}
+
+export type PackageUncheckedCreateWithoutConsumedAttendancesInput = {
+  id?: string
+  memberId: string
+  packageOfferId: string
+  classesRemaining: number
+  expiresAt: Date | string
+  status?: $Enums.PackageStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type PackageCreateOrConnectWithoutConsumedAttendancesInput = {
+  where: Prisma.PackageWhereUniqueInput
+  create: Prisma.XOR<Prisma.PackageCreateWithoutConsumedAttendancesInput, Prisma.PackageUncheckedCreateWithoutConsumedAttendancesInput>
+}
+
+export type PackageUpsertWithoutConsumedAttendancesInput = {
+  update: Prisma.XOR<Prisma.PackageUpdateWithoutConsumedAttendancesInput, Prisma.PackageUncheckedUpdateWithoutConsumedAttendancesInput>
+  create: Prisma.XOR<Prisma.PackageCreateWithoutConsumedAttendancesInput, Prisma.PackageUncheckedCreateWithoutConsumedAttendancesInput>
+  where?: Prisma.PackageWhereInput
+}
+
+export type PackageUpdateToOneWithWhereWithoutConsumedAttendancesInput = {
+  where?: Prisma.PackageWhereInput
+  data: Prisma.XOR<Prisma.PackageUpdateWithoutConsumedAttendancesInput, Prisma.PackageUncheckedUpdateWithoutConsumedAttendancesInput>
+}
+
+export type PackageUpdateWithoutConsumedAttendancesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  member?: Prisma.MemberUpdateOneRequiredWithoutPackagesNestedInput
+  offer?: Prisma.PackageOfferUpdateOneRequiredWithoutPackagesNestedInput
+}
+
+export type PackageUncheckedUpdateWithoutConsumedAttendancesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  memberId?: Prisma.StringFieldUpdateOperationsInput | string
+  packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type PackageCreateWithoutOfferInput = {
+  id?: string
+  classesRemaining: number
+  expiresAt: Date | string
+  status?: $Enums.PackageStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  member: Prisma.MemberCreateNestedOneWithoutPackagesInput
+  consumedAttendances?: Prisma.AttendanceCreateNestedManyWithoutConsumedPackageInput
 }
 
 export type PackageUncheckedCreateWithoutOfferInput = {
   id?: string
   memberId: string
-  classesRemaining?: number | null
+  classesRemaining: number
   expiresAt: Date | string
   status?: $Enums.PackageStatus
   createdAt?: Date | string
   updatedAt?: Date | string
+  consumedAttendances?: Prisma.AttendanceUncheckedCreateNestedManyWithoutConsumedPackageInput
 }
 
 export type PackageCreateOrConnectWithoutOfferInput = {
@@ -626,7 +718,7 @@ export type PackageUpdateManyWithWhereWithoutOfferInput = {
 export type PackageCreateManyMemberInput = {
   id?: string
   packageOfferId: string
-  classesRemaining?: number | null
+  classesRemaining: number
   expiresAt: Date | string
   status?: $Enums.PackageStatus
   createdAt?: Date | string
@@ -635,28 +727,30 @@ export type PackageCreateManyMemberInput = {
 
 export type PackageUpdateWithoutMemberInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  classesRemaining?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   offer?: Prisma.PackageOfferUpdateOneRequiredWithoutPackagesNestedInput
+  consumedAttendances?: Prisma.AttendanceUpdateManyWithoutConsumedPackageNestedInput
 }
 
 export type PackageUncheckedUpdateWithoutMemberInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
-  classesRemaining?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  consumedAttendances?: Prisma.AttendanceUncheckedUpdateManyWithoutConsumedPackageNestedInput
 }
 
 export type PackageUncheckedUpdateManyWithoutMemberInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   packageOfferId?: Prisma.StringFieldUpdateOperationsInput | string
-  classesRemaining?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -666,7 +760,7 @@ export type PackageUncheckedUpdateManyWithoutMemberInput = {
 export type PackageCreateManyOfferInput = {
   id?: string
   memberId: string
-  classesRemaining?: number | null
+  classesRemaining: number
   expiresAt: Date | string
   status?: $Enums.PackageStatus
   createdAt?: Date | string
@@ -675,34 +769,65 @@ export type PackageCreateManyOfferInput = {
 
 export type PackageUpdateWithoutOfferInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  classesRemaining?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   member?: Prisma.MemberUpdateOneRequiredWithoutPackagesNestedInput
+  consumedAttendances?: Prisma.AttendanceUpdateManyWithoutConsumedPackageNestedInput
 }
 
 export type PackageUncheckedUpdateWithoutOfferInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   memberId?: Prisma.StringFieldUpdateOperationsInput | string
-  classesRemaining?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  consumedAttendances?: Prisma.AttendanceUncheckedUpdateManyWithoutConsumedPackageNestedInput
 }
 
 export type PackageUncheckedUpdateManyWithoutOfferInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   memberId?: Prisma.StringFieldUpdateOperationsInput | string
-  classesRemaining?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  classesRemaining?: Prisma.IntFieldUpdateOperationsInput | number
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.EnumPackageStatusFieldUpdateOperationsInput | $Enums.PackageStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+
+/**
+ * Count Type PackageCountOutputType
+ */
+
+export type PackageCountOutputType = {
+  consumedAttendances: number
+}
+
+export type PackageCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  consumedAttendances?: boolean | PackageCountOutputTypeCountConsumedAttendancesArgs
+}
+
+/**
+ * PackageCountOutputType without action
+ */
+export type PackageCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PackageCountOutputType
+   */
+  select?: Prisma.PackageCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * PackageCountOutputType without action
+ */
+export type PackageCountOutputTypeCountConsumedAttendancesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AttendanceWhereInput
+}
 
 
 export type PackageSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -716,6 +841,8 @@ export type PackageSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   updatedAt?: boolean
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
   offer?: boolean | Prisma.PackageOfferDefaultArgs<ExtArgs>
+  consumedAttendances?: boolean | Prisma.Package$consumedAttendancesArgs<ExtArgs>
+  _count?: boolean | Prisma.PackageCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["package"]>
 
 export type PackageSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -759,6 +886,8 @@ export type PackageOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 export type PackageInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
   offer?: boolean | Prisma.PackageOfferDefaultArgs<ExtArgs>
+  consumedAttendances?: boolean | Prisma.Package$consumedAttendancesArgs<ExtArgs>
+  _count?: boolean | Prisma.PackageCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PackageIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   member?: boolean | Prisma.MemberDefaultArgs<ExtArgs>
@@ -774,12 +903,13 @@ export type $PackagePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   objects: {
     member: Prisma.$MemberPayload<ExtArgs>
     offer: Prisma.$PackageOfferPayload<ExtArgs>
+    consumedAttendances: Prisma.$AttendancePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     memberId: string
     packageOfferId: string
-    classesRemaining: number | null
+    classesRemaining: number
     expiresAt: Date
     status: $Enums.PackageStatus
     createdAt: Date
@@ -1180,6 +1310,7 @@ export interface Prisma__PackageClient<T, Null = never, ExtArgs extends runtime.
   readonly [Symbol.toStringTag]: "PrismaPromise"
   member<T extends Prisma.MemberDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MemberDefaultArgs<ExtArgs>>): Prisma.Prisma__MemberClient<runtime.Types.Result.GetResult<Prisma.$MemberPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   offer<T extends Prisma.PackageOfferDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PackageOfferDefaultArgs<ExtArgs>>): Prisma.Prisma__PackageOfferClient<runtime.Types.Result.GetResult<Prisma.$PackageOfferPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  consumedAttendances<T extends Prisma.Package$consumedAttendancesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Package$consumedAttendancesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttendancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1615,6 +1746,30 @@ export type PackageDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Limit how many Packages to delete.
    */
   limit?: number
+}
+
+/**
+ * Package.consumedAttendances
+ */
+export type Package$consumedAttendancesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Attendance
+   */
+  select?: Prisma.AttendanceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Attendance
+   */
+  omit?: Prisma.AttendanceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AttendanceInclude<ExtArgs> | null
+  where?: Prisma.AttendanceWhereInput
+  orderBy?: Prisma.AttendanceOrderByWithRelationInput | Prisma.AttendanceOrderByWithRelationInput[]
+  cursor?: Prisma.AttendanceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AttendanceScalarFieldEnum | Prisma.AttendanceScalarFieldEnum[]
 }
 
 /**
