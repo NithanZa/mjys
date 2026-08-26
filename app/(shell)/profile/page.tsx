@@ -19,7 +19,6 @@ import { useClassHistory } from "@/lib/profile/use-class-history";
 import { usePurchases } from "@/lib/api/purchases";
 import { LockIcon, LogOut, Smartphone, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 const CELEBRATION_MESSAGES: Record<number, string> = {
@@ -31,14 +30,13 @@ const CELEBRATION_MESSAGES: Record<number, string> = {
 const DEV = process.env.NODE_ENV !== "production";
 
 export default function ProfilePage() {
-    const router = useRouter();
     const { status, isInClient, error: liffError, liff, isLoggedIn } = useLiff();
     const { member, loading, markCelebrated, reset, deleteAccount } =
         useMember();
 
-    const handleLogout = () => {
-        reset();
-        router.push("/");
+    const handleLogout = async () => {
+        await reset();
+        window.location.replace("/");
     };
     const { activePackage } = usePurchases();
     const { history: classHistory } = useClassHistory();
