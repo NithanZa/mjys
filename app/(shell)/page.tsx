@@ -1,15 +1,12 @@
 "use client";
 
 import {
-    PoseCard,
-    QuoteCard,
     ThaiCalendarCard,
     TigerHeader,
     TigerPromoCard,
     WorkshopPromo,
 } from "@/components/home";
 import { MilestoneCelebrationCard } from "@/components/rewards";
-import { HOME_CONTENT } from "@/lib/mock/home-content";
 import { useMember } from "@/lib/profile/use-member";
 import { getUnseenUnlockedMilestones } from "@/lib/rewards";
 import { motion } from "motion/react";
@@ -38,7 +35,6 @@ const itemVariants = {
 };
 
 export default function HomePage() {
-    const { quoteOfWeek, poseOfWeek } = HOME_CONTENT;
     const { member, markCelebrated } = useMember();
     const [banners, setBanners] = useState<HomeBannerDTO[]>([]);
 
@@ -126,21 +122,6 @@ export default function HomePage() {
 
                 <motion.div variants={itemVariants}>
                     <WorkshopPromo />
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                    <QuoteCard
-                        text={quoteOfWeek.text}
-                        author={quoteOfWeek.author}
-                    />
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                    <PoseCard
-                        name={poseOfWeek.name}
-                        description={poseOfWeek.description}
-                        imageUrl={poseOfWeek.imageUrl}
-                    />
                 </motion.div>
             </motion.div>
         </>

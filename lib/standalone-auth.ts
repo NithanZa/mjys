@@ -7,7 +7,7 @@
  * every request.
  */
 import { createHmac } from "crypto";
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 const COOKIE_NAME = "mjys_sid";
 
@@ -51,3 +51,12 @@ export const SESSION_COOKIE_OPTIONS = {
     path: "/",
     maxAge: 60 * 60 * 24 * 365, // 1 year
 } as const;
+
+/** Expire the session cookie using the same attributes it was issued with. */
+export function clearSessionCookie(res: NextResponse): void {
+    res.cookies.set(SESSION_COOKIE_NAME, "", {
+        ...SESSION_COOKIE_OPTIONS,
+        maxAge: 0,
+        expires: new Date(0),
+    });
+}
