@@ -8,7 +8,18 @@
 // with standalone mode off, where no member session can exist.
 
 import { useLiff } from "@/lib/liff";
-import { useCallback, useEffect, useState } from "react";
+import { usePurchases } from "@/lib/api/purchases";
+import { useMember } from "@/lib/profile/use-member";
+import {
+    createContext,
+    createElement,
+    useCallback,
+    useContext,
+    useEffect,
+    useRef,
+    useState,
+    type ReactNode,
+} from "react";
 
 /** True when the app runs as a regular web app (cookie auth, no LINE). */
 const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
@@ -38,12 +49,21 @@ export interface UseBookingsResult {
     refresh: () => Promise<void>;
 }
 
-export function useBookings(): UseBookingsResult {
+const BookingsContext = createContext<UseBookingsResult | null>(null);
+
+function useBookingsState(): UseBookingsResult {
     const { liff, status, isLoggedIn } = useLiff();
+    const { member } = useMember();
+    const { refresh: refreshPurchases } = usePurchases();
+    const memberId = member?.id ?? null;
     const [realBookings, setRealBookings] = useState<Booking[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     const [loading, setLoading] = useState(true);
+    const loadedMemberId = useRef<string | null>(null);
+    const currentMemberId = useRef(memberId);
+    const requestId = useRef(0);
+    currentMemberId.current = memberId;
 
     /** Auth headers for the current mode (cookie mode needs none). */
     const authHeaders = useCallback((): Record<string, string> => {
@@ -58,8 +78,20 @@ export function useBookings(): UseBookingsResult {
     }, [liff]);
 
     const fetchRealBookings = useCallback(async () => {
+        const activeRequestId = ++requestId.current;
+        const requestedMemberId = memberId;
+        const isCurrentRequest = () =>
+            activeRequestId === requestId.current &&
+            requestedMemberId === currentMemberId.current;
+
+        if (!memberId) {
+            setRealBookings([]);
+            setLoading(true);
+            return;
+        }
         if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) return;
 
+        setLoading(true);
         try {
             const res = await fetch("/api/bookings", {
                 headers: authHeaders(),
@@ -67,12 +99,13 @@ export function useBookings(): UseBookingsResult {
             if (!res.ok) {
                 // 404 = member not registered yet; treat as "no bookings".
                 if (res.status === 404) {
-                    setRealBookings([]);
+                    if (isCurrentRequest()) setRealBookings([]);
                     return;
                 }
                 throw new Error("Failed to fetch bookings");
             }
             const data = await res.json();
+            if (!isCurrentRequest()) return;
             setRealBookings(
                 (data.bookings as AttendanceWire[]).map((b) => ({
                     occurrenceId: b.classOccurrenceId,
@@ -82,18 +115,26 @@ export function useBookings(): UseBookingsResult {
             );
             setError(null);
         } catch (err) {
+            if (!isCurrentRequest()) return;
             console.error("Failed to fetch bookings:", err);
             setError(
                 err instanceof Error ? err.message : "Failed to fetch bookings",
             );
         } finally {
-            setLoading(false);
+            if (isCurrentRequest()) setLoading(false);
         }
-    }, [authHeaders, isLoggedIn, liff, status]);
+    }, [authHeaders, isLoggedIn, liff, memberId, status]);
 
     useEffect(() => {
-        fetchRealBookings();
-    }, [fetchRealBookings]);
+        if (!memberId) {
+            loadedMemberId.current = null;
+            void fetchRealBookings();
+            return;
+        }
+        if (loadedMemberId.current === memberId) return;
+        loadedMemberId.current = memberId;
+        void fetchRealBookings();
+    }, [fetchRealBookings, memberId]);
 
     const activeBookings = realBookings;
 
@@ -130,6 +171,7 @@ export function useBookings(): UseBookingsResult {
                 }
 
                 await fetchRealBookings();
+                await refreshPurchases();
             } catch (err) {
                 const message =
                     err instanceof Error ? err.message : "Failed to book";
@@ -139,7 +181,7 @@ export function useBookings(): UseBookingsResult {
                 setLoading(false);
             }
         },
-        [authHeaders, fetchRealBookings],
+        [authHeaders, fetchRealBookings, refreshPurchases],
     );
 
     const cancel = useCallback(
@@ -160,6 +202,7 @@ export function useBookings(): UseBookingsResult {
                 }
 
                 await fetchRealBookings();
+                await refreshPurchases();
             } catch (err) {
                 const message =
                     err instanceof Error ? err.message : "Failed to cancel";
@@ -169,7 +212,7 @@ export function useBookings(): UseBookingsResult {
                 setLoading(false);
             }
         },
-        [authHeaders, fetchRealBookings],
+        [authHeaders, fetchRealBookings, refreshPurchases],
     );
 
     const toggle = useCallback(
@@ -195,4 +238,17 @@ export function useBookings(): UseBookingsResult {
         toggle,
         refresh: fetchRealBookings,
     };
+}
+
+export function BookingsProvider({ children }: { children: ReactNode }) {
+    const value = useBookingsState();
+    return createElement(BookingsContext.Provider, { value }, children);
+}
+
+export function useBookings(): UseBookingsResult {
+    const value = useContext(BookingsContext);
+    if (!value) {
+        throw new Error("useBookings must be used within BookingsProvider");
+    }
+    return value;
 }

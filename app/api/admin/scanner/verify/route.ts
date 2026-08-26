@@ -5,6 +5,7 @@ import { newlyCrossedThresholds } from "@/lib/levels";
 import { studioToday } from "@/lib/dates";
 import { addDays } from "date-fns";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { CACHE_TAGS, expireCacheTags } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -158,6 +159,7 @@ export async function POST(request: NextRequest) {
             };
         });
 
+        expireCacheTags(CACHE_TAGS.memberStats, CACHE_TAGS.staffStats);
         return NextResponse.json({
             success: true,
             ...checkInResult,

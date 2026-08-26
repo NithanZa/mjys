@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { getCachedPackageOffers } from "@/lib/cache/catalogs";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {
-        const offers = await prisma.packageOffer.findMany({
-            where: { active: true },
-            orderBy: { sortOrder: "asc" },
-        });
+        const offers = await getCachedPackageOffers();
         return NextResponse.json({ offers });
     } catch (error) {
         console.error("[api-packages-get] Error fetching package offers:", error);

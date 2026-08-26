@@ -8,6 +8,7 @@ import { fetchOccurrence, OccurrenceView } from "@/lib/api/classes";
 import { INTENSITY_LABELS } from "@/lib/intensity";
 import { useBookings } from "@/lib/api/bookings";
 import { useSpecialAdmission } from "@/lib/api/special-purchases";
+import { clearScheduleSnapshot } from "@/lib/cache/client-schedule";
 import { CalendarX, Clock, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
@@ -21,7 +22,13 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
   const [occurrence, setOccurrence] = useState<OccurrenceView | null>(null);
   const [loading, setLoading] = useState(true);
   const [contactModalOpen, setContactModalOpen] = useState(false);
-  const { isBooked, isPaidSpecialBooking, book, cancel } = useBookings();
+  const {
+    isBooked,
+    isPaidSpecialBooking,
+    book,
+    cancel,
+    loading: bookingsLoading,
+  } = useBookings();
   const { admission } = useSpecialAdmission(occurrence?.isSpecial ? occurrenceId : null);
 
   useEffect(() => {
@@ -40,6 +47,15 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
       cancelled = true;
     };
   }, [occurrenceId]);
+
+  const refreshOccurrence = async () => {
+    clearScheduleSnapshot();
+    try {
+      setOccurrence(await fetchOccurrence(occurrenceId));
+    } catch (error) {
+      console.error("Failed to refresh class availability:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -173,13 +189,18 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
               <BookButton
                 isBooked={booked}
                 isFull={isFull}
-                onBook={() => book(occurrence.id)}
-                onCancel={() => {
+                loading={bookingsLoading}
+                onBook={async () => {
+                  await book(occurrence.id);
+                  await refreshOccurrence();
+                }}
+                onCancel={async () => {
                   if (isPaidSpecialBooking(occurrence.id)) {
                     setContactModalOpen(true);
                     return;
                   }
-                  cancel(occurrence.id);
+                  await cancel(occurrence.id);
+                  await refreshOccurrence();
                 }}
                 size="md"
               />

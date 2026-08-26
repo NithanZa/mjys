@@ -1,5 +1,11 @@
 # FEATURE: Shared schedule cache and smaller Book fetches
 
+## Status
+
+Phases 1–8 are implemented. Runtime/build and browser verification were
+intentionally not run at the user's request, so manual verification checklists
+remain unchecked.
+
 ## Goals
 
 - Stop downloading ~2 years of class occurrences on every visit to Book.
@@ -19,7 +25,9 @@
 
 Member Book (`app/(shell)/book/page.tsx`) fetches `today−1` through `+2 years` on every mount via `GET /api/classes`. Instructors refetch the same way. Almost every API sets `dynamic = "force-dynamic"`. There is no `revalidateTag`, no shared query cache, and no React Query/SWR. Redis is used only for auth rate limits.
 
-`slotsLeft` is derived from `bookedCount` inside `GET /api/classes`. Caching that JSON means spot counts can lag a few minutes. **Overbook is still prevented** because `POST /api/bookings` reads Prisma live.
+`slotsLeft` is derived from `bookedCount` inside `GET /api/classes`. Occupancy
+writes expire that cache, while **overbook is still prevented** because
+`POST /api/bookings` reads Prisma live.
 
 ## Target mental model
 
@@ -32,7 +40,7 @@ Book UI  →  small date window (this month + 2) → GET /api/classes?from&to
 
 Month change in InlineCalendar → fetch that month if not already loaded → merge by occurrence id
 
-Book / cancel → live API; do not bust the shared class list cache
+Book / cancel → live API → expire shared class-list occupancy
 ```
 
 ## Acceptance criteria
@@ -51,11 +59,13 @@ Book / cancel → live API; do not bust the shared class list cache
 - **Phase 3** (`03-server-cache-catalogs.md`): Same pattern for packages and home banners.
 - **Phase 4** (`04-admin-calendar-and-stats.md`): Short TTL for admin calendar range + heavy stats (optional after member path).
 - **Phase 5** (`05-optional-device-and-member-cache.md`): Namespaced device snapshot and shared `useMember` — only if still needed.
+- **Phase 6** (`06-shared-bookings-state.md`): One shell-level bookings state.
+- **Phase 7** (`07-shared-purchases-state.md`): One shell-level purchases state.
+- **Phase 8** (`08-session-preferences.md`): Restore member/admin calendar context from session preferences.
 
 ## Out of scope
 
 - Caching QR tokens, admin JWT, LINE tokens, or slip images.
-- Busting the public class list on every member book/cancel.
 - Replacing LIFF/session cookies with `localStorage` auth.
 - React Query/SWR as a product requirement (in-memory merge on Book is enough for phase 1).
 - Changing how far ahead staff **may** schedule classes (calendar can still navigate ~2 years; we just do not fetch it all up front).

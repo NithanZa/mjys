@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { getCachedInstructors } from "@/lib/cache/classes";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {
-        const instructors = await prisma.instructor.findMany({
-            orderBy: { order: "asc" },
-        });
+        const instructors = await getCachedInstructors();
         return NextResponse.json({ instructors });
     } catch (error) {
         console.error("[api-instructors] Error fetching instructors:", error);

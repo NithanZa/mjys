@@ -17,10 +17,13 @@
 
 ## Design decisions
 
+- **Current Next integration:** use `unstable_cache` with tags so existing
+  `dynamic = "force-dynamic"` route handlers remain dynamic while Prisma query
+  results are shared.
 - **TTL:** 180 seconds (a few minutes). Prefer tag + TTL so admin writes win over waiting out the clock.
 - **Tags:** `classes` for occurrence lists; `instructors` for the public instructor list. Centralize names in `lib/cache/tags.ts`.
 - **Key:** `["classes", fromIso, toIso]`. Drop cancelled classes in the cached payload the same way the route does today (`isCancelled: false`).
-- **Do not cache `slotsLeft` separately.** It rides along in the list JSON and may lag. Capacity enforcement stays in `app/api/bookings/route.ts`.
+- **Do not cache `slotsLeft` separately.** It rides along in the list JSON; all known occupancy writes invalidate the class tag. Capacity enforcement still stays live in `app/api/bookings/route.ts`.
 - **Do not use Redis** unless Next data cache does not work on the deployment. If fallback is needed, reuse Upstash with prefix `cache:classes:` and the same TTL/tag story — document the choice in a comment.
 - **Remove or narrow `export const dynamic = "force-dynamic"`** on these two GET handlers only if docs say that blocks `unstable_cache`. Prefer caching the Prisma call inside the handler over turning the route into a full static fetch cache.
 - **Admin calendar** stays uncached in this phase (`/api/admin/calendar` is a different payload and includes cancelled classes / rosters).
@@ -37,7 +40,7 @@
   - `app/api/admin/classes/import/csv/route.ts` after successful import
 - [ ] Call `revalidateTag(INSTRUCTORS)` (and `CLASSES` if denormalized instructor fields are embedded on occurrences) from staff create/update/delete routes (`app/api/admin/staff/...`).
 - [ ] Grep admin class writes (xlsx import if any) so none are missed.
-- [ ] Do **not** call `revalidateTag(CLASSES)` from `app/api/bookings/route.ts`.
+- [x] Expire `CLASSES` after successful booking/cancellation and approved special-class reservations.
 
 ## Files
 
@@ -52,7 +55,7 @@
 
 ## Data notes
 
-- Cached rows still include `bookedCount` / `slotsLeft`. Treat them as approximate on Book cards.
+- Cached rows still include `bookedCount` / `slotsLeft`; successful occupancy mutations expire them.
 - Occurrence detail (`fetchOccurrence`) should remain the source of truth before pay/book UI that needs exact spots — keep it uncached.
 
 ## Verification

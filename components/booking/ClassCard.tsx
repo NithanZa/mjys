@@ -15,6 +15,7 @@ import Link from "next/link";
 export interface ClassCardProps {
   occurrence: OccurrenceView;
   isBooked: boolean;
+  bookingLoading?: boolean;
   onBook: () => void;
   onCancel: () => void;
   className?: string;
@@ -32,6 +33,7 @@ const intensityTone: Record<
 export function ClassCard({
   occurrence,
   isBooked,
+  bookingLoading = false,
   onBook,
   onCancel,
   className,
@@ -85,7 +87,11 @@ export function ClassCard({
           slotsLeft={occurrence.slotsLeft}
           capacity={occurrence.capacity}
         />
-        {isSpecial && !isBooked && !isFull ? (
+        {bookingLoading ? (
+          <Button size="sm" variant="secondary" disabled>
+            Checking…
+          </Button>
+        ) : isSpecial && !isBooked && !isFull ? (
           <Link href={`/book/${occurrence.id}/pay`}>
             <Button size="sm" variant="primary">
               Pay to reserve
@@ -97,6 +103,7 @@ export function ClassCard({
             isFull={isFull}
             onBook={onBook}
             onCancel={onCancel}
+            loading={bookingLoading}
             size="sm"
           />
         )}

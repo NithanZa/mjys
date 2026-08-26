@@ -1,7 +1,16 @@
 "use client";
 
 import { useLiff } from "@/lib/liff";
-import { useCallback, useEffect, useState } from "react";
+import {
+    createContext,
+    createElement,
+    useCallback,
+    useContext,
+    useEffect,
+    useRef,
+    useState,
+    type ReactNode,
+} from "react";
 import { type Level } from "@/lib/levels";
 
 export interface Member {
@@ -46,6 +55,7 @@ const DEV = process.env.NODE_ENV !== "production";
 
 /** True when the app is running in standalone (non-LINE) mode. */
 const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+const MemberContext = createContext<UseMemberResult | null>(null);
 
 function getRequiredIDToken(liff: any): string {
     const token = liff?.getIDToken();
@@ -57,11 +67,12 @@ function getRequiredIDToken(liff: any): string {
     return token;
 }
 
-export function useMember(): UseMemberResult {
+function useMemberState(): UseMemberResult {
     const { liff, status, isLoggedIn } = useLiff();
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const initialFetchStarted = useRef(false);
 
     const fetchMember = useCallback(async () => {
         if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) {
@@ -106,8 +117,13 @@ export function useMember(): UseMemberResult {
     }, [isLoggedIn, liff, status]);
 
     useEffect(() => {
-        fetchMember();
-    }, [fetchMember]);
+        if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) {
+            return;
+        }
+        if (initialFetchStarted.current) return;
+        initialFetchStarted.current = true;
+        void fetchMember();
+    }, [fetchMember, isLoggedIn, liff, status]);
 
     const register = useCallback(
         async (input: {
@@ -235,20 +251,24 @@ export function useMember(): UseMemberResult {
 
     const reset = useCallback(async () => {
         if (isStandalone) {
-            try {
-                const res = await fetch("/api/auth/logout", {
-                    method: "POST",
-                });
-                if (res.ok) {
-                    setMember(null);
-                }
-            } catch (err) {
-                console.error("Failed to log out:", err);
+            const res = await fetch("/api/auth/logout", {
+                method: "POST",
+                cache: "no-store",
+                credentials: "include",
+            });
+            if (!res.ok) {
+                throw new Error("Failed to log out");
             }
+            setMember(null);
             return;
         }
 
-        if (!DEV) return;
+        if (!DEV) {
+            if (!liff) throw new Error("LIFF is not initialized");
+            liff.logout();
+            setMember(null);
+            return;
+        }
         try {
             const token = getRequiredIDToken(liff);
             const res = await fetch("/api/members/reset", {
@@ -308,4 +328,17 @@ export function useMember(): UseMemberResult {
         reset,
         deleteAccount,
     };
+}
+
+export function MemberProvider({ children }: { children: ReactNode }) {
+    const value = useMemberState();
+    return createElement(MemberContext.Provider, { value }, children);
+}
+
+export function useMember(): UseMemberResult {
+    const value = useContext(MemberContext);
+    if (!value) {
+        throw new Error("useMember must be used within MemberProvider");
+    }
+    return value;
 }

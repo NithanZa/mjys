@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { format, startOfWeek, startOfMonth, endOfMonth, addDays, isSameDay, parseISO, addMonths, isSameMonth } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { format, startOfWeek, startOfMonth, endOfMonth, endOfWeek, addDays, isSameDay, parseISO, addMonths, isSameMonth } from "date-fns";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { STUDIO_TZ } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import {
@@ -30,6 +30,10 @@ import {
     Grid3x3,
 } from "lucide-react";
 import { INTENSITIES, INTENSITY_LABELS } from "@/lib/intensity";
+import {
+    readAdminCalendarPreferences,
+    writeAdminCalendarPreferences,
+} from "@/lib/cache/client-preferences";
 
 interface Occurrence {
     id: string;
@@ -73,9 +77,12 @@ export default function AdminCalendarPage() {
     const [instructors, setInstructors] = useState<Instructor[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<"week" | "month">("week");
+    const [preferencesReady, setPreferencesReady] = useState(false);
     const [selectedOccurrences, setSelectedOccurrences] = useState<Set<string>>(new Set());
     const [mobileSelectionMode, setMobileSelectionMode] = useState(false);
     const selectionAnchorRef = useRef<string | null>(null);
+    const calendarRequestId = useRef(0);
+    const rosterRequestId = useRef(0);
 
     // Sheet states
     const [addSheetOpen, setAddSheetOpen] = useState(false);
@@ -114,11 +121,29 @@ export default function AdminCalendarPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [importing, setImporting] = useState(false);
 
+    useEffect(() => {
+        const preferences = readAdminCalendarPreferences();
+        if (preferences) {
+            setCurrentDate(new Date(preferences.currentDate));
+            setViewMode(preferences.viewMode);
+        }
+        setPreferencesReady(true);
+    }, []);
+
+    useEffect(() => {
+        if (!preferencesReady) return;
+        writeAdminCalendarPreferences({
+            currentDate: currentDate.toISOString(),
+            viewMode,
+        });
+    }, [currentDate, preferencesReady, viewMode]);
+
     // Compute the week start (Monday) based on currentDate
     const weekStart = startOfWeek(toZonedTime(currentDate, STUDIO_TZ), { weekStartsOn: 1 });
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
     const loadCalendarData = useCallback(async () => {
+        const requestId = ++calendarRequestId.current;
         setLoading(true);
         try {
             let startStr: string;
@@ -126,31 +151,46 @@ export default function AdminCalendarPage() {
 
             if (viewMode === "week") {
                 const localWeekStart = startOfWeek(toZonedTime(currentDate, STUDIO_TZ), { weekStartsOn: 1 });
-                startStr = localWeekStart.toISOString();
-                endStr = addDays(localWeekStart, 7).toISOString();
+                startStr = fromZonedTime(localWeekStart, STUDIO_TZ).toISOString();
+                endStr = fromZonedTime(addDays(localWeekStart, 7), STUDIO_TZ).toISOString();
             } else {
                 const localMonthStart = startOfMonth(toZonedTime(currentDate, STUDIO_TZ));
-                const localMonthEnd = endOfMonth(toZonedTime(currentDate, STUDIO_TZ));
-                startStr = localMonthStart.toISOString();
-                endStr = localMonthEnd.toISOString();
+                const nextLocalMonth = addMonths(localMonthStart, 1);
+                startStr = fromZonedTime(localMonthStart, STUDIO_TZ).toISOString();
+                endStr = fromZonedTime(nextLocalMonth, STUDIO_TZ).toISOString();
             }
 
             const res = await fetch(`/api/admin/calendar?start=${startStr}&end=${endStr}`);
             if (res.ok) {
                 const data = await res.json();
-                setOccurrences(data.occurrences);
-                setInstructors(data.instructors);
+                if (requestId === calendarRequestId.current) {
+                    setOccurrences(data.occurrences);
+                    setInstructors(data.instructors);
+                }
             }
         } catch (error) {
             console.error("Failed to load calendar data:", error);
         } finally {
-            setLoading(false);
+            if (requestId === calendarRequestId.current) {
+                setLoading(false);
+            }
         }
     }, [currentDate, viewMode]);
 
     useEffect(() => {
-        loadCalendarData();
-    }, [loadCalendarData]);
+        if (!preferencesReady) return;
+        void loadCalendarData();
+        return () => {
+            calendarRequestId.current += 1;
+        };
+    }, [loadCalendarData, preferencesReady]);
+
+    useEffect(
+        () => () => {
+            rosterRequestId.current += 1;
+        },
+        [],
+    );
 
     // Derive unique class names for autocomplete from existing occurrences
     const classNameSuggestions = Array.from(
@@ -173,6 +213,7 @@ export default function AdminCalendarPage() {
 
     // Load roster when an occurrence is clicked
     const handleOccurrenceClick = async (occ: Occurrence) => {
+        const requestId = ++rosterRequestId.current;
         setSelectedOcc(occ);
         setEditCapacity(occ.capacity);
         setEditInstructorId(occ.instructor.id);
@@ -189,12 +230,16 @@ export default function AdminCalendarPage() {
             const res = await fetch(`/api/admin/classes/${occ.id}/roster`);
             if (res.ok) {
                 const data = await res.json();
-                setRoster(data.roster);
+                if (requestId === rosterRequestId.current) {
+                    setRoster(data.roster);
+                }
             }
         } catch (err) {
             console.error("Failed to load roster:", err);
         } finally {
-            setLoadingRoster(false);
+            if (requestId === rosterRequestId.current) {
+                setLoadingRoster(false);
+            }
         }
     };
 
@@ -420,6 +465,10 @@ export default function AdminCalendarPage() {
         if (selectedOccurrences.size === 0) return;
 
         const selectedClasses = occurrences.filter((occ) => selectedOccurrences.has(occ.id));
+        if (selectedClasses.length === 0) {
+            clearSelection();
+            return;
+        }
         const hasBookings = selectedClasses.some((occ) => occ.bookedCount > 0);
 
         if (hasBookings) {
@@ -429,7 +478,7 @@ export default function AdminCalendarPage() {
 
         if (
             !confirm(
-                `Are you sure you want to delete ${selectedOccurrences.size} empty class session(s)? This cannot be undone.`,
+                `Are you sure you want to delete ${selectedClasses.length} empty class session(s)? This cannot be undone.`,
             )
         ) {
             return;
@@ -441,7 +490,7 @@ export default function AdminCalendarPage() {
             let failureCount = 0;
             const failedOccurrenceIds = new Set<string>();
 
-            for (const occId of selectedOccurrences) {
+            for (const { id: occId } of selectedClasses) {
                 try {
                     const res = await fetch(`/api/admin/classes/${occId}`, {
                         method: "DELETE",
@@ -532,10 +581,12 @@ export default function AdminCalendarPage() {
     };
 
     const changeViewMode = (mode: "week" | "month") => {
+        clearSelection();
         setViewMode(mode);
     };
 
     const changeCalendarDate = (date: Date) => {
+        clearSelection();
         setCurrentDate(date);
     };
 
@@ -844,7 +895,7 @@ export default function AdminCalendarPage() {
                         const monthStart = startOfMonth(toZonedTime(currentDate, STUDIO_TZ));
                         const monthEnd = endOfMonth(toZonedTime(currentDate, STUDIO_TZ));
                         const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
-                        const endDate = addDays(startOfWeek(addDays(monthEnd, 1), { weekStartsOn: 1 }), -1);
+                        const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
                         const days: Date[] = [];
                         let current = startDate;

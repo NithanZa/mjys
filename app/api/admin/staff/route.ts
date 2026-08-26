@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/admin-auth";
+import { CACHE_TAGS, expireCacheTags } from "@/lib/cache/tags";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        expireCacheTags(CACHE_TAGS.instructors, CACHE_TAGS.staffStats);
         return NextResponse.json({ instructor }, { status: 201 });
     } catch (error) {
         console.error("[api-admin-staff-create] Error creating staff:", error);
