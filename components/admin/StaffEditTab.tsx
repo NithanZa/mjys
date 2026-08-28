@@ -154,7 +154,6 @@ export function StaffEditTab({ onLoading }: StaffEditTabProps) {
         if (!res.ok) {
           const err = await res.json();
           setFormError(err.error || "Failed to update staff member.");
-          setSubmitting(false);
           return;
         }
       } else {
@@ -167,7 +166,6 @@ export function StaffEditTab({ onLoading }: StaffEditTabProps) {
         if (!res.ok) {
           const err = await res.json();
           setFormError(err.error || "Failed to create staff member.");
-          setSubmitting(false);
           return;
         }
       }
@@ -176,6 +174,7 @@ export function StaffEditTab({ onLoading }: StaffEditTabProps) {
       loadStaff();
     } catch {
       setFormError("Network error.");
+    } finally {
       setSubmitting(false);
     }
   }

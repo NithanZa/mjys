@@ -2,10 +2,10 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { QRCode } from "@/components/ui/QRCode";
 import { Sheet } from "@/components/ui/Sheet";
 import { formatTHB, type PackageOffer } from "@/lib/api/packages";
 import { CheckCircle2, Clock, Copy } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 
 export interface PaymentSheetProps {
@@ -21,14 +21,6 @@ export interface PaymentSheetProps {
   onMarkPaid: () => void;
   /** True once the user has clicked "Mark as paid" — flips the sheet to a waiting state. */
   isPending: boolean;
-}
-
-/**
- * FRONTEND STUB: the QR encodes a stable but non-functional payload.
- * The backend pass will swap to a real PromptPay EMVCo string via `promptpay-qr`.
- */
-function buildStubQrPayload(offerId: string, amount: number, promptpayId: string) {
-  return `MJYS-PAY:v1:${promptpayId}:${offerId}:${amount}`;
 }
 
 export function PaymentSheet({
@@ -51,8 +43,6 @@ export function PaymentSheet({
     }
   }
 
-  const qrValue = buildStubQrPayload(offer.id, offer.priceTHB, promptpayId);
-
   return (
     <Sheet open={open} onClose={onClose} title={`Pay for ${offer.name}`}>
       {isPending ? (
@@ -60,7 +50,14 @@ export function PaymentSheet({
       ) : (
         <div className="flex flex-col gap-4">
           <Card elevation="sm" className="flex flex-col items-center gap-3">
-            <QRCode value={qrValue} size={208} ariaLabel="Payment QR code" />
+            <Image
+              src="/payment.JPG"
+              alt="Payment QR code"
+              width={208}
+              height={208}
+              className="rounded-md"
+              unoptimized
+            />
             <div className="flex flex-col items-center gap-1 text-center">
               <p className="font-display text-h3 font-medium text-neutral-ink">
                 Scan to pay {formatTHB(offer.priceTHB)}
