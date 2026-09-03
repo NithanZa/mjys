@@ -19,8 +19,54 @@ if (!supabaseServiceKey) {
     );
 }
 
+/**
+ * auth-js treats every HTTP 500 as AuthRetryableFetchError and JSON.stringifies
+ * the Response, which becomes message "{}". Re-read the JSON body and return
+ * 422 so callers get the real GoTrue `msg` (e.g. confirmation email failures).
+ */
+const authAwareFetch: typeof fetch = async (input, init) => {
+    const response = await fetch(input, init);
+    if (response.ok || response.status < 500) {
+        return response;
+    }
+
+    const requestUrl =
+        typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url;
+    if (!requestUrl.includes("/auth/v1/")) {
+        return response;
+    }
+
+    const text = await response.text();
+    let payload: Record<string, unknown> = {};
+    try {
+        payload = JSON.parse(text) as Record<string, unknown>;
+    } catch {
+        if (text) payload = { msg: text };
+    }
+
+    const msg =
+        (typeof payload.msg === "string" && payload.msg) ||
+        (typeof payload.message === "string" && payload.message) ||
+        (typeof payload.error_description === "string" &&
+            payload.error_description) ||
+        `Auth request failed (${response.status})`;
+
+    return new Response(JSON.stringify({ ...payload, msg, message: msg }), {
+        status: 422,
+        statusText: response.statusText,
+        headers: { "Content-Type": "application/json" },
+    });
+};
+
 export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: {
         persistSession: false,
+    },
+    global: {
+        fetch: authAwareFetch,
     },
 });

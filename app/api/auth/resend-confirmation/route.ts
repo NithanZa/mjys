@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { formatMailerError } from "@/lib/auth-error";
 import { supabase } from "@/lib/supabase";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
@@ -44,7 +45,10 @@ export async function POST(request: NextRequest) {
         });
 
         if (error) {
-            return NextResponse.json({ error: error.message }, { status: 400 });
+            return NextResponse.json(
+                { error: formatMailerError(error) },
+                { status: 400 },
+            );
         }
 
         return NextResponse.json({

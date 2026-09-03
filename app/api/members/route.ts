@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { formatMailerError } from "@/lib/auth-error";
 import { supabase } from "@/lib/supabase";
 import { verifyLineIdToken } from "@/lib/line/verify-id-token";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -84,7 +85,6 @@ export async function POST(request: NextRequest) {
             const origin =
                 process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
 
-            // Create user in Supabase Auth
             const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
@@ -94,12 +94,10 @@ export async function POST(request: NextRequest) {
             });
 
             if (signUpError) {
-                const message = /already registered|already exists/i.test(
-                    signUpError.message,
-                )
-                    ? "An account with this email already exists. Try signing in or resetting your password."
-                    : signUpError.message;
-                return NextResponse.json({ error: message }, { status: 400 });
+                return NextResponse.json(
+                    { error: formatMailerError(signUpError) },
+                    { status: 400 },
+                );
             }
 
             if (!signUpData.user) {

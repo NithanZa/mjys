@@ -15,7 +15,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  "inline-flex items-center justify-center gap-2 font-sans font-medium select-none " +
+  "inline-flex items-center justify-center gap-2 font-sans font-medium select-none whitespace-nowrap " +
   "transition-colors duration-150 ease-out " +
   "disabled:opacity-50 disabled:pointer-events-none " +
   "active:scale-[0.98]";

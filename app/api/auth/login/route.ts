@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { formatAuthError } from "@/lib/auth-error";
 import { supabase } from "@/lib/supabase";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
 
         if (signInError) {
             return NextResponse.json(
-                { error: signInError.message },
+                { error: formatAuthError(signInError, "Invalid email or password.") },
                 { status: 401 },
             );
         }

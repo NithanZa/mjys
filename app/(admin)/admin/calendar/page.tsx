@@ -564,6 +564,11 @@ export default function AdminCalendarPage() {
 
     const allOccurrencesSelected =
         occurrences.length > 0 && occurrences.every((occ) => selectedOccurrences.has(occ.id));
+    const someOccurrencesSelected = selectedOccurrences.size > 0 && !allOccurrencesSelected;
+
+    const bindSelectAllCheckbox = (checkbox: HTMLInputElement | null) => {
+        if (checkbox) checkbox.indeterminate = someOccurrencesSelected;
+    };
 
     const selectAllInView = () => {
         selectionAnchorRef.current = null;
@@ -593,7 +598,7 @@ export default function AdminCalendarPage() {
     return (
         <div className="p-6 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto h-full font-sans">
             {/* Header section */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col gap-4 xl:flex-row xl:justify-between xl:items-center">
                 <div>
                     <h1 className="font-display text-h1 font-semibold text-neutral-ink">
                         Schedule Calendar
@@ -602,7 +607,7 @@ export default function AdminCalendarPage() {
                         Schedule new occurrences, change instructor capacity, or review booking rosters.
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -638,7 +643,8 @@ export default function AdminCalendarPage() {
                     </Button>
                     <Button
                         variant="primary"
-                        leftIcon={<Plus className="h-5 w-5" />}
+                        size="sm"
+                        leftIcon={<Plus className="h-4 w-4" />}
                         onClick={() => setAddSheetOpen(true)}
                     >
                         Schedule Class
@@ -646,26 +652,79 @@ export default function AdminCalendarPage() {
                 </div>
             </div>
 
-            {/* View Mode Toggle and Selector bar */}
-            <div className="flex flex-col gap-3">
-                <div className="flex justify-between items-center bg-neutral-card border border-neutral-line rounded-md p-3.5 shadow-sm">
-                    <div className="flex gap-2">
-                        <Button
-                            variant={viewMode === "week" ? "primary" : "secondary"}
-                            size="sm"
-                            onClick={() => changeViewMode("week")}
-                        >
-                            Week
-                        </Button>
-                        <Button
-                            variant={viewMode === "month" ? "primary" : "secondary"}
-                            size="sm"
-                            leftIcon={<Grid3x3 className="h-4 w-4" />}
-                            onClick={() => changeViewMode("month")}
-                        >
-                            Month
-                        </Button>
-                    </div>
+            {/* View, date, and compact bulk selection */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border border-neutral-line bg-neutral-card rounded-md p-3.5 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                        variant={viewMode === "week" ? "primary" : "secondary"}
+                        size="sm"
+                        onClick={() => changeViewMode("week")}
+                    >
+                        Week
+                    </Button>
+                    <Button
+                        variant={viewMode === "month" ? "primary" : "secondary"}
+                        size="sm"
+                        leftIcon={<Grid3x3 className="h-4 w-4" />}
+                        onClick={() => changeViewMode("month")}
+                    >
+                        Month
+                    </Button>
+                    <Button
+                        variant={mobileSelectionMode ? "primary" : "secondary"}
+                        size="sm"
+                        className="md:hidden"
+                        aria-pressed={mobileSelectionMode}
+                        onClick={() => {
+                            if (mobileSelectionMode) clearSelection();
+                            setMobileSelectionMode((isSelecting) => !isSelecting);
+                        }}
+                    >
+                        {mobileSelectionMode ? "Done" : "Select"}
+                    </Button>
+                    <label
+                        className={cn(
+                            "inline-flex h-9 cursor-pointer items-center gap-1.5 px-1 text-body font-medium text-neutral-ink select-none",
+                            (loading || occurrences.length === 0) && "pointer-events-none opacity-50",
+                        )}
+                    >
+                        <input
+                            ref={bindSelectAllCheckbox}
+                            type="checkbox"
+                            checked={allOccurrencesSelected}
+                            disabled={loading || occurrences.length === 0}
+                            onChange={selectAllInView}
+                            className="h-3.5 w-3.5 rounded border-neutral-line text-primary-500 focus:ring-primary-500"
+                            aria-label={
+                                selectedOccurrences.size > 0
+                                    ? `Select all visible classes, ${selectedOccurrences.size} selected`
+                                    : "Select all visible classes"
+                            }
+                        />
+                        All
+                    </label>
+                    {selectedOccurrences.size > 0 && (
+                        <>
+                            <span
+                                className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-primary-500 px-2 font-display text-caption font-semibold tabular-nums text-neutral-ink"
+                                aria-hidden="true"
+                            >
+                                {selectedOccurrences.size}
+                            </span>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={handleBulkDelete}
+                                loading={submittingEdit}
+                                disabled={submittingEdit}
+                                aria-label={`Delete ${selectedOccurrences.size} selected class${selectedOccurrences.size !== 1 ? "es" : ""}`}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </>
+                    )}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2">
                         <Button
                             variant="secondary"
@@ -689,69 +748,20 @@ export default function AdminCalendarPage() {
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>
-                    <div className="flex items-center gap-2 font-display text-body-lg font-bold text-neutral-ink">
-                        <Calendar className="h-5 w-5 text-primary-600" />
-                        {viewMode === "week"
-                            ? `${format(weekStart, "d MMMM yyyy")} – ${format(addDays(weekStart, 6), "d MMMM yyyy")}`
-                            : format(toZonedTime(currentDate, STUDIO_TZ), "MMMM yyyy")}
+                    <div className="flex items-center gap-2 font-display text-body font-bold text-neutral-ink">
+                        <Calendar className="h-5 w-5 shrink-0 text-primary-600" />
+                        <span>
+                            {viewMode === "week"
+                                ? `${format(weekStart, "d MMM yyyy")} – ${format(addDays(weekStart, 6), "d MMM yyyy")}`
+                                : format(toZonedTime(currentDate, STUDIO_TZ), "MMMM yyyy")}
+                        </span>
                     </div>
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-primary-50 border border-primary-200 rounded-md p-3.5 shadow-sm">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <Button
-                                variant={mobileSelectionMode ? "primary" : "secondary"}
-                                size="sm"
-                                className="md:hidden"
-                                aria-pressed={mobileSelectionMode}
-                                onClick={() => {
-                                    if (mobileSelectionMode) clearSelection();
-                                    setMobileSelectionMode((isSelecting) => !isSelecting);
-                                }}
-                            >
-                                {mobileSelectionMode ? "Done" : "Select"}
-                            </Button>
-                            <span className="font-display text-body font-semibold text-neutral-ink">
-                                {selectedOccurrences.size > 0
-                                    ? `${selectedOccurrences.size} class${selectedOccurrences.size !== 1 ? "es" : ""} selected`
-                                    : "Select classes to manage in bulk"}
-                            </span>
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={selectAllInView}
-                                disabled={loading || occurrences.length === 0}
-                            >
-                                {allOccurrencesSelected ? "Deselect Visible" : "Select Visible"}
-                            </Button>
-                        </div>
-                        {selectedOccurrences.size > 0 && (
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={clearSelection}
-                                >
-                                    Clear selection
-                                </Button>
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    leftIcon={<Trash2 className="h-4 w-4" />}
-                                    onClick={handleBulkDelete}
-                                    loading={submittingEdit}
-                                    disabled={submittingEdit}
-                                >
-                                    Delete Selected
-                                </Button>
-                            </div>
-                        )}
                 </div>
             </div>
 
             {/* Calendar Visual Grid - Week or Month View */}
             {viewMode === "week" ? (
-            <div className="grid grid-cols-1 md:grid-cols-7 gap-4 flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-2 flex-1 min-w-0">
                 {weekDays.map((day, idx) => {
                     const dayClasses = occurrences.filter((occ) => {
                         const localStartsAt = toZonedTime(parseISO(occ.startsAt), STUDIO_TZ);
@@ -764,14 +774,14 @@ export default function AdminCalendarPage() {
                         <div
                             key={idx}
                             className={cn(
-                                "flex flex-col min-h-[350px] border border-neutral-line bg-neutral-card rounded-md shadow-sm overflow-hidden",
+                                "flex min-w-0 flex-col min-h-[350px] border border-neutral-line bg-neutral-card rounded-md shadow-sm overflow-hidden",
                                 isToday && "border-2 border-primary-500 ring-2 ring-primary-100",
                             )}
                         >
                             {/* Day Header */}
                             <div
                                 className={cn(
-                                    "flex flex-col items-center justify-center p-3 border-b border-neutral-line text-center shrink-0",
+                                    "flex flex-col items-center justify-center p-2 border-b border-neutral-line text-center shrink-0",
                                     isToday ? "bg-primary-500 text-neutral-ink font-semibold" : "bg-neutral-bg",
                                 )}
                             >
@@ -784,7 +794,7 @@ export default function AdminCalendarPage() {
                             </div>
 
                             {/* Class occurrences under this day */}
-                            <div className="flex-1 p-2.5 flex flex-col gap-2.5 overflow-y-auto bg-neutral-card/60">
+                            <div className="flex-1 min-w-0 p-1.5 flex flex-col gap-1.5 overflow-y-auto bg-neutral-card/60">
                                 {loading ? (
                                     <div className="flex flex-col items-center justify-center h-24 gap-2">
                                         <Loader className="h-5 w-5 animate-spin text-neutral-text-3" />
@@ -815,13 +825,13 @@ export default function AdminCalendarPage() {
                                                     }
                                                 }}
                                                 className={cn(
-                                                    "p-3 flex flex-col gap-2 border border-neutral-line hover:border-primary-400 hover:bg-primary-50/50 rounded-sm transition-all duration-150 text-left cursor-pointer",
+                                                    "min-w-0 w-full overflow-hidden p-2 flex flex-col gap-1.5 border border-neutral-line hover:border-primary-400 hover:bg-primary-50/50 rounded-sm transition-all duration-150 text-left cursor-pointer",
                                                     isSelected && "border-primary-500 ring-2 ring-primary-100 bg-primary-50",
                                                     isSpecial && "border-l-4 border-l-primary-500 bg-primary-50/20",
                                                     occ.isCancelled && "opacity-50 hover:opacity-70 border-error-fg/40 bg-error-bg/20",
                                                 )}
                                             >
-                                                <div className="flex items-start gap-2">
+                                                <div className="flex min-w-0 items-start gap-1.5">
                                                     <input
                                                         type="checkbox"
                                                         checked={isSelected}
@@ -831,44 +841,40 @@ export default function AdminCalendarPage() {
                                                             handleOccurrenceSelection(occ.id, e.shiftKey);
                                                         }}
                                                         aria-label={`Select ${occ.name}`}
-                                                        className="mt-0.5 hidden h-4 w-4 shrink-0 rounded border-neutral-line text-primary-500 focus:ring-primary-500 md:block"
+                                                        className="mt-0.5 hidden h-3.5 w-3.5 shrink-0 rounded border-neutral-line text-primary-500 focus:ring-primary-500 md:block"
                                                     />
-                                                    <div className="flex min-w-0 flex-1 justify-between items-start gap-1">
-                                                        <span
-                                                            className={cn(
-                                                                "font-display text-body-sm font-semibold tracking-wide text-neutral-ink leading-tight",
-                                                                occ.isCancelled && "line-through",
-                                                            )}
-                                                        >
-                                                            {occ.name}
-                                                        </span>
-                                                        {occ.isCancelled ? (
-                                                            <Badge tone="error" className="shrink-0 text-[10px]">
-                                                                Cancelled
-                                                            </Badge>
-                                                        ) : (
-                                                            isSpecial && (
-                                                                <Sparkles className="h-3.5 w-3.5 text-primary-600 shrink-0 mt-0.5" />
-                                                            )
+                                                    <span
+                                                        className={cn(
+                                                            "min-w-0 flex-1 truncate font-display text-caption font-semibold tracking-wide text-neutral-ink leading-tight",
+                                                            occ.isCancelled && "line-through",
                                                         )}
-                                                    </div>
+                                                        title={occ.name}
+                                                    >
+                                                        {occ.name}
+                                                    </span>
+                                                    {occ.isCancelled ? (
+                                                        <Badge tone="error" className="shrink-0 text-[10px]">
+                                                            Cancelled
+                                                        </Badge>
+                                                    ) : (
+                                                        isSpecial && (
+                                                            <Sparkles className="h-3.5 w-3.5 text-primary-600 shrink-0 mt-0.5" />
+                                                        )
+                                                    )}
                                                 </div>
 
-                                                <div className="flex flex-col gap-1 text-neutral-text-3">
-                                                    <div className="flex items-center gap-1.5 font-sans text-caption">
-                                                        <Clock className="h-3.5 w-3.5" />
-                                                        <span>{format(localStarts, "HH:mm")} ({occ.durationMin}m)</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-between gap-1.5 font-sans text-caption mt-1">
-                                                        <div className="flex items-center gap-1">
-                                                            <User className="h-3.5 w-3.5" />
-                                                            <span className="font-medium">{occ.instructor.name}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1 text-neutral-ink shrink-0 bg-neutral-line/30 px-1.5 py-0.5 rounded-sm">
-                                                            <Users className="h-3 w-3 text-neutral-text-2" />
-                                                            <span className="font-semibold text-[11px]">{occ.bookedCount}/{occ.capacity}</span>
-                                                        </div>
-                                                    </div>
+                                                <div className="flex min-w-0 items-center gap-1 font-sans text-[11px] text-neutral-text-3">
+                                                    <Clock className="h-3 w-3 shrink-0" />
+                                                    <span className="truncate">{format(localStarts, "HH:mm")} ({occ.durationMin}m)</span>
+                                                </div>
+                                                <div className="flex min-w-0 items-center gap-1 font-sans text-[11px] text-neutral-text-3">
+                                                    <User className="h-3 w-3 shrink-0" />
+                                                    <span className="min-w-0 truncate font-medium" title={occ.instructor.name}>
+                                                        {occ.instructor.name}
+                                                    </span>
+                                                    <span className="ml-auto shrink-0 tabular-nums font-semibold text-neutral-ink">
+                                                        {occ.bookedCount}/{occ.capacity}
+                                                    </span>
                                                 </div>
                                             </Card>
                                         );
@@ -882,7 +888,7 @@ export default function AdminCalendarPage() {
             ) : (
             <div className="flex flex-col gap-4 flex-1 min-h-0">
                 {/* Month View */}
-                <div className="grid grid-cols-7 gap-3">
+                <div className="grid grid-cols-7 gap-2 min-w-0">
                     {/* Weekday headers */}
                     {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
                         <div key={day} className="text-center font-display text-overline uppercase tracking-[0.08em] text-neutral-text-2 py-3 border-b border-neutral-line">
@@ -917,7 +923,7 @@ export default function AdminCalendarPage() {
                                 <div
                                     key={idx}
                                     className={cn(
-                                        "flex flex-col min-h-[200px] border border-neutral-line rounded-md shadow-sm overflow-hidden",
+                                        "flex min-w-0 flex-col min-h-[200px] border border-neutral-line rounded-md shadow-sm overflow-hidden",
                                         isCurrentMonth ? "bg-neutral-card" : "bg-neutral-bg/60",
                                         isToday && "border-2 border-primary-500 ring-2 ring-primary-100",
                                     )}
@@ -964,7 +970,7 @@ export default function AdminCalendarPage() {
                                                             }
                                                         }}
                                                         className={cn(
-                                                            "p-2 flex flex-col gap-1 border rounded-sm transition-all duration-150 text-left cursor-pointer",
+                                                            "min-w-0 overflow-hidden p-2 flex flex-col gap-1 border rounded-sm transition-all duration-150 text-left cursor-pointer",
                                                             isSelected
                                                                 ? "bg-primary-500 border-primary-600 text-white"
                                                                 : "border-neutral-line hover:border-primary-400 hover:bg-primary-50/50 bg-neutral-card",
@@ -988,7 +994,7 @@ export default function AdminCalendarPage() {
                                                             <div className="flex min-w-0 flex-1 justify-between items-start gap-1">
                                                                 <span
                                                                     className={cn(
-                                                                        "font-display text-caption font-semibold tracking-wide leading-tight line-clamp-2",
+                                                                        "min-w-0 font-display text-caption font-semibold tracking-wide leading-tight truncate",
                                                                         occ.isCancelled && "line-through",
                                                                     )}
                                                                 >
