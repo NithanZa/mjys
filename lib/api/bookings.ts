@@ -3,11 +3,9 @@
 // Real bookings access. Talks to `/api/bookings`, which enforces auth
 // (LINE ID token in LIFF mode, signed HttpOnly cookie in standalone mode),
 // capacity limits, duplicate checks and package decrement server-side.
-//
-// A localStorage fallback is kept ONLY for local development outside LINE
-// with standalone mode off, where no member session can exist.
 
-import { useLiff } from "@/lib/liff";
+import { isStandaloneMode } from "@/lib/auth/mode";
+import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
 import { usePurchases } from "@/lib/api/purchases";
 import { useMember } from "@/lib/profile/use-member";
 import {
@@ -22,7 +20,7 @@ import {
 } from "react";
 
 /** True when the app runs as a regular web app (cookie auth, no LINE). */
-const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+const isStandalone = isStandaloneMode;
 
 export interface Booking {
     occurrenceId: string;
@@ -68,13 +66,7 @@ function useBookingsState(): UseBookingsResult {
     /** Auth headers for the current mode (cookie mode needs none). */
     const authHeaders = useCallback((): Record<string, string> => {
         if (isStandalone) return {};
-        const token = liff?.getIDToken();
-        if (!token) {
-            throw new Error(
-                "LINE ID Token is missing. Enable the 'openid' scope for this LIFF channel, then log out and back in.",
-            );
-        }
-        return { Authorization: `Bearer ${token}` };
+        return getLiffAuthHeaders(liff);
     }, [liff]);
 
     const fetchRealBookings = useCallback(async () => {

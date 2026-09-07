@@ -4,7 +4,8 @@
 // status for a specific class occurrence. Talks to the real `/api/purchases`
 // endpoint (auth via LINE ID token in LIFF mode, cookie in standalone mode).
 
-import { useLiff } from "@/lib/liff";
+import { isStandaloneMode } from "@/lib/auth/mode";
+import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
 import { useCallback, useEffect, useState } from "react";
 
 export type SpecialAdmissionStatus = "NONE" | "PENDING" | "APPROVED" | "REJECTED";
@@ -21,7 +22,7 @@ const NONE_ADMISSION: SpecialAdmission = {
     purchaseId: null,
 };
 
-const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+const isStandalone = isStandaloneMode;
 
 export interface UseSpecialAdmissionResult {
     admission: SpecialAdmission;
@@ -49,8 +50,7 @@ export function useSpecialAdmission(occurrenceId: string | null): UseSpecialAdmi
         try {
             const headers: Record<string, string> = {};
             if (!isStandalone) {
-                const token = liff?.getIDToken();
-                if (token) headers["Authorization"] = `Bearer ${token}`;
+                Object.assign(headers, getLiffAuthHeaders(liff));
             }
 
             const res = await fetch("/api/purchases", { headers });

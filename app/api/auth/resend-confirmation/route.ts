@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { formatMailerError } from "@/lib/auth-error";
 import { supabase } from "@/lib/supabase";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isStandaloneMode } from "@/lib/auth/mode";
 import { z } from "zod";
 
 const ResendSchema = z.object({
@@ -9,7 +10,7 @@ const ResendSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-    if (process.env.NEXT_PUBLIC_STANDALONE_MODE !== "true") {
+    if (!isStandaloneMode) {
         return NextResponse.json(
             { error: "Authentication is only available in standalone mode." },
             { status: 400 },

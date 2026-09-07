@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyLineIdToken } from "@/lib/line/verify-id-token";
-import { parseSessionCookie } from "@/lib/standalone-auth";
+import { authenticateRequest } from "@/lib/auth/member-request";
 import { randomUUID } from "crypto";
 import { supabase } from "@/lib/supabase";
 
@@ -24,32 +23,9 @@ const ALLOWED_TYPES: Record<string, string> = {
  * Authenticated via LINE ID token (in LIFF mode) or session cookie (in standalone mode).
  */
 export async function POST(request: NextRequest) {
-    let isAuthenticated = false;
-
-    const authHeader = request.headers.get("Authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-        const idToken = authHeader.substring(7);
-        const lineClaims = await verifyLineIdToken(idToken);
-        if (lineClaims) {
-            isAuthenticated = true;
-        } else {
-            return NextResponse.json(
-                { error: "Invalid LINE ID token" },
-                { status: 401 },
-            );
-        }
-    } else if (process.env.NEXT_PUBLIC_STANDALONE_MODE === "true") {
-        const memberId = parseSessionCookie(request);
-        if (memberId) {
-            isAuthenticated = true;
-        }
-    }
-
-    if (!isAuthenticated) {
-        return NextResponse.json(
-            { error: "Missing or invalid authorization header" },
-            { status: 401 },
-        );
+    const auth = await authenticateRequest(request);
+    if (!auth.ok) {
+        return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     try {

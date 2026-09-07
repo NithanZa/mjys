@@ -11,13 +11,12 @@ import {
     StatsRow,
 } from "@/components/profile";
 import { RecentActivityList } from "@/components/rewards";
-import { Button, Card, EmptyState, Modal, Input } from "@/components/ui";
-import { useLiff } from "@/lib/liff";
+import { Button, Card, Modal, Input } from "@/components/ui";
 import { getLevel } from "@/lib/levels";
 import { useMember } from "@/lib/profile/use-member";
 import { useClassHistory } from "@/lib/profile/use-class-history";
 import { usePurchases } from "@/lib/api/purchases";
-import { LockIcon, LogOut, Smartphone, Trash2 } from "lucide-react";
+import { LockIcon, LogOut, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -27,11 +26,8 @@ const CELEBRATION_MESSAGES: Record<number, string> = {
     100: "100 Club. You are the heart of MiTR.",
 };
 
-const DEV = process.env.NODE_ENV !== "production";
-
 export default function ProfilePage() {
-    const { status, isInClient, error: liffError, liff, isLoggedIn } = useLiff();
-    const { member, loading, markCelebrated, reset, deleteAccount } =
+    const { member, markCelebrated, reset, deleteAccount } =
         useMember();
 
     const handleLogout = async () => {

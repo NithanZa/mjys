@@ -7,6 +7,7 @@ import {
     SESSION_COOKIE_NAME,
     SESSION_COOKIE_OPTIONS,
 } from "@/lib/standalone-auth";
+import { isStandaloneMode } from "@/lib/auth/mode";
 import { z } from "zod";
 
 const ResetPasswordSchema = z.object({
@@ -15,7 +16,7 @@ const ResetPasswordSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-    if (process.env.NEXT_PUBLIC_STANDALONE_MODE !== "true") {
+    if (!isStandaloneMode) {
         return NextResponse.json(
             { error: "Authentication is only available in standalone mode." },
             { status: 400 },

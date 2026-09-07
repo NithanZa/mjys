@@ -6,7 +6,8 @@ import { Button, Card, EmptyState, QRCode } from "@/components/ui";
 import { formatDateLong, formatTime } from "@/lib/dates";
 import { fetchOccurrence, OccurrenceView } from "@/lib/api/classes";
 import { useSpecialAdmission } from "@/lib/api/special-purchases";
-import { useLiff } from "@/lib/liff";
+import { isStandaloneMode } from "@/lib/auth/mode";
+import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
 import { CheckCircle2, Clock, Copy, ImageUp, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
@@ -33,7 +34,7 @@ export default function SpecialClassPayPage({ params }: PayPageProps) {
     const [copied, setCopied] = useState(false);
     const { admission, refresh: refreshAdmission } = useSpecialAdmission(occurrenceId);
 
-    const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+    const isStandalone = isStandaloneMode;
 
     useEffect(() => {
         let cancelled = false;
@@ -52,9 +53,8 @@ export default function SpecialClassPayPage({ params }: PayPageProps) {
 
     async function getAuthHeaders(): Promise<Record<string, string>> {
         const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (!isStandalone && liff) {
-            const token = liff.getIDToken();
-            if (token) headers["Authorization"] = `Bearer ${token}`;
+        if (!isStandalone) {
+            Object.assign(headers, getLiffAuthHeaders(liff));
         }
         return headers;
     }
@@ -63,9 +63,8 @@ export default function SpecialClassPayPage({ params }: PayPageProps) {
         const form = new FormData();
         form.append("file", file);
         const uploadHeaders: Record<string, string> = {};
-        if (!isStandalone && liff) {
-            const token = liff.getIDToken();
-            if (token) uploadHeaders["Authorization"] = `Bearer ${token}`;
+        if (!isStandalone) {
+            Object.assign(uploadHeaders, getLiffAuthHeaders(liff));
         }
         const res = await fetch("/api/upload", {
             method: "POST",

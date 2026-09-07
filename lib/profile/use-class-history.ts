@@ -1,9 +1,8 @@
 "use client";
 
-import { useLiff } from "@/lib/liff";
+import { isStandaloneMode } from "@/lib/auth/mode";
+import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
 import { useCallback, useEffect, useState } from "react";
-
-const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
 
 export type ActivityStatus = "ATTENDED" | "BOOKED" | "CANCELLED" | "NO_SHOW";
 
@@ -43,33 +42,22 @@ export function useClassHistory(): UseClassHistoryResult {
     const [error, setError] = useState<string | null>(null);
 
     const fetchHistory = useCallback(async () => {
-        if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) {
+        if (!isStandaloneMode && (status !== "ready" || !isLoggedIn || !liff)) {
             setHistory([]);
-            setError("LINE authentication is unavailable. Please open this page from an authenticated LINE session.");
+            setError(null);
             setLoading(false);
             return;
         }
 
         try {
             let data: any;
-            if (isStandalone) {
+            if (isStandaloneMode) {
                 const res = await fetch("/api/members/me/history");
                 if (!res.ok) throw new Error(`Failed to fetch history: ${res.statusText}`);
                 data = await res.json();
             } else {
-                if (!liff) {
-                    setError("LIFF not initialized");
-                    setLoading(false);
-                    return;
-                }
-                const token = liff.getIDToken();
-                if (!token) {
-                    setError("No LINE ID token available");
-                    setLoading(false);
-                    return;
-                }
                 const res = await fetch("/api/members/me/history", {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: getLiffAuthHeaders(liff),
                 });
                 if (!res.ok) throw new Error(`Failed to fetch history: ${res.statusText}`);
                 data = await res.json();

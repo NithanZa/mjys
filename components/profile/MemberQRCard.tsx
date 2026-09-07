@@ -2,7 +2,8 @@
 
 import { Card } from "@/components/ui/Card";
 import { QRCode } from "@/components/ui/QRCode";
-import { useLiff } from "@/lib/liff";
+import { isStandaloneMode } from "@/lib/auth/mode";
+import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
 import { useEffect, useState, useCallback } from "react";
 
 export interface MemberQRCardProps {
@@ -23,7 +24,7 @@ export function MemberQRCard({ refreshMs = 60_000 }: MemberQRCardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+  const isStandalone = isStandaloneMode;
 
   const rotateToken = useCallback(async () => {
     try {
@@ -32,12 +33,7 @@ export function MemberQRCard({ refreshMs = 60_000 }: MemberQRCardProps) {
         if (status !== "ready" || !isLoggedIn || !liff) {
           throw new Error("LINE authentication is unavailable");
         }
-
-        const idToken = liff.getIDToken();
-        if (!idToken) throw new Error("No LINE ID token available");
-        fetchOptions.headers = {
-          Authorization: `Bearer ${idToken}`,
-        };
+        fetchOptions.headers = getLiffAuthHeaders(liff);
       }
 
       const res = await fetch("/api/members/me/qr", fetchOptions);

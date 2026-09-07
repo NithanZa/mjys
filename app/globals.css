@@ -192,9 +192,8 @@
     font-size: var(--text-body-lg);
     line-height: var(--text-body-lg--line-height);
     min-height: 100dvh;
-    /* Honor iPhone safe areas under viewport-fit=cover */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+    /* Horizontal notches only. Top/bottom insets belong on sticky TopBar
+       and fixed BottomNav so they are not applied twice. */
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
