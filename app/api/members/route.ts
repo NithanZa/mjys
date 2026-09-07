@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { formatMailerError } from "@/lib/auth-error";
 import { supabase } from "@/lib/supabase";
-import { verifyLineIdToken } from "@/lib/line/verify-id-token";
+import { authenticateRequest, resolveAuthenticatedMember } from "@/lib/auth/member-request";
+import { isStandaloneMode } from "@/lib/auth/mode";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
     createSessionToken,
-    parseSessionCookie,
     SESSION_COOKIE_NAME,
     SESSION_COOKIE_OPTIONS,
 } from "@/lib/standalone-auth";
@@ -24,19 +24,23 @@ const RegistrationSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-    const authHeader = request.headers.get("Authorization");
-
     let lineUserId: string = "";
     let isStandalone = false;
 
+    const authHeader = request.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
-        const idToken = authHeader.substring(7);
-        const lineClaims = await verifyLineIdToken(idToken);
-        if (!lineClaims) {
-            return NextResponse.json({ error: "Invalid LINE ID token" }, { status: 401 });
+        const auth = await authenticateRequest(request);
+        if (!auth.ok) {
+            return NextResponse.json({ error: auth.error }, { status: auth.status });
         }
-        lineUserId = lineClaims.lineUserId;
-    } else if (process.env.NEXT_PUBLIC_STANDALONE_MODE === "true") {
+        if (auth.method !== "line") {
+            return NextResponse.json(
+                { error: "Missing or invalid authorization header" },
+                { status: 401 },
+            );
+        }
+        lineUserId = auth.lineUserId;
+    } else if (isStandaloneMode) {
         isStandalone = true;
     } else {
         return NextResponse.json(
@@ -155,67 +159,34 @@ export async function POST(request: NextRequest) {
     }
 }
 export async function PATCH(request: NextRequest) {
-    const authHeader = request.headers.get("Authorization");
-
     const updateSchema = z.object({
         classesAttended: z.number().int().nonnegative().optional(),
         celebratedLevels: z.array(z.enum(["CAT", "TIGER", "LEOPARD"])).optional(),
         level: z.enum(["CAT", "TIGER", "LEOPARD"]).optional(),
     });
 
-    if (authHeader?.startsWith("Bearer ")) {
-        const idToken = authHeader.substring(7);
-        const lineClaims = await verifyLineIdToken(idToken);
-        if (!lineClaims) {
-            return NextResponse.json({ error: "Invalid LINE ID token" }, { status: 401 });
-        }
-        try {
-            const body = await request.json();
-            const parsed = updateSchema.safeParse(body);
-            if (!parsed.success) {
-                return NextResponse.json(
-                    { error: "Validation failed", details: parsed.error.format() },
-                    { status: 400 },
-                );
-            }
-            const member = await prisma.member.update({
-                where: { lineUserId: lineClaims.lineUserId },
-                data: parsed.data,
-            });
-            return NextResponse.json({ member });
-        } catch (error) {
-            console.error("[api-members] Error updating member:", error);
-            return NextResponse.json({ error: "Database error" }, { status: 500 });
-        }
+    const result = await resolveAuthenticatedMember(request);
+    if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    if (process.env.NEXT_PUBLIC_STANDALONE_MODE === "true") {
-        const memberId = parseSessionCookie(request);
-        if (!memberId) {
-            return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    try {
+        const body = await request.json();
+        const parsed = updateSchema.safeParse(body);
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: "Validation failed", details: parsed.error.format() },
+                { status: 400 },
+            );
         }
-        try {
-            const body = await request.json();
-            const parsed = updateSchema.safeParse(body);
-            if (!parsed.success) {
-                return NextResponse.json(
-                    { error: "Validation failed", details: parsed.error.format() },
-                    { status: 400 },
-                );
-            }
-            const member = await prisma.member.update({
-                where: { id: memberId },
-                data: parsed.data,
-            });
-            return NextResponse.json({ member });
-        } catch (error) {
-            console.error("[api-members] Error updating standalone member:", error);
-            return NextResponse.json({ error: "Database error" }, { status: 500 });
-        }
+        const member = await prisma.member.update({
+            where: { id: result.member.id },
+            data: parsed.data,
+        });
+        return NextResponse.json({ member });
+    } catch (error) {
+        console.error("[api-members] Error updating member:", error);
+        return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
-
-    return NextResponse.json(
-        { error: "Missing or invalid authorization header" },
-        { status: 401 },
-    );
 }
+

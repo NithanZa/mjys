@@ -14,7 +14,8 @@ export function TigerHeader({ className }: TigerHeaderProps) {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
-      className={cn("flex flex-col items-center text-center px-4 pt-2", className)}
+      className={cn("flex flex-col items-center text-center px-4", className)}
+      style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
     >
       <div className="relative h-12 w-12 overflow-hidden rounded-full border-2 border-primary-200 shadow-sm">
         <Image

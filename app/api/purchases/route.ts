@@ -1,42 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyLineIdToken } from "@/lib/line/verify-id-token";
-import { parseSessionCookie } from "@/lib/standalone-auth";
+import { resolveAuthenticatedMember } from "@/lib/auth/member-request";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { addDays } from "date-fns";
-import type { Member } from "@/generated/prisma/client";
 import { getSignedSlipUrl } from "@/lib/storage";
 import { sumRemaining, syncLotStatus } from "@/lib/packages/balance";
 import { CACHE_TAGS, expireCacheTags } from "@/lib/cache/tags";
-
-async function resolveMember(request: NextRequest): Promise<Member | null | { _err: string; _status: number }> {
-    const authHeader = request.headers.get("Authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-        const lineClaims = await verifyLineIdToken(authHeader.substring(7));
-        if (!lineClaims) return { _err: "Invalid LINE ID token", _status: 401 };
-        return prisma.member.findUnique({ where: { lineUserId: lineClaims.lineUserId } });
-    }
-    if (process.env.NEXT_PUBLIC_STANDALONE_MODE === "true") {
-        const memberId = parseSessionCookie(request);
-        if (!memberId) return { _err: "Not authenticated", _status: 401 };
-        return prisma.member.findUnique({ where: { id: memberId } });
-    }
-    return { _err: "Missing or invalid authorization header", _status: 401 };
-}
-
-function isAuthError(v: unknown): v is { _err: string; _status: number } {
-    return typeof v === "object" && v !== null && "_err" in v;
-}
 
 export const dynamic = "force-dynamic";
 
 // GET: Retrieve purchases and the member's pooled remaining-class balance.
 export async function GET(request: NextRequest) {
     try {
-        const result = await resolveMember(request);
-        if (isAuthError(result)) return NextResponse.json({ error: result._err }, { status: result._status });
-        if (!result) return NextResponse.json({ error: "Member not registered" }, { status: 404 });
-        const member = result;
+        const result = await resolveAuthenticatedMember(request);
+        if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+        const member = result.member;
 
         const [pendingPurchases, packages] = await Promise.all([
             prisma.pendingPurchase.findMany({
@@ -96,10 +74,9 @@ export async function GET(request: NextRequest) {
 // POST: Create a PENDING purchase (package offer or special-class admission)
 export async function POST(request: NextRequest) {
     try {
-        const result = await resolveMember(request);
-        if (isAuthError(result)) return NextResponse.json({ error: result._err }, { status: result._status });
-        if (!result) return NextResponse.json({ error: "Member not registered" }, { status: 404 });
-        const member = result;
+        const result = await resolveAuthenticatedMember(request);
+        if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+        const member = result.member;
 
         const { packageOfferId, classOccurrenceId, proofImageUrl } = await request.json();
 
@@ -303,10 +280,9 @@ export async function PUT(request: NextRequest) {
     }
 
     try {
-        const result = await resolveMember(request);
-        if (isAuthError(result)) return NextResponse.json({ error: result._err }, { status: result._status });
-        if (!result) return NextResponse.json({ error: "Member not found" }, { status: 404 });
-        const member = result;
+        const result = await resolveAuthenticatedMember(request);
+        if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+        const member = result.member;
 
         await prisma.pendingPurchase.deleteMany({ where: { memberId: member.id } });
         await prisma.package.deleteMany({ where: { memberId: member.id } });

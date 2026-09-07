@@ -6,25 +6,32 @@ let liffPromise: Promise<Liff> | null = null;
  * Initialize LIFF exactly once per browser session.
  * Safe to call from multiple components — they share the same promise.
  * Never call this on the server (it will throw).
+ *
+ * `withLoginOnExternalBrowser` makes LINE Login run automatically when the
+ * app is opened outside the LINE app (desktop preview, Android Chrome, etc.).
+ * Inside LINE, login already happens as part of init.
  */
 export function initLiff(): Promise<Liff> {
-  if (typeof window === "undefined") {
-    throw new Error("LIFF can only be initialized in the browser");
-  }
+    if (typeof window === "undefined") {
+        throw new Error("LIFF can only be initialized in the browser");
+    }
 
-  if (!liffPromise) {
-    liffPromise = (async () => {
-      const liff = (await import("@line/liff")).default;
-      const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+    if (!liffPromise) {
+        liffPromise = (async () => {
+            const liff = (await import("@line/liff")).default;
+            const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
 
-      if (!liffId) {
-        throw new Error("Missing NEXT_PUBLIC_LIFF_ID");
-      }
+            if (!liffId) {
+                throw new Error("Missing NEXT_PUBLIC_LIFF_ID");
+            }
 
-      await liff.init({ liffId });
-      return liff;
-    })();
-  }
+            await liff.init({
+                liffId,
+                withLoginOnExternalBrowser: true,
+            });
+            return liff;
+        })();
+    }
 
-  return liffPromise;
+    return liffPromise;
 }

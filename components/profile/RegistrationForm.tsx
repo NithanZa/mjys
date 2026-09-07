@@ -3,12 +3,13 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextField } from "@/components/ui/Input";
+import { isStandaloneMode } from "@/lib/auth/mode";
 import { useLiff } from "@/lib/liff";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
-const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+const isStandalone = isStandaloneMode;
 
 const RegistrationSchema = z.object({
     displayName: z
@@ -44,7 +45,7 @@ export function RegistrationForm({
     onSubmit,
     onSwitchToLogin,
 }: RegistrationFormProps) {
-    const { liff, status, isInClient } = useLiff();
+    const { liff, status, isLoggedIn } = useLiff();
     const [displayName, setDisplayName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -63,9 +64,9 @@ export function RegistrationForm({
     const [resending, setResending] = useState(false);
     const [resendMessage, setResendMessage] = useState<string | null>(null);
 
-    // Pre-fill from LIFF when available.
+    // Pre-fill from LIFF when the LINE session is ready (in-app or external browser).
     useEffect(() => {
-        if (status !== "ready" || !liff || !isInClient) return;
+        if (status !== "ready" || !liff || !isLoggedIn) return;
         let cancelled = false;
         void liff
             .getProfile()
@@ -80,7 +81,7 @@ export function RegistrationForm({
         return () => {
             cancelled = true;
         };
-    }, [liff, status, isInClient]);
+    }, [liff, status, isLoggedIn]);
 
     async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
         e.preventDefault();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isStandaloneMode } from "@/lib/auth/mode";
 import { z } from "zod";
 
 const ForgotPasswordSchema = z.object({
@@ -8,7 +9,7 @@ const ForgotPasswordSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-    if (process.env.NEXT_PUBLIC_STANDALONE_MODE !== "true") {
+    if (!isStandaloneMode) {
         return NextResponse.json(
             { error: "Authentication is only available in standalone mode." },
             { status: 400 },

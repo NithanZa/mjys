@@ -1,6 +1,7 @@
 "use client";
 
-import { useLiff } from "@/lib/liff";
+import { isStandaloneMode } from "@/lib/auth/mode";
+import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
 import {
     createContext,
     createElement,
@@ -52,20 +53,7 @@ export interface UseMemberResult {
 }
 
 const DEV = process.env.NODE_ENV !== "production";
-
-/** True when the app is running in standalone (non-LINE) mode. */
-const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
 const MemberContext = createContext<UseMemberResult | null>(null);
-
-function getRequiredIDToken(liff: any): string {
-    const token = liff?.getIDToken();
-    if (!token) {
-        throw new Error(
-            "LINE ID Token is missing (null). Please open your LINE Developers Console, select your LIFF Channel, scroll down to Scopes, and check/enable the 'openid' scope. After enabling, log out of the app and log back in to grant permissions."
-        );
-    }
-    return token;
-}
 
 function useMemberState(): UseMemberResult {
     const { liff, status, isLoggedIn } = useLiff();
@@ -75,35 +63,26 @@ function useMemberState(): UseMemberResult {
     const initialFetchStarted = useRef(false);
 
     const fetchMember = useCallback(async () => {
-        if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) {
-            setMember(null);
-            setError("LINE authentication is unavailable. Please open this page from an authenticated LINE session.");
-            setLoading(false);
+        if (!isStandaloneMode && (status !== "ready" || !isLoggedIn || !liff)) {
             return;
         }
 
         try {
             let data: any;
-            if (isStandalone) {
+            if (isStandaloneMode) {
                 // Cookie is sent automatically by the browser
                 const res = await fetch("/api/members/me");
                 if (!res.ok) throw new Error(`Failed to fetch profile: ${res.statusText}`);
                 data = await res.json();
             } else {
-                if (!liff) {
-                    setError("LIFF not initialized");
-                    setLoading(false);
-                    return;
-                }
-                const token = liff.getIDToken();
-                if (!token) {
-                    setError("No LINE ID token available");
-                    setLoading(false);
-                    return;
-                }
                 const res = await fetch("/api/members/me", {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: getLiffAuthHeaders(liff),
                 });
+                if (res.status === 401) {
+                    throw new Error(
+                        "LINE session could not be verified. Reopen this page from LINE, or tap Continue with LINE.",
+                    );
+                }
                 if (!res.ok) throw new Error(`Failed to fetch profile: ${res.statusText}`);
                 data = await res.json();
             }
@@ -117,7 +96,8 @@ function useMemberState(): UseMemberResult {
     }, [isLoggedIn, liff, status]);
 
     useEffect(() => {
-        if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) {
+        if (!isStandaloneMode && (status !== "ready" || !isLoggedIn || !liff)) {
+            initialFetchStarted.current = false;
             return;
         }
         if (initialFetchStarted.current) return;
@@ -137,19 +117,18 @@ function useMemberState(): UseMemberResult {
         }) => {
             try {
                 let res: Response;
-                if (isStandalone) {
+                if (isStandaloneMode) {
                     res = await fetch("/api/members", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(input),
                     });
                 } else {
-                    const token = getRequiredIDToken(liff);
                     res = await fetch("/api/members", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
+                            ...getLiffAuthHeaders(liff),
                         },
                         body: JSON.stringify(input),
                     });
@@ -220,19 +199,18 @@ function useMemberState(): UseMemberResult {
 
             try {
                 let res: Response;
-                if (isStandalone) {
+                if (isStandaloneMode) {
                     res = await fetch("/api/members", {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ celebratedLevels: nextCelebrated }),
                     });
                 } else {
-                    const token = getRequiredIDToken(liff);
                     res = await fetch("/api/members", {
                         method: "PATCH",
                         headers: {
                             "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
+                            ...getLiffAuthHeaders(liff),
                         },
                         body: JSON.stringify({ celebratedLevels: nextCelebrated }),
                     });
@@ -250,7 +228,7 @@ function useMemberState(): UseMemberResult {
     );
 
     const reset = useCallback(async () => {
-        if (isStandalone) {
+        if (isStandaloneMode) {
             const res = await fetch("/api/auth/logout", {
                 method: "POST",
                 cache: "no-store",
@@ -270,12 +248,9 @@ function useMemberState(): UseMemberResult {
             return;
         }
         try {
-            const token = getRequiredIDToken(liff);
             const res = await fetch("/api/members/reset", {
                 method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: getLiffAuthHeaders(liff),
             });
             if (res.ok) {
                 setMember(null);
@@ -289,17 +264,14 @@ function useMemberState(): UseMemberResult {
         setLoading(true);
         try {
             let res: Response;
-            if (isStandalone) {
+            if (isStandaloneMode) {
                 res = await fetch("/api/members/me", {
                     method: "DELETE",
                 });
             } else {
-                const token = getRequiredIDToken(liff);
                 res = await fetch("/api/members/me", {
                     method: "DELETE",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: getLiffAuthHeaders(liff),
                 });
             }
 
@@ -318,9 +290,12 @@ function useMemberState(): UseMemberResult {
         }
     }, [liff]);
 
+    const liffSessionReady =
+        isStandaloneMode || (status === "ready" && isLoggedIn && !!liff);
+
     return {
-        member,
-        loading,
+        member: liffSessionReady ? member : null,
+        loading: liffSessionReady ? loading : false,
         error,
         register,
         login,

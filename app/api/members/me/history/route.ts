@@ -1,41 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyLineIdToken } from "@/lib/line/verify-id-token";
-import { parseSessionCookie } from "@/lib/standalone-auth";
+import { resolveAuthenticatedMember } from "@/lib/auth/member-request";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-    let memberId: string | null = null;
-    const authHeader = request.headers.get("Authorization");
-
-    if (authHeader?.startsWith("Bearer ")) {
-        const idToken = authHeader.substring(7);
-        const lineClaims = await verifyLineIdToken(idToken);
-        if (!lineClaims) {
-            return NextResponse.json({ error: "Invalid LINE ID token" }, { status: 401 });
-        }
-        try {
-            const member = await prisma.member.findUnique({
-                where: { lineUserId: lineClaims.lineUserId },
-            });
-            if (member) {
-                memberId = member.id;
-            }
-        } catch (error) {
-            console.error("[api-members-me-history] Error fetching member:", error);
-            return NextResponse.json({ error: "Database error" }, { status: 500 });
-        }
-    } else if (process.env.NEXT_PUBLIC_STANDALONE_MODE === "true") {
-        memberId = parseSessionCookie(request);
+    const result = await resolveAuthenticatedMember(request);
+    if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
     }
-
-    if (!memberId) {
-        return NextResponse.json(
-            { error: "Missing or invalid authorization" },
-            { status: 401 },
-        );
-    }
+    const memberId = result.member.id;
 
     try {
         const attendances = await prisma.attendance.findMany({

@@ -1,6 +1,7 @@
 "use client";
 
-import { useLiff } from "@/lib/liff";
+import { isStandaloneMode } from "@/lib/auth/mode";
+import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
 import type { PackageOffer } from "@/lib/api/packages";
 import { useMember } from "@/lib/profile/use-member";
 import {
@@ -82,7 +83,7 @@ interface PurchasesWire {
   nextExpiry: { classesRemaining: number; expiresAt: string } | null;
 }
 
-const isStandalone = process.env.NEXT_PUBLIC_STANDALONE_MODE === "true";
+const isStandalone = isStandaloneMode;
 const PurchasesContext = createContext<UsePurchasesResult | null>(null);
 
 function usePurchasesState(): UsePurchasesResult {
@@ -101,9 +102,7 @@ function usePurchasesState(): UsePurchasesResult {
 
   const authHeaders = useCallback((): Record<string, string> => {
     if (isStandalone) return {};
-    const token = liff?.getIDToken();
-    if (!token) throw new Error("No LINE ID token available");
-    return { Authorization: `Bearer ${token}` };
+    return getLiffAuthHeaders(liff);
   }, [liff]);
 
   const refresh = useCallback(async () => {

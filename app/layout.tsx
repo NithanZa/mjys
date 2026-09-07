@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Thai } from "next/font/google";
 import "./globals.css";
-import { LiffProvider } from "@/lib/liff";
 
 const ibmPlexSansThai = IBM_Plex_Sans_Thai({
     subsets: ["thai", "latin"],
@@ -38,9 +37,7 @@ export default function RootLayout({
             className={`${ibmPlexSansThai.variable}`}
             data-semantic-theme="warm"
         >
-            <body>
-                <LiffProvider>{children}</LiffProvider>
-            </body>
+            <body>{children}</body>
         </html>
     );
 }

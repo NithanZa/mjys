@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyLineIdToken } from "@/lib/line/verify-id-token";
-import { parseSessionCookie } from "@/lib/standalone-auth";
-import type { Member } from "@/generated/prisma/client";
+import { resolveAuthenticatedMember } from "@/lib/auth/member-request";
 import { usableLotsWhere } from "@/lib/packages/balance";
 import { CACHE_TAGS, expireCacheTag } from "@/lib/cache/tags";
 
@@ -34,38 +32,17 @@ function checkRateLimit(memberId: string, classOccurrenceId: string): boolean {
     return true; // Not rate limited
 }
 
-async function resolveBookingMember(
-    request: NextRequest,
-): Promise<Member | null | { _err: string; _status: number }> {
-    const authHeader = request.headers.get("Authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-        const lineClaims = await verifyLineIdToken(authHeader.substring(7));
-        if (!lineClaims) return { _err: "Invalid LINE ID token", _status: 401 };
-        return prisma.member.findUnique({ where: { lineUserId: lineClaims.lineUserId } });
-    }
-    if (process.env.NEXT_PUBLIC_STANDALONE_MODE === "true") {
-        const memberId = parseSessionCookie(request);
-        if (!memberId) return { _err: "Not authenticated", _status: 401 };
-        return prisma.member.findUnique({ where: { id: memberId } });
-    }
-    return { _err: "Missing or invalid authorization header", _status: 401 };
-}
-
-function isAuthError(v: unknown): v is { _err: string; _status: number } {
-    return typeof v === "object" && v !== null && "_err" in v;
+function jsonAuthError(result: { error: string; status: number }) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
 }
 
 // GET: Retrieve all active bookings for the logged-in member
 export async function GET(request: NextRequest) {
-    const result = await resolveBookingMember(request);
-    if (isAuthError(result)) {
-        return NextResponse.json({ error: result._err }, { status: result._status });
+    const result = await resolveAuthenticatedMember(request);
+    if (!result.ok) {
+        return jsonAuthError(result);
     }
-
-    if (!result) {
-        return NextResponse.json({ error: "Member not registered" }, { status: 404 });
-    }
-    const member = result;
+    const member = result.member;
 
     try {
         const bookings = await prisma.attendance.findMany({
@@ -115,14 +92,11 @@ export async function GET(request: NextRequest) {
 
 // POST: Book a class occurrence atomically (with concurrency lock & package decrement)
 export async function POST(request: NextRequest) {
-    const auth = await resolveBookingMember(request);
-    if (isAuthError(auth)) {
-        return NextResponse.json({ error: auth._err }, { status: auth._status });
+    const result = await resolveAuthenticatedMember(request);
+    if (!result.ok) {
+        return jsonAuthError(result);
     }
-    if (!auth) {
-        return NextResponse.json({ error: "Profile registration required." }, { status: 404 });
-    }
-    const resolvedMember = auth;
+    const resolvedMember = result.member;
 
     try {
         const { classOccurrenceId } = await request.json();
@@ -286,14 +260,11 @@ export async function POST(request: NextRequest) {
 
 // DELETE: Cancel a booking (with timezone-safe late cancellation check)
 export async function DELETE(request: NextRequest) {
-    const auth = await resolveBookingMember(request);
-    if (isAuthError(auth)) {
-        return NextResponse.json({ error: auth._err }, { status: auth._status });
+    const result = await resolveAuthenticatedMember(request);
+    if (!result.ok) {
+        return jsonAuthError(result);
     }
-    if (!auth) {
-        return NextResponse.json({ error: "Profile registration required." }, { status: 404 });
-    }
-    const resolvedMember = auth;
+    const resolvedMember = result.member;
 
     try {
         const urlParams = request.nextUrl.searchParams;
