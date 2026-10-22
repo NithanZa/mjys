@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { isAdminSessionToken } from "@/lib/admin-auth";
 
 export const config = {
     // Intercept requests to admin pages and admin API endpoints
@@ -44,12 +44,9 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(new URL("/admin/login", request.url));
         }
 
-        const secret = new TextEncoder().encode(secretString);
-
-        // Verify JWT token signature and expiry
-        await jwtVerify(sessionCookie.value, secret, {
-            algorithms: ["HS256"],
-        });
+        if (!(await isAdminSessionToken(sessionCookie.value, secretString))) {
+            throw new Error("Not an admin session token");
+        }
 
         return NextResponse.next();
     } catch (error) {

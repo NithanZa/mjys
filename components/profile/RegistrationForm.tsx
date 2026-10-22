@@ -45,7 +45,7 @@ export function RegistrationForm({
     onSubmit,
     onSwitchToLogin,
 }: RegistrationFormProps) {
-    const { liff, status, isLoggedIn } = useLiff();
+    const { liff } = useLiff();
     const [displayName, setDisplayName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -66,7 +66,7 @@ export function RegistrationForm({
 
     // Pre-fill from LIFF when the LINE session is ready (in-app or external browser).
     useEffect(() => {
-        if (status !== "ready" || !liff || !isLoggedIn) return;
+        if (!liff?.isLoggedIn()) return;
         let cancelled = false;
         void liff
             .getProfile()
@@ -81,7 +81,7 @@ export function RegistrationForm({
         return () => {
             cancelled = true;
         };
-    }, [liff, status, isLoggedIn]);
+    }, [liff]);
 
     async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -280,6 +280,14 @@ export function RegistrationForm({
                             target="_blank"
                         >
                             Terms &amp; Conditions
+                        </Link>{" "}
+                        and{" "}
+                        <Link
+                            href="/privacy"
+                            className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800"
+                            target="_blank"
+                        >
+                            Privacy Policy
                         </Link>
                     </span>
                 </label>

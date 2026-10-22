@@ -6,8 +6,6 @@ import { Button, Card, EmptyState, QRCode } from "@/components/ui";
 import { formatDateLong, formatTime } from "@/lib/dates";
 import { fetchOccurrence, OccurrenceView } from "@/lib/api/classes";
 import { useSpecialAdmission } from "@/lib/api/special-purchases";
-import { isStandaloneMode } from "@/lib/auth/mode";
-import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
 import { CheckCircle2, Clock, Copy, ImageUp, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
@@ -24,7 +22,6 @@ function buildQrPayload(occurrenceId: string, amount: number, promptpayId: strin
 
 export default function SpecialClassPayPage({ params }: PayPageProps) {
     const { occurrenceId } = use(params);
-    const { liff } = useLiff();
     const [occurrence, setOccurrence] = useState<OccurrenceView | null>(null);
     const [loading, setLoading] = useState(true);
     const [slipFile, setSlipFile] = useState<File | null>(null);
@@ -33,8 +30,6 @@ export default function SpecialClassPayPage({ params }: PayPageProps) {
     const [submitted, setSubmitted] = useState(false);
     const [copied, setCopied] = useState(false);
     const { admission, refresh: refreshAdmission } = useSpecialAdmission(occurrenceId);
-
-    const isStandalone = isStandaloneMode;
 
     useEffect(() => {
         let cancelled = false;
@@ -51,24 +46,11 @@ export default function SpecialClassPayPage({ params }: PayPageProps) {
         return () => { cancelled = true; };
     }, [occurrenceId]);
 
-    async function getAuthHeaders(): Promise<Record<string, string>> {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (!isStandalone) {
-            Object.assign(headers, getLiffAuthHeaders(liff));
-        }
-        return headers;
-    }
-
     async function uploadSlip(file: File): Promise<string> {
         const form = new FormData();
         form.append("file", file);
-        const uploadHeaders: Record<string, string> = {};
-        if (!isStandalone) {
-            Object.assign(uploadHeaders, getLiffAuthHeaders(liff));
-        }
         const res = await fetch("/api/upload", {
             method: "POST",
-            headers: uploadHeaders,
             body: form,
         });
         if (!res.ok) {
@@ -85,7 +67,7 @@ export default function SpecialClassPayPage({ params }: PayPageProps) {
         setSubmitError(null);
         try {
             const proofImageUrl = await uploadSlip(slipFile);
-            const headers = await getAuthHeaders();
+            const headers = { "Content-Type": "application/json" };
             const res = await fetch("/api/purchases", {
                 method: "POST",
                 headers,

@@ -2,14 +2,11 @@
 
 import type { Liff } from "@line/liff";
 import { isStandaloneMode } from "@/lib/auth/mode";
-import {
-    clearLiffLoginAttempt,
-    hasAttemptedLiffLogin,
-    startLiffLogin,
-} from "@/lib/liff/auth";
+import { startLiffLogin, startServerSession } from "@/lib/liff/auth";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { initLiff } from "./client";
 
+/** "ready" means LIFF initialized and any LINE login was exchanged for a session cookie. */
 type LiffStatus = "loading" | "ready" | "error";
 
 interface LiffContextValue {
@@ -17,14 +14,10 @@ interface LiffContextValue {
     status: LiffStatus;
     error: string | null;
     isInClient: boolean;
-    isLoggedIn: boolean;
     login: () => void;
 }
 
 const LiffContext = createContext<LiffContextValue | null>(null);
-
-const MISSING_OPENID_MESSAGE =
-    "LINE ID Token is missing. Enable the openid scope on this LIFF channel in LINE Developers Console, then tap Continue with LINE.";
 
 export function LiffProvider({ children }: { children: React.ReactNode }) {
     const [liff, setLiff] = useState<Liff | null>(null);
@@ -33,62 +26,28 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
     );
     const [error, setError] = useState<string | null>(null);
 
-    const finishReady = useCallback((instance: Liff) => {
-        clearLiffLoginAttempt();
-        setLiff(instance);
-        setError(null);
-        setStatus("ready");
-        if (process.env.NODE_ENV !== "production") {
-            console.info(
-                `[liff] ready. inClient=${instance.isInClient()} loggedIn=${instance.isLoggedIn()}`,
-            );
-        }
-    }, []);
-
-    const requireLogin = useCallback((instance: Liff, reason: string) => {
-        if (hasAttemptedLiffLogin()) {
-            setLiff(instance);
-            setError(reason);
-            setStatus("error");
-            return;
-        }
-        startLiffLogin(instance);
-    }, []);
-
     useEffect(() => {
-        if (isStandaloneMode) {
-            console.info("[liff] standalone mode — skipping LIFF init");
-            return;
-        }
+        if (isStandaloneMode) return;
 
         let cancelled = false;
         initLiff()
-            .then((instance) => {
+            .then(async (instance) => {
+                await startServerSession(instance).catch((err: unknown) => {
+                    console.error("[liff] session exchange failed:", err);
+                });
                 if (cancelled) return;
-                if (!instance.isLoggedIn()) {
-                    requireLogin(
-                        instance,
-                        "Sign in with LINE to continue. Open this page from the LINE app, or tap Continue with LINE.",
-                    );
-                    return;
-                }
-                if (!instance.getIDToken()) {
-                    requireLogin(instance, MISSING_OPENID_MESSAGE);
-                    return;
-                }
-                finishReady(instance);
+                setLiff(instance);
+                setStatus("ready");
             })
             .catch((err: unknown) => {
                 if (cancelled) return;
-                setError(
-                    err instanceof Error ? err.message : "Unknown LIFF error",
-                );
+                setError(err instanceof Error ? err.message : "Unknown LIFF error");
                 setStatus("error");
             });
         return () => {
             cancelled = true;
         };
-    }, [finishReady, requireLogin]);
+    }, []);
 
     const login = useCallback(() => {
         if (isStandaloneMode) return;
@@ -96,16 +55,10 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
             startLiffLogin(liff);
             return;
         }
-        setStatus("loading");
-        setError(null);
         void initLiff()
-            .then((instance) => {
-                startLiffLogin(instance);
-            })
+            .then(startLiffLogin)
             .catch((err: unknown) => {
-                setError(
-                    err instanceof Error ? err.message : "Unknown LIFF error",
-                );
+                setError(err instanceof Error ? err.message : "Unknown LIFF error");
                 setStatus("error");
             });
     }, [liff]);
@@ -116,7 +69,6 @@ export function LiffProvider({ children }: { children: React.ReactNode }) {
             status,
             error,
             isInClient: liff?.isInClient() ?? false,
-            isLoggedIn: liff?.isLoggedIn() ?? false,
             login,
         }),
         [liff, status, error, login],

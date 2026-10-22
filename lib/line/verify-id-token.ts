@@ -1,3 +1,5 @@
+import { decodeJwt } from "jose";
+
 interface LineVerifySuccessResponse {
     iss: string;
     sub: string;
@@ -9,19 +11,46 @@ interface LineVerifySuccessResponse {
 }
 
 /**
+ * Channel IDs whose ID tokens this deployment accepts. A LINE MINI App has
+ * Developing, Review and Published internal channels, each with its own ID,
+ * so LINE_CHANNEL_ID takes a comma-separated list.
+ */
+function allowedChannelIds(): string[] {
+    const raw = process.env.LINE_CHANNEL_ID || process.env.LINE_LOGIN_CHANNEL_ID || "";
+    return raw
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean);
+}
+
+/** The token's unverified `aud`, used only to pick which channel to verify against. */
+function claimedAudience(idToken: string): string | null {
+    try {
+        const { aud } = decodeJwt(idToken);
+        return typeof aud === "string" ? aud : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Verify a LINE ID token with the LINE API server-side.
  * Resolves to the user claims if valid, or null if invalid/expired.
  */
 export async function verifyLineIdToken(
     idToken: string,
 ): Promise<{ lineUserId: string; displayName?: string; email?: string } | null> {
-    const channelId = process.env.LINE_LOGIN_CHANNEL_ID;
-    
-    if (!channelId) {
-        throw new Error("LINE_LOGIN_CHANNEL_ID is not configured");
+    const channelIds = allowedChannelIds();
+    if (channelIds.length === 0) {
+        throw new Error("LINE_CHANNEL_ID is not configured");
     }
 
-
+    const claimed = claimedAudience(idToken);
+    const channelId = claimed && channelIds.includes(claimed) ? claimed : null;
+    if (!channelId) {
+        console.error(`[line-verify] Token audience ${claimed} is not an allowed channel`);
+        return null;
+    }
 
     try {
         const response = await fetch("https://api.line.me/oauth2/v2.1/verify", {

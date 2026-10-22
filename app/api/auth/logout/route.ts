@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { clearLineSessionCookie } from "@/lib/auth/line-session";
 import { clearSessionCookie } from "@/lib/standalone-auth";
 
 export const dynamic = "force-dynamic";
@@ -9,5 +10,6 @@ export async function POST() {
         { headers: { "Cache-Control": "no-store" } },
     );
     clearSessionCookie(res);
+    clearLineSessionCookie(res);
     return res;
 }

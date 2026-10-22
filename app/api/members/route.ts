@@ -25,28 +25,17 @@ const RegistrationSchema = z.object({
 
 export async function POST(request: NextRequest) {
     let lineUserId: string = "";
-    let isStandalone = false;
+    const isStandalone = isStandaloneMode;
 
-    const authHeader = request.headers.get("Authorization");
-    if (authHeader?.startsWith("Bearer ")) {
+    if (!isStandalone) {
         const auth = await authenticateRequest(request);
         if (!auth.ok) {
             return NextResponse.json({ error: auth.error }, { status: auth.status });
         }
         if (auth.method !== "line") {
-            return NextResponse.json(
-                { error: "Missing or invalid authorization header" },
-                { status: 401 },
-            );
+            return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
         lineUserId = auth.lineUserId;
-    } else if (isStandaloneMode) {
-        isStandalone = true;
-    } else {
-        return NextResponse.json(
-            { error: "Missing or invalid authorization header" },
-            { status: 401 },
-        );
     }
 
     try {

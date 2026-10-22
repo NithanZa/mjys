@@ -1,14 +1,13 @@
 "use client";
 
 import { isStandaloneMode } from "@/lib/auth/mode";
-import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
+import { useLiff } from "@/lib/liff";
 import {
     createContext,
     createElement,
     useCallback,
     useContext,
     useEffect,
-    useRef,
     useState,
     type ReactNode,
 } from "react";
@@ -30,10 +29,25 @@ export interface Member {
     updatedAt: string;
 }
 
+/**
+ * Who is using the app. `signedOut` has no session; `unregistered` is signed in
+ * with LINE but has no member profile yet.
+ */
+export type Account =
+    | { kind: "loading" }
+    | { kind: "signedOut" }
+    | { kind: "unregistered" }
+    | { kind: "member"; member: Member };
+
 export interface UseMemberResult {
+    account: Account;
     member: Member | null;
     loading: boolean;
     error: string | null;
+    /** The visitor chose to browse without signing in for this session. */
+    browsingAsGuest: boolean;
+    continueAsGuest: () => void;
+    requestSignIn: () => void;
     register: (input: {
         displayName: string;
         email: string;
@@ -53,57 +67,75 @@ export interface UseMemberResult {
 }
 
 const DEV = process.env.NODE_ENV !== "production";
+const GUEST_KEY = "mjys.browsingAsGuest";
 const MemberContext = createContext<UseMemberResult | null>(null);
 
+function readGuestFlag(): boolean {
+    try {
+        return typeof window !== "undefined" && sessionStorage.getItem(GUEST_KEY) === "1";
+    } catch {
+        return false;
+    }
+}
+
+function writeGuestFlag(value: boolean): void {
+    try {
+        if (value) sessionStorage.setItem(GUEST_KEY, "1");
+        else sessionStorage.removeItem(GUEST_KEY);
+    } catch {
+        /* private mode: the choice lasts until reload */
+    }
+}
+
 function useMemberState(): UseMemberResult {
-    const { liff, status, isLoggedIn } = useLiff();
-    const [member, setMember] = useState<Member | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { liff, status } = useLiff();
+    const [account, setAccount] = useState<Account>({ kind: "loading" });
     const [error, setError] = useState<string | null>(null);
-    const initialFetchStarted = useRef(false);
+    const [browsingAsGuest, setBrowsingAsGuest] = useState(readGuestFlag);
 
-    const fetchMember = useCallback(async () => {
-        if (!isStandaloneMode && (status !== "ready" || !isLoggedIn || !liff)) {
-            return;
-        }
+    const setMember = useCallback((member: Member) => {
+        setAccount({ kind: "member", member });
+    }, []);
 
+    const fetchAccount = useCallback(async () => {
         try {
-            let data: any;
-            if (isStandaloneMode) {
-                // Cookie is sent automatically by the browser
-                const res = await fetch("/api/members/me");
-                if (!res.ok) throw new Error(`Failed to fetch profile: ${res.statusText}`);
-                data = await res.json();
-            } else {
-                const res = await fetch("/api/members/me", {
-                    headers: getLiffAuthHeaders(liff),
-                });
-                if (res.status === 401) {
-                    throw new Error(
-                        "LINE session could not be verified. Reopen this page from LINE, or tap Continue with LINE.",
-                    );
-                }
-                if (!res.ok) throw new Error(`Failed to fetch profile: ${res.statusText}`);
-                data = await res.json();
+            const res = await fetch("/api/members/me", { cache: "no-store" });
+            if (res.status === 401) {
+                setAccount({ kind: "signedOut" });
+                return;
             }
-            setMember(data.member);
+            if (!res.ok) throw new Error(`Failed to fetch profile: ${res.statusText}`);
+            const data = (await res.json()) as { member: Member | null };
+            const lineUserId = liff?.isLoggedIn() ? liff.getDecodedIDToken()?.sub : undefined;
+            if (data.member && lineUserId && data.member.lineUserId !== lineUserId) {
+                // The cookie belongs to someone else who used this browser before.
+                await fetch("/api/auth/logout", { method: "POST" });
+                setAccount({ kind: "signedOut" });
+                return;
+            }
+            if (data.member) setMember(data.member);
+            else setAccount({ kind: isStandaloneMode ? "signedOut" : "unregistered" });
             setError(null);
         } catch (err: any) {
             setError(err.message || "An error occurred");
-        } finally {
-            setLoading(false);
+            setAccount({ kind: "signedOut" });
         }
-    }, [isLoggedIn, liff, status]);
+    }, [liff, setMember]);
 
     useEffect(() => {
-        if (!isStandaloneMode && (status !== "ready" || !isLoggedIn || !liff)) {
-            initialFetchStarted.current = false;
-            return;
-        }
-        if (initialFetchStarted.current) return;
-        initialFetchStarted.current = true;
-        void fetchMember();
-    }, [fetchMember, isLoggedIn, liff, status]);
+        if (status === "loading") return;
+        void fetchAccount();
+    }, [fetchAccount, status]);
+
+    const continueAsGuest = useCallback(() => {
+        writeGuestFlag(true);
+        setBrowsingAsGuest(true);
+    }, []);
+
+    const requestSignIn = useCallback(() => {
+        writeGuestFlag(false);
+        setBrowsingAsGuest(false);
+    }, []);
 
     const register = useCallback(
         async (input: {
@@ -116,23 +148,11 @@ function useMemberState(): UseMemberResult {
             password?: string;
         }) => {
             try {
-                let res: Response;
-                if (isStandaloneMode) {
-                    res = await fetch("/api/members", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(input),
-                    });
-                } else {
-                    res = await fetch("/api/members", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            ...getLiffAuthHeaders(liff),
-                        },
-                        body: JSON.stringify(input),
-                    });
-                }
+                const res = await fetch("/api/members", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(input),
+                });
 
                 if (!res.ok) {
                     const errData = await res.json();
@@ -141,7 +161,6 @@ function useMemberState(): UseMemberResult {
 
                 const data = await res.json();
                 if (data.unverified) {
-                    setMember(null);
                     return data;
                 }
                 setMember(data.member);
@@ -151,7 +170,7 @@ function useMemberState(): UseMemberResult {
                 throw err;
             }
         },
-        [liff],
+        [setMember],
     );
 
     const login = useCallback(
@@ -182,8 +201,10 @@ function useMemberState(): UseMemberResult {
                 throw err;
             }
         },
-        [],
+        [setMember],
     );
+
+    const member = account.kind === "member" ? account.member : null;
 
     const markCelebrated = useCallback(
         async (threshold: number) => {
@@ -198,23 +219,11 @@ function useMemberState(): UseMemberResult {
             const nextCelebrated = [...member.celebratedLevels, crossedLevel];
 
             try {
-                let res: Response;
-                if (isStandaloneMode) {
-                    res = await fetch("/api/members", {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ celebratedLevels: nextCelebrated }),
-                    });
-                } else {
-                    res = await fetch("/api/members", {
-                        method: "PATCH",
-                        headers: {
-                            "Content-Type": "application/json",
-                            ...getLiffAuthHeaders(liff),
-                        },
-                        body: JSON.stringify({ celebratedLevels: nextCelebrated }),
-                    });
-                }
+                const res = await fetch("/api/members", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ celebratedLevels: nextCelebrated }),
+                });
 
                 if (!res.ok) throw new Error("Failed to update celebration");
 
@@ -224,79 +233,56 @@ function useMemberState(): UseMemberResult {
                 console.error("Failed to mark celebrated:", err);
             }
         },
-        [member, liff],
+        [member, setMember],
     );
 
     const reset = useCallback(async () => {
-        if (isStandaloneMode) {
-            const res = await fetch("/api/auth/logout", {
-                method: "POST",
-                cache: "no-store",
-                credentials: "include",
-            });
-            if (!res.ok) {
-                throw new Error("Failed to log out");
+        if (!isStandaloneMode && DEV) {
+            try {
+                const res = await fetch("/api/members/reset", { method: "POST" });
+                if (res.ok) setAccount({ kind: "unregistered" });
+            } catch (err) {
+                console.error("Failed to reset account:", err);
             }
-            setMember(null);
             return;
         }
 
-        if (!DEV) {
-            if (!liff) throw new Error("LIFF is not initialized");
-            liff.logout();
-            setMember(null);
-            return;
+        const res = await fetch("/api/auth/logout", {
+            method: "POST",
+            cache: "no-store",
+        });
+        if (!res.ok) {
+            throw new Error("Failed to log out");
         }
-        try {
-            const res = await fetch("/api/members/reset", {
-                method: "POST",
-                headers: getLiffAuthHeaders(liff),
-            });
-            if (res.ok) {
-                setMember(null);
-            }
-        } catch (err) {
-            console.error("Failed to reset account:", err);
-        }
-    }, [liff]);
+        if (liff?.isLoggedIn()) liff.logout();
+        requestSignIn();
+        setAccount({ kind: "signedOut" });
+    }, [liff, requestSignIn]);
 
     const deleteAccount = useCallback(async () => {
-        setLoading(true);
         try {
-            let res: Response;
-            if (isStandaloneMode) {
-                res = await fetch("/api/members/me", {
-                    method: "DELETE",
-                });
-            } else {
-                res = await fetch("/api/members/me", {
-                    method: "DELETE",
-                    headers: getLiffAuthHeaders(liff),
-                });
-            }
+            const res = await fetch("/api/members/me", { method: "DELETE" });
 
             if (!res.ok) {
                 const errData = await res.json();
                 throw new Error(errData.error || "Failed to delete account");
             }
 
-            setMember(null);
             window.location.href = "/";
         } catch (err: any) {
             setError(err.message);
             throw err;
-        } finally {
-            setLoading(false);
         }
-    }, [liff]);
-
-    const liffSessionReady =
-        isStandaloneMode || (status === "ready" && isLoggedIn && !!liff);
+    }, []);
 
     return {
-        member: liffSessionReady ? member : null,
-        loading: liffSessionReady ? loading : false,
+        account,
+        member,
+        loading: account.kind === "loading",
         error,
+        browsingAsGuest,
+        continueAsGuest,
+        requestSignIn,
         register,
         login,
         markCelebrated,

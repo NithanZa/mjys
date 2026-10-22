@@ -7,9 +7,8 @@ let liffPromise: Promise<Liff> | null = null;
  * Safe to call from multiple components — they share the same promise.
  * Never call this on the server (it will throw).
  *
- * `withLoginOnExternalBrowser` makes LINE Login run automatically when the
- * app is opened outside the LINE app (desktop preview, Android Chrome, etc.).
- * Inside LINE, login already happens as part of init.
+ * Outside the LINE app this does not log in. LINE MINI Apps must stay usable
+ * without LINE Login in external browsers, so login waits for the user.
  */
 export function initLiff(): Promise<Liff> {
     if (typeof window === "undefined") {
@@ -25,12 +24,12 @@ export function initLiff(): Promise<Liff> {
                 throw new Error("Missing NEXT_PUBLIC_LIFF_ID");
             }
 
-            await liff.init({
-                liffId,
-                withLoginOnExternalBrowser: true,
-            });
+            await liff.init({ liffId });
             return liff;
-        })();
+        })().catch((err: unknown) => {
+            liffPromise = null;
+            throw err;
+        });
     }
 
     return liffPromise;

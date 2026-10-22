@@ -1,11 +1,8 @@
 "use client";
 
-// Real bookings access. Talks to `/api/bookings`, which enforces auth
-// (LINE ID token in LIFF mode, signed HttpOnly cookie in standalone mode),
+// Real bookings access. Talks to `/api/bookings`, which enforces cookie auth,
 // capacity limits, duplicate checks and package decrement server-side.
 
-import { isStandaloneMode } from "@/lib/auth/mode";
-import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
 import { usePurchases } from "@/lib/api/purchases";
 import { useMember } from "@/lib/profile/use-member";
 import {
@@ -18,9 +15,6 @@ import {
     useState,
     type ReactNode,
 } from "react";
-
-/** True when the app runs as a regular web app (cookie auth, no LINE). */
-const isStandalone = isStandaloneMode;
 
 export interface Booking {
     occurrenceId: string;
@@ -50,8 +44,7 @@ export interface UseBookingsResult {
 const BookingsContext = createContext<UseBookingsResult | null>(null);
 
 function useBookingsState(): UseBookingsResult {
-    const { liff, status, isLoggedIn } = useLiff();
-    const { member } = useMember();
+    const { member, loading: memberLoading, requestSignIn } = useMember();
     const { refresh: refreshPurchases } = usePurchases();
     const memberId = member?.id ?? null;
     const [realBookings, setRealBookings] = useState<Booking[]>([]);
@@ -62,12 +55,6 @@ function useBookingsState(): UseBookingsResult {
     const currentMemberId = useRef(memberId);
     const requestId = useRef(0);
     currentMemberId.current = memberId;
-
-    /** Auth headers for the current mode (cookie mode needs none). */
-    const authHeaders = useCallback((): Record<string, string> => {
-        if (isStandalone) return {};
-        return getLiffAuthHeaders(liff);
-    }, [liff]);
 
     const fetchRealBookings = useCallback(async () => {
         const activeRequestId = ++requestId.current;
@@ -81,13 +68,9 @@ function useBookingsState(): UseBookingsResult {
             setLoading(true);
             return;
         }
-        if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) return;
-
         setLoading(true);
         try {
-            const res = await fetch("/api/bookings", {
-                headers: authHeaders(),
-            });
+            const res = await fetch("/api/bookings");
             if (!res.ok) {
                 // 404 = member not registered yet; treat as "no bookings".
                 if (res.status === 404) {
@@ -115,7 +98,7 @@ function useBookingsState(): UseBookingsResult {
         } finally {
             if (isCurrentRequest()) setLoading(false);
         }
-    }, [authHeaders, isLoggedIn, liff, memberId, status]);
+    }, [memberId]);
 
     useEffect(() => {
         if (!memberId) {
@@ -146,14 +129,15 @@ function useBookingsState(): UseBookingsResult {
 
     const book = useCallback(
         async (occurrenceId: string) => {
+            if (!memberId) {
+                requestSignIn();
+                return;
+            }
             setLoading(true);
             try {
                 const res = await fetch("/api/bookings", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...authHeaders(),
-                    },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ classOccurrenceId: occurrenceId }),
                 });
 
@@ -173,7 +157,7 @@ function useBookingsState(): UseBookingsResult {
                 setLoading(false);
             }
         },
-        [authHeaders, fetchRealBookings, refreshPurchases],
+        [fetchRealBookings, memberId, refreshPurchases, requestSignIn],
     );
 
     const cancel = useCallback(
@@ -182,10 +166,7 @@ function useBookingsState(): UseBookingsResult {
             try {
                 const res = await fetch(
                     `/api/bookings?classOccurrenceId=${encodeURIComponent(occurrenceId)}`,
-                    {
-                        method: "DELETE",
-                        headers: authHeaders(),
-                    },
+                    { method: "DELETE" },
                 );
 
                 if (!res.ok) {
@@ -204,7 +185,7 @@ function useBookingsState(): UseBookingsResult {
                 setLoading(false);
             }
         },
-        [authHeaders, fetchRealBookings, refreshPurchases],
+        [fetchRealBookings, refreshPurchases],
     );
 
     const toggle = useCallback(
@@ -221,7 +202,7 @@ function useBookingsState(): UseBookingsResult {
 
     return {
         bookings: activeBookings,
-        loading,
+        loading: memberId ? loading : memberLoading,
         error,
         isBooked,
         isPaidSpecialBooking,

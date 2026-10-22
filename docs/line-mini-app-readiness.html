@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LINE Mini App readiness · MiTR Journey (mjys)</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --fb-bg: #ffffff; --fb-fg: #111827; --fb-muted: #6b7280; --fb-card: #f8fafc; --fb-border: #e5e7eb;
+    --fb-success: #15803d; --fb-warning: #b45309; --fb-danger: #b91c1c; --fb-info: #1d4ed8; --fb-code: #f1f5f9;
+    --bg: var(--background, var(--fb-bg));
+    --fg: var(--foreground, var(--fb-fg));
+    --muted: var(--muted-foreground, var(--fb-muted));
+    --card: var(--card, var(--fb-card));
+    --line: var(--border, var(--fb-border));
+    --ok: var(--success, var(--fb-success));
+    --warn: var(--warning, var(--fb-warning));
+    --bad: var(--destructive, var(--fb-danger));
+    --info: var(--info, var(--fb-info));
+    --codebg: var(--code-background, var(--fb-code));
+    --r: var(--radius, 10px);
+    --sans: var(--font-sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
+    --mono: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --fb-bg: #0b0f17; --fb-fg: #e5e7eb; --fb-muted: #9ca3af; --fb-card: #121826; --fb-border: #273041;
+            --fb-success: #4ade80; --fb-warning: #fbbf24; --fb-danger: #f87171; --fb-info: #60a5fa; --fb-code: #1a2233; }
+  }
+  html { background: var(--bg); color: var(--fg); font-family: var(--sans); }
+  body { margin: 0; font-size: 15px; line-height: 1.5; }
+  * { box-sizing: border-box; }
+  a { color: var(--info); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font-family: var(--mono); font-size: 0.86em; background: var(--codebg); padding: 1px 6px; border-radius: 6px; }
+  h1 { font-size: 24px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 32px 0 12px; font-weight: 600; }
+  h3 { font-size: 16px; margin: 0 0 4px; line-height: 1.3; }
+  p { margin: 0; }
+  .sub { color: var(--muted); font-size: 14px; }
+
+  .verdict { display: grid; grid-template-columns: 6px 1fr; gap: 14px; margin-top: 16px; }
+  .verdict .bar { background: var(--ok); border-radius: 3px; }
+  .verdict strong { font-size: 17px; display: block; margin-bottom: 4px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 18px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 14px 12px; display: grid; gap: 2px; }
+  .tile .n { font-size: 30px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+  .tile .l { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .tile .l svg { width: 14px; height: 14px; }
+
+  .seg { display: flex; gap: 2px; height: 10px; margin-top: 12px; border-radius: 5px; overflow: hidden; }
+  .seg span { flex: 1; }
+  .ok-bg { background: var(--ok); } .bad-bg { background: var(--bad); } .warn-bg { background: var(--warn); } .info-bg { background: var(--info); }
+  .ok-fg { color: var(--ok); } .bad-fg { color: var(--bad); } .warn-fg { color: var(--warn); } .info-fg { color: var(--info); }
+
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; line-height: 1.4; white-space: nowrap; }
+  .chip svg { width: 12px; height: 12px; }
+  .chip.neutral { color: var(--muted); }
+
+  .list { display: grid; gap: 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; grid-template-columns: 34px 1fr; gap: 12px; }
+  .card .num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; color: #fff; }
+  .card .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .card .meta { display: flex; gap: 6px; flex-wrap: wrap; }
+  .card .why { color: var(--muted); margin-top: 4px; }
+  .card .do { margin-top: 8px; display: grid; grid-template-columns: 44px 1fr; gap: 8px; }
+  .card .do b { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+  .check { display: grid; grid-template-columns: 20px 1fr; gap: 8px; align-items: start; padding: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); }
+  .check svg { width: 18px; height: 18px; margin-top: 2px; }
+  .check b { display: block; }
+  .check span { color: var(--muted); font-size: 14px; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; position: relative; }
+  .step .k { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--info); }
+  .step .t { font-weight: 600; margin: 2px 0 6px; }
+  .step ul { margin: 0; padding-left: 16px; color: var(--muted); font-size: 14px; }
+  .step .dur { margin-top: 8px; font-size: 13px; font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  td:first-child { font-weight: 600; }
+  .cell { display: inline-flex; align-items: center; gap: 6px; }
+  .cell svg { width: 15px; height: 15px; }
+
+  .note { border-left: 3px solid var(--warn); padding: 8px 14px; color: var(--muted); font-size: 14px; }
+  .sources { columns: 2; column-gap: 24px; font-size: 13px; padding-left: 18px; margin: 0; }
+  .sources li { break-inside: avoid; margin-bottom: 4px; }
+
+  @media (max-width: 560px) {
+    .tiles { grid-template-columns: repeat(2, 1fr); }
+    .checks { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; }
+    .sources { columns: 1; }
+    .card { grid-template-columns: 30px 1fr; gap: 10px; padding: 12px; }
+    .card .do { grid-template-columns: 1fr; gap: 2px; }
+    h1 { font-size: 21px; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12.5l2.5 2.5L16 9.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3L22 20H2L12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 4h12l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M3 12h18" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+</svg>
+
+<header>
+  <h1>LINE Mini App readiness · MiTR Journey (<code>mjys</code>)</h1>
+  <p class="sub">Assessed 22 Oct 2026 against the current LINE Developers docs. Scope: the member-facing app under <code>app/(shell)</code>.</p>
+
+  <div class="verdict">
+    <div class="bar"></div>
+    <div>
+      <strong>Close to ready. Mostly channel setup plus five contained code changes.</strong>
+      <p class="sub">The app is already a LIFF app with server-side token verification, safe-area handling and external-browser login. LINE's own guide says a Mini App "runs as a LIFF app that uses the LIFF." The one large non-code step is becoming a certified provider, which is only needed for <em>verified</em> status.</p>
+    </div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="n ok-fg">6</div><div class="l"><svg class="ok-fg"><use href="#i-check"/></svg>Already in place</div></div>
+    <div class="tile"><div class="n bad-fg">5</div><div class="l"><svg class="bad-fg"><use href="#i-alert"/></svg>Must change</div></div>
+    <div class="tile"><div class="n warn-fg">2</div><div class="l"><svg class="warn-fg"><use href="#i-flag"/></svg>Strongly advised</div></div>
+    <div class="tile"><div class="n info-fg">1</div><div class="l"><svg class="info-fg"><use href="#i-brief"/></svg>Business step</div></div>
+  </div>
+  <div class="seg" aria-label="14 checks: 6 in place, 5 must change, 2 advised, 1 business step">
+    <span class="ok-bg"></span><span class="ok-bg"></span><span class="ok-bg"></span><span class="ok-bg"></span><span class="ok-bg"></span><span class="ok-bg"></span>
+    <span class="bad-bg"></span><span class="bad-bg"></span><span class="bad-bg"></span><span class="bad-bg"></span><span class="bad-bg"></span>
+    <span class="warn-bg"></span><span class="warn-bg"></span>
+    <span class="info-bg"></span>
+  </div>
+</header>
+
+<h2>Do these first · must change</h2>
+<div class="list">
+
+  <div class="card">
+    <div class="num bad-bg">1</div>
+    <div>
+      <div class="head"><h3>Create a new LINE MINI App channel under the <em>same</em> provider</h3>
+        <div class="meta"><span class="chip neutral">Console only</span><span class="chip neutral">~1 hour</span></div></div>
+      <p class="why">LINE's FAQ: LIFF apps on a LINE Login channel "can't be migrated to a LINE MINI App channel." User IDs are issued per provider, so the same provider keeps every existing <code>Member.lineUserId</code> valid. A different provider orphans every member row.</p>
+      <div class="do"><b>Do</b><p>Create the Mini App channel in the LINE Developers Console under the provider that owns today's LINE Login channel. Region: Thailand. Link the <code>@mitrjourney</code> Official Account. Anyone permitted can do this since 11 Mar 2026.</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num bad-bg">2</div>
+    <div>
+      <div class="head"><h3>Support three LIFF IDs and three channel IDs</h3>
+        <div class="meta"><span class="chip neutral">Small code change</span><span class="chip neutral">~half day</span></div></div>
+      <p class="why">A Mini App channel contains Developing, Review and Published internal channels. Each has its own LIFF ID, channel ID and endpoint URL. The code has one build-time <code>NEXT_PUBLIC_LIFF_ID</code> and one <code>LINE_LOGIN_CHANNEL_ID</code>, so today it fits only one environment.</p>
+      <div class="do"><b>Do</b><p>Either run three deployments with their own env values, or add a per-environment selector. The repo's own skill note in <code>.devin/skills/line-liff/SKILL.md</code> already sketches a <code>getLiffId()</code> selector. Rename the channel-ID env var so it no longer says "LOGIN".</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num bad-bg">3</div>
+    <div>
+      <div class="head"><h3>Upgrade <code>@line/liff</code> from 2.29.0 to 2.31.2</h3>
+        <div class="meta"><span class="chip bad-fg"><svg><use href="#i-clock"/></svg>Deadline ~24 Nov 2026</span><span class="chip neutral">~1 hour + test</span></div></div>
+      <p class="why">LINE deprecated 2.20.0 through 2.31.0 on 30 Sep 2026 for a security issue and will restrict them "around November 24, 2026." This matters even if the Mini App move waits.</p>
+      <div class="do"><b>Do</b><p>Bump the dependency, then test login redirects. Version 2.31.2 changed how <code>?</code> inside query values is restored. The app only strips <code>code</code>, <code>state</code> and <code>liff.state</code>, so this should be safe, but confirm on a device.</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num bad-bg">4</div>
+    <div>
+      <div class="head"><h3>Publish privacy policy and terms pages</h3>
+        <div class="meta"><span class="chip neutral">Content + 2 pages</span><span class="chip neutral">~1 day</span></div></div>
+      <p class="why">The consent screen shows the privacy policy URL, and the Thai verification checklist lists it as required. The policy must name the company that handles user data. The registration form links to <code>/terms</code>, and no such route exists in the app today.</p>
+      <div class="do"><b>Do</b><p>Add <code>/terms</code> and <code>/privacy</code> pages, in Thai and English, and set both URLs in the channel's Basic settings.</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="num bad-bg">5</div>
+    <div>
+      <div class="head"><h3>Handle ID-token expiry</h3>
+        <div class="meta"><span class="chip neutral">Medium code change</span><span class="chip neutral">1–2 days</span></div></div>
+      <p class="why">LINE ID tokens "are valid for one hour." The hooks in <code>lib/profile/use-member.ts</code>, <code>lib/api/bookings.ts</code> and <code>lib/api/purchases.ts</code> resend the same token on every call. On a 401 they throw a "session could not be verified" error with no re-login. Mini Apps linger in LINE's multi-tab view, so after an hour every booking action fails until a reload.</p>
+      <div class="do"><b>Do</b><p>Check <code>liff.getDecodedIDToken().exp</code> before each call and re-login when stale, or exchange the ID token once for a signed server session cookie. The standalone path in <code>lib/standalone-auth.ts</code> already has that cookie machinery.</p></div>
+    </div>
+  </div>
+</div>
+
+<h2>Already in place · works as-is</h2>
+<div class="checks">
+  <div class="check"><svg class="ok-fg"><use href="#i-check"/></svg><div><b>LIFF init is correct</b><span><code>lib/liff/client.ts</code> initializes once, client-side only, with <code>withLoginOnExternalBrowser: true</code>. Matches LINE's rule since Mini Apps opened to external browsers in Oct 2025.</span></div></div>
+  <div class="check"><svg class="ok-fg"><use href="#i-check"/></svg><div><b>Auth follows LINE's recommended model</b><span>Client sends the ID token as a Bearer header. <code>lib/line/verify-id-token.ts</code> verifies with LINE and checks audience, issuer and expiry. No API trusts a client-supplied user ID.</span></div></div>
+  <div class="check"><svg class="ok-fg"><use href="#i-check"/></svg><div><b>Safe areas handled</b><span>Viewport uses <code>viewportFit: "cover"</code>. Top bar, bottom nav and global CSS use the safe-area insets. Covers Android edge-to-edge from Mar 2026.</span></div></div>
+  <div class="check"><svg class="ok-fg"><use href="#i-check"/></svg><div><b>Deep links will work</b><span>Permanent links are the LIFF URL plus the page path. Next.js serves every path under the root endpoint, so a shared booking page resolves.</span></div></div>
+  <div class="check"><svg class="ok-fg"><use href="#i-check"/></svg><div><b>Only safe LIFF APIs used</b><span>Login, logout, ID token, and one <code>openWindow</code> call guarded by <code>isInClient</code>. Nothing that breaks outside LINE.</span></div></div>
+  <div class="check"><svg class="ok-fg"><use href="#i-check"/></svg><div><b>Payment method is allowed</b><span>PromptPay slip upload counts as an "other payment method," available in all regions. In-app purchase is Japan-only and not required.</span></div></div>
+</div>
+
+<h2>Strongly advised</h2>
+<div class="list">
+  <div class="card">
+    <div class="num warn-bg">A</div>
+    <div>
+      <div class="head"><h3>Loosen the login wall</h3><div class="meta"><span class="chip neutral">Medium code change</span></div></div>
+      <p class="why">The shell layout blocks every page, including about, contact and the schedule, behind LINE login and full registration. LINE's external-browser guidance says the service should work "without requiring LINE Login" for non-LINE users. The Policy says registration should be required only where it is needed for points or purchases.</p>
+      <div class="do"><b>Do</b><p>Keep home, schedule, instructors, about and contact public. Gate booking, profile and payments.</p></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="num warn-bg">B</div>
+    <div>
+      <div class="head"><h3>Measure performance and match the loading icon</h3><div class="meta"><span class="chip neutral">Unverified</span></div></div>
+      <p class="why">LINE requires a Lighthouse performance score of 50 or above, measured on production while logged out. Nothing in the repo shows this has been checked. LINE also recommends its 30×30 SVG spinner, centered, in place of the app's "Connecting to MiTR..." text spinner.</p>
+      <div class="do"><b>Do</b><p>Run Lighthouse against the Published URL with LINE Login disabled, and swap the spinner.</p></div>
+    </div>
+  </div>
+</div>
+
+<h2>Verified status in Thailand · business step</h2>
+<p class="sub" style="margin-bottom:12px">Unverified Mini Apps are fully usable in production. Verification is optional, and in Thailand it is gated on becoming a certified provider through LINE for Business Thailand.</p>
+<div class="steps">
+  <div class="step"><div class="k">Step 1</div><div class="t">Certified provider</div>
+    <ul><li>Provider name = registered company name</li><li>DBD company registration certificate</li><li>Signed application form</li><li>Signatory's ID copy</li><li>Email to LINE Thailand</li></ul>
+    <div class="dur info-fg">5–7 working days</div></div>
+  <div class="step"><div class="k">Step 2</div><div class="t">Verification review</div>
+    <ul><li>LINE checks the Review channel's LIFF URL</li><li>Provide test scenarios: test account, test slip</li><li>Avoid generic names like "ระบบจองคิว" or "ระบบจองล่วงหน้า"</li><li>Icon per spec, privacy URL set, add-friend configured</li></ul>
+    <div class="dur info-fg">1–2 weeks</div></div>
+  <div class="step"><div class="k">Step 3</div><div class="t">Publish</div>
+    <ul><li>Status becomes "Reflected"</li><li>Click <b>Search enable</b> to appear in search</li><li>Otherwise it turns on automatically after 31 days</li></ul>
+    <div class="dur info-fg">Same day</div></div>
+</div>
+
+<h2>What verification unlocks</h2>
+<table>
+  <thead><tr><th>Feature</th><th>Unverified</th><th>Verified</th><th>Why it matters here</th></tr></thead>
+  <tbody>
+    <tr><td>Service messages</td><td><span class="cell bad-fg"><svg><use href="#i-x"/></svg>No</span></td><td><span class="cell ok-fg"><svg><use href="#i-check"/></svg>Yes</span></td><td>Booking confirmations are exactly the "response to a user action" LINE allows.</td></tr>
+    <tr><td>Home-screen shortcut</td><td><span class="cell bad-fg"><svg><use href="#i-x"/></svg>No</span></td><td><span class="cell ok-fg"><svg><use href="#i-check"/></svg>Yes</span></td><td>Members can pin the studio app.</td></tr>
+    <tr><td>App name in header</td><td><span class="cell bad-fg"><svg><use href="#i-x"/></svg>Shows your domain</span></td><td><span class="cell ok-fg"><svg><use href="#i-check"/></svg>Name + badge</span></td><td>Looks like a product, not a website.</td></tr>
+    <tr><td>Custom path</td><td><span class="cell bad-fg"><svg><use href="#i-x"/></svg>No</span></td><td><span class="cell ok-fg"><svg><use href="#i-check"/></svg>Yes</span></td><td>Brand name in the share URL instead of the LIFF ID.</td></tr>
+    <tr><td>Add Official Account as friend</td><td><span class="cell ok-fg"><svg><use href="#i-check"/></svg>Yes</span></td><td><span class="cell ok-fg"><svg><use href="#i-check"/></svg>Yes</span></td><td>Already available.</td></tr>
+    <tr><td>Payments (PromptPay slip)</td><td><span class="cell ok-fg"><svg><use href="#i-check"/></svg>Yes</span></td><td><span class="cell ok-fg"><svg><use href="#i-check"/></svg>Yes</span></td><td>Already available.</td></tr>
+  </tbody>
+</table>
+
+<h2>Effort at a glance</h2>
+<table>
+  <thead><tr><th>Track</th><th>Who</th><th>Time</th></tr></thead>
+  <tbody>
+    <tr><td>Channel setup (items 1, 2 config side)</td><td>Studio owner + dev</td><td>About 1 day</td></tr>
+    <tr><td>Code changes (items 2 to 5, plus A)</td><td>Dev</td><td>3 to 5 working days</td></tr>
+    <tr><td>Certified provider + verification</td><td>Studio owner</td><td>5 to 7 working days, then 1 to 2 weeks review</td></tr>
+  </tbody>
+</table>
+
+<h2>Caveat</h2>
+<p class="note">LINE's development-guidelines and design-index pages returned 403 to my fetcher. The loading-icon, safe-area and performance figures above come from search snippets and the Thai LINE for Business page rather than the full pages.</p>
+
+<h2>Sources</h2>
+<ol class="sources">
+  <li><a href="https://developers.line.biz/en/docs/line-mini-app/develop/web-to-mini-app/">Implementing web apps as LINE MINI Apps</a></li>
+  <li><a href="https://developers.line.biz/en/docs/line-mini-app/discover/console-guide/">Console guide (three internal channels)</a></li>
+  <li><a href="https://developers.line.biz/en/docs/line-mini-app/discover/custom-features/">Custom features: verified vs unverified</a></li>
+  <li><a href="https://developers.line.biz/en/docs/line-mini-app/submit/submission-guide/">Submission guide</a></li>
+  <li><a href="https://developers.line.biz/en/docs/line-mini-app/develop/external-browser/">External browser behavior</a></li>
+  <li><a href="https://developers.line.biz/en/docs/line-mini-app/develop/service-messages/">Service messages</a></li>
+  <li><a href="https://developers.line.biz/en/docs/line-mini-app/develop/permanent-links/">Permanent links</a></li>
+  <li><a href="https://terms2.line.me/LINE_MINI_App?lang=en">LINE MINI App Policy</a></li>
+  <li><a href="https://developers.line.biz/en/reference/liff/">LIFF reference (token validity)</a></li>
+  <li><a href="https://developers.line.biz/en/docs/liff/release-notes/">LIFF release notes (deprecations)</a></li>
+  <li><a href="https://developers.line.biz/en/docs/line-mini-app/develop/performance-guidelines/">Performance guidelines</a></li>
+  <li><a href="https://developers.line.biz/en/docs/line-mini-app/design/landscape/">Safe area</a></li>
+  <li><a href="https://developers.line.biz/en/docs/line-mini-app/design/loading-icon">Loading icon</a></li>
+  <li><a href="https://developers.line.biz/en/faq/tags/line-mini-app/">Mini App FAQ (no migration)</a></li>
+  <li><a href="https://developers.line.biz/en/news/2025/">LINE Developers news 2025</a></li>
+  <li><a href="https://developers.line.biz/en/news/2026/">LINE Developers news 2026</a></li>
+  <li><a href="https://lineforbusiness.com/th/service/mini-app">LINE for Business Thailand: Mini App</a></li>
+  <li><a href="https://developers.line.biz/en/tips/2026/06/25/provider-design-basics/">Provider design basics (user IDs per provider)</a></li>
+</ol>
+
+</body>
+</html>
