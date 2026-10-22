@@ -2,10 +2,9 @@
 
 // Client-side helper for looking up a member's special-class payment/admission
 // status for a specific class occurrence. Talks to the real `/api/purchases`
-// endpoint (auth via LINE ID token in LIFF mode, cookie in standalone mode).
+// endpoint with cookie auth.
 
-import { isStandaloneMode } from "@/lib/auth/mode";
-import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
+import { useMember } from "@/lib/profile/use-member";
 import { useCallback, useEffect, useState } from "react";
 
 export type SpecialAdmissionStatus = "NONE" | "PENDING" | "APPROVED" | "REJECTED";
@@ -22,8 +21,6 @@ const NONE_ADMISSION: SpecialAdmission = {
     purchaseId: null,
 };
 
-const isStandalone = isStandaloneMode;
-
 export interface UseSpecialAdmissionResult {
     admission: SpecialAdmission;
     loading: boolean;
@@ -36,24 +33,20 @@ export interface UseSpecialAdmissionResult {
  * approved admission, or a rejected slip (with reason, if any).
  */
 export function useSpecialAdmission(occurrenceId: string | null): UseSpecialAdmissionResult {
-    const { liff, status, isLoggedIn } = useLiff();
+    const { member } = useMember();
+    const memberId = member?.id ?? null;
     const [admission, setAdmission] = useState<SpecialAdmission>(NONE_ADMISSION);
     const [loading, setLoading] = useState(true);
 
     const fetchAdmission = useCallback(async () => {
-        if (!occurrenceId || (!isStandalone && (status !== "ready" || !isLoggedIn || !liff))) {
+        if (!occurrenceId || !memberId) {
             setLoading(false);
             return;
         }
 
         setLoading(true);
         try {
-            const headers: Record<string, string> = {};
-            if (!isStandalone) {
-                Object.assign(headers, getLiffAuthHeaders(liff));
-            }
-
-            const res = await fetch("/api/purchases", { headers });
+            const res = await fetch("/api/purchases");
             if (!res.ok) {
                 setAdmission(NONE_ADMISSION);
                 return;
@@ -90,7 +83,7 @@ export function useSpecialAdmission(occurrenceId: string | null): UseSpecialAdmi
         } finally {
             setLoading(false);
         }
-    }, [isLoggedIn, liff, occurrenceId, status]);
+    }, [memberId, occurrenceId]);
 
     useEffect(() => {
         fetchAdmission();

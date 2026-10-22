@@ -1,7 +1,5 @@
 import type { Liff } from "@line/liff";
 
-const LOGIN_ATTEMPT_KEY = "mjys.liff.loginAttempted";
-
 const CALLBACK_PARAMS = [
     "code",
     "state",
@@ -9,6 +7,9 @@ const CALLBACK_PARAMS = [
     "liffRedirectUri",
     "liff.state",
 ];
+
+/** Treat tokens this close to expiry as already expired. */
+const EXPIRY_MARGIN_MS = 60_000;
 
 /** Current page URL with LIFF/OAuth callback params stripped. */
 export function getLiffLoginRedirectUri(): string {
@@ -20,49 +21,42 @@ export function getLiffLoginRedirectUri(): string {
     return url.toString();
 }
 
-export function hasAttemptedLiffLogin(): boolean {
-    try {
-        return sessionStorage.getItem(LOGIN_ATTEMPT_KEY) === "1";
-    } catch {
-        return false;
-    }
+/**
+ * The LIFF ID token if it can still be exchanged for a server session.
+ * LIFF caches tokens across reloads, so a logged-in LIFF can hold an expired one.
+ */
+export function getFreshIdToken(liff: Liff): string | null {
+    if (!liff.isLoggedIn()) return null;
+    const token = liff.getIDToken();
+    const exp = liff.getDecodedIDToken()?.exp;
+    if (!token || !exp) return null;
+    return exp * 1000 - EXPIRY_MARGIN_MS > Date.now() ? token : null;
 }
 
-export function markLiffLoginAttempted(): void {
-    try {
-        sessionStorage.setItem(LOGIN_ATTEMPT_KEY, "1");
-    } catch {
-        /* ignore quota / private-mode */
-    }
-}
-
-export function clearLiffLoginAttempt(): void {
-    try {
-        sessionStorage.removeItem(LOGIN_ATTEMPT_KEY);
-    } catch {
-        /* ignore */
-    }
-}
-
-/** Redirects to LINE Login, preserving the current path for deep links. */
+/**
+ * Starts LINE Login, returning to the current path afterwards.
+ * Inside the LINE app login is part of liff.init(), so dropping the cached
+ * tokens and reloading is what fetches fresh ones.
+ */
 export function startLiffLogin(liff: Liff): void {
-    markLiffLoginAttempted();
+    if (liff.isLoggedIn()) liff.logout();
+    if (liff.isInClient()) {
+        window.location.reload();
+        return;
+    }
     liff.login({ redirectUri: getLiffLoginRedirectUri() });
 }
 
-const MISSING_ID_TOKEN_MESSAGE =
-    "LINE ID Token is missing. In LINE Developers Console, open this LIFF channel, enable the openid scope, then log out and back in.";
-
-export function getLiffIdToken(liff: Liff | null | undefined): string {
-    const token = liff?.getIDToken();
-    if (!token) {
-        throw new Error(MISSING_ID_TOKEN_MESSAGE);
+/** Exchanges the LIFF ID token for the server's session cookie. */
+export async function startServerSession(liff: Liff): Promise<void> {
+    const idToken = getFreshIdToken(liff);
+    if (!idToken) return;
+    const res = await fetch("/api/auth/line-session", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+        signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+        console.error(`[liff] session exchange failed with status ${res.status}`);
     }
-    return token;
-}
-
-export function getLiffAuthHeaders(
-    liff: Liff | null | undefined,
-): Record<string, string> {
-    return { Authorization: `Bearer ${getLiffIdToken(liff)}` };
 }

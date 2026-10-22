@@ -1,7 +1,5 @@
 "use client";
 
-import { isStandaloneMode } from "@/lib/auth/mode";
-import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
 import type { PackageOffer } from "@/lib/api/packages";
 import { useMember } from "@/lib/profile/use-member";
 import {
@@ -83,12 +81,10 @@ interface PurchasesWire {
   nextExpiry: { classesRemaining: number; expiresAt: string } | null;
 }
 
-const isStandalone = isStandaloneMode;
 const PurchasesContext = createContext<UsePurchasesResult | null>(null);
 
 function usePurchasesState(): UsePurchasesResult {
-  const { liff, status, isLoggedIn } = useLiff();
-  const { member } = useMember();
+  const { member, loading: memberLoading } = useMember();
   const memberId = member?.id ?? null;
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [remainingClasses, setRemainingClasses] = useState(0);
@@ -99,11 +95,6 @@ function usePurchasesState(): UsePurchasesResult {
   const currentMemberId = useRef(memberId);
   const requestId = useRef(0);
   currentMemberId.current = memberId;
-
-  const authHeaders = useCallback((): Record<string, string> => {
-    if (isStandalone) return {};
-    return getLiffAuthHeaders(liff);
-  }, [liff]);
 
   const refresh = useCallback(async () => {
     const activeRequestId = ++requestId.current;
@@ -119,11 +110,9 @@ function usePurchasesState(): UsePurchasesResult {
       setLoading(true);
       return;
     }
-    if (!isStandalone && (status !== "ready" || !isLoggedIn || !liff)) return;
-
     setLoading(true);
     try {
-      const res = await fetch("/api/purchases", { headers: authHeaders() });
+      const res = await fetch("/api/purchases");
       if (!res.ok) throw new Error("Failed to fetch purchases");
       const data = (await res.json()) as PurchasesWire;
       const packagePurchases: Purchase[] = data.packages.map((pkg) => ({
@@ -181,7 +170,7 @@ function usePurchasesState(): UsePurchasesResult {
     } finally {
       if (isCurrentRequest()) setLoading(false);
     }
-  }, [authHeaders, isLoggedIn, liff, memberId, status]);
+  }, [memberId]);
 
   useEffect(() => {
     if (!memberId) {
@@ -199,7 +188,6 @@ function usePurchasesState(): UsePurchasesResult {
     form.append("file", file);
     const res = await fetch("/api/upload", {
       method: "POST",
-      headers: authHeaders(),
       body: form,
     });
     if (!res.ok) {
@@ -208,12 +196,12 @@ function usePurchasesState(): UsePurchasesResult {
     }
     const data = await res.json();
     return data.path as string;
-  }, [authHeaders]);
+  }, []);
 
   const createPending = useCallback(async (offerId: string, proofImageUrl?: string): Promise<string> => {
     const res = await fetch("/api/purchases", {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ packageOfferId: offerId, proofImageUrl }),
     });
     if (!res.ok) {
@@ -223,7 +211,7 @@ function usePurchasesState(): UsePurchasesResult {
     const data = await res.json();
     await refresh();
     return data.pendingPurchase.id as string;
-  }, [authHeaders, refresh]);
+  }, [refresh]);
 
   const pendingPurchases = useMemo(
     () => purchases.filter((purchase) => purchase.status === "PENDING"),
@@ -235,7 +223,7 @@ function usePurchasesState(): UsePurchasesResult {
     pendingPurchases,
     remainingClasses,
     nextExpiry,
-    loading,
+    loading: memberId ? loading : memberLoading,
     error,
     uploadSlip,
     createPending,

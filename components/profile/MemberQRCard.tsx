@@ -2,8 +2,6 @@
 
 import { Card } from "@/components/ui/Card";
 import { QRCode } from "@/components/ui/QRCode";
-import { isStandaloneMode } from "@/lib/auth/mode";
-import { getLiffAuthHeaders, useLiff } from "@/lib/liff";
 import { useEffect, useState, useCallback } from "react";
 
 export interface MemberQRCardProps {
@@ -18,25 +16,14 @@ export interface MemberQRCardProps {
  * The HMAC-signed JWT token is always requested from the server.
  */
 export function MemberQRCard({ refreshMs = 60_000 }: MemberQRCardProps) {
-  const { liff, status, isLoggedIn } = useLiff();
   const [token, setToken] = useState("");
   const [tick, setTick] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const isStandalone = isStandaloneMode;
-
   const rotateToken = useCallback(async () => {
     try {
-      const fetchOptions: RequestInit = { credentials: "same-origin" };
-      if (!isStandalone) {
-        if (status !== "ready" || !isLoggedIn || !liff) {
-          throw new Error("LINE authentication is unavailable");
-        }
-        fetchOptions.headers = getLiffAuthHeaders(liff);
-      }
-
-      const res = await fetch("/api/members/me/qr", fetchOptions);
+      const res = await fetch("/api/members/me/qr");
 
       if (!res.ok) throw new Error("Failed to fetch secure QR pass");
 
@@ -54,7 +41,7 @@ export function MemberQRCard({ refreshMs = 60_000 }: MemberQRCardProps) {
     } finally {
       setLoading(false);
     }
-  }, [isLoggedIn, isStandalone, liff, status]);
+  }, []);
 
   useEffect(() => {
     rotateToken();

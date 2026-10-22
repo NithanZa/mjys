@@ -9,6 +9,7 @@ import { INTENSITY_LABELS } from "@/lib/intensity";
 import { useBookings } from "@/lib/api/bookings";
 import { useSpecialAdmission } from "@/lib/api/special-purchases";
 import { usePurchases } from "@/lib/api/purchases";
+import { useMember } from "@/lib/profile/use-member";
 import { clearScheduleSnapshot } from "@/lib/cache/client-schedule";
 import { CalendarX, Clock, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -35,6 +36,7 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
     remainingClasses,
     loading: balanceLoading,
   } = usePurchases();
+  const { member } = useMember();
 
   useEffect(() => {
     let cancelled = false;
@@ -194,7 +196,7 @@ export default function ClassDetailPage({ params }: ClassDetailPageProps) {
               <Button size="md" variant="primary" disabled>
                 Checking balance…
               </Button>
-            ) : !isSpecial && !booked && remainingClasses === 0 ? (
+            ) : !isSpecial && !booked && member && remainingClasses === 0 ? (
               <Link href="/promotion">
                 <Button size="md" variant="primary">
                   Buy classes to book

@@ -3,6 +3,24 @@ import { NextRequest, NextResponse } from "next/server";
 
 const ADMIN_COOKIE_NAME = "mjys_admin_session";
 
+/**
+ * Member QR passes are signed with the same secret, so the role claim is what
+ * separates an admin session from a replayed member token.
+ */
+export async function isAdminSessionToken(
+    token: string,
+    secretString: string,
+): Promise<boolean> {
+    try {
+        const { payload } = await jwtVerify(token, new TextEncoder().encode(secretString), {
+            algorithms: ["HS256"],
+        });
+        return payload.role === "admin";
+    } catch {
+        return false;
+    }
+}
+
 /** Verify the admin session cookie on a request. Returns null if valid, or a 401 NextResponse if not. */
 export async function verifyAdmin(
     request: NextRequest,
@@ -24,16 +42,11 @@ export async function verifyAdmin(
         );
     }
 
-    try {
-        const secret = new TextEncoder().encode(secretString);
-        await jwtVerify(cookie.value, secret, {
-            algorithms: ["HS256"],
-        });
+    if (await isAdminSessionToken(cookie.value, secretString)) {
         return null;
-    } catch {
-        return NextResponse.json(
-            { error: "Unauthorized" },
-            { status: 401 },
-        );
     }
+    return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 },
+    );
 }
